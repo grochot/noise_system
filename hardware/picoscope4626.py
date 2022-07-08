@@ -1,0 +1,181 @@
+from pymeasure.instruments import Instrument
+from pymeasure.instruments.validators import strict_discrete_set
+
+import logging
+import ctypes
+import numpy as np
+from picosdk.ps4000 import ps4000 as ps
+import matplotlib.pyplot as plt
+from picosdk.functions import adc2mV, assert_pico_ok
+import time
+
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
+
+class PicoScope(Instrument): 
+
+    def __init__(self, resourceName, **kwargs):
+        kwargs.setdefault('read_termination', '\n')
+        super().__init__(
+            resourceName,
+            "PicoScope",
+            includeSCPI=True,
+            **kwargs
+        )
+        chandle = ctypes.c_int16()
+        status = {}
+        enabled = 1
+        disabled = 0
+        analogue_offset = 0.0   
+
+        self.status["openunit"] = ps.ps4000OpenUnit(ctypes.byref(chandle))
+        assert_pico_ok(status["openunit"])
+
+
+    def setChannelA(self, coupling="DC", range="10mV"): 
+        if coupling == 'DC':
+            coupling_type = True
+        else: 
+            coupling_type = False
+        
+        range_list = {"10mV":0, "20mV":1, "50mV":2, "100mV":3, "200mV":4, "500mV":5, "1V":6, "2V":7, "5V":8, "10V":9, "20V":10, "50V":11, "100V":12}
+        
+
+        self.status["setChA"] = ps.ps4000SetChannel(self.chandle,
+                                    ps.PS4000_CHANNEL['PS4000_CHANNEL_A'],
+                                    self.enabled,
+                                    coupling_type,
+                                    range_list[range])
+        assert_pico_ok(self.status["setChA"])
+
+
+    def setChannelB(self, coupling="DC", range="10mV"): 
+        if coupling == 'DC':
+            coupling_type = True
+        else: 
+            coupling_type = False
+        
+        range_list = {"10mV":0, "20mV":1, "50mV":2, "100mV":3, "200mV":4, "500mV":5, "1V":6, "2V":7, "5V":8, "10V":9, "20V":10, "50V":11, "100V":12}
+        
+
+        self.status["setChB"] = ps.ps4000SetChannel(self.chandle,
+                                    ps.PS4000_CHANNEL['PS4000_CHANNEL_B'],
+                                    self.enabled,
+                                    coupling_type,
+                                    range_list[range])
+        assert_pico_ok(self.status["setChB"])
+    
+
+    def setSizeCapture(self,sizeOneBuffer=500, noBuffers=10):
+        sizeOfOneBuffer = sizeOfOneBuffer
+        numBuffersToCapture = noBuffers
+        totalSamples = sizeOfOneBuffer * numBuffersToCapture
+        
+        bufferAMax = np.zeros(shape=sizeOfOneBuffer, dtype=np.int16)
+        bufferBMax = np.zeros(shape=sizeOfOneBuffer, dtype=np.int16)
+
+        memory_segment = 0
+        status["setDataBuffersA"] = ps.ps4000SetDataBuffers(chandle,
+                                                     ps.PS4000_CHANNEL['PS4000_CHANNEL_A'],
+                                                     bufferAMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+                                                     None,
+                                                     sizeOfOneBuffer)
+        assert_pico_ok(status["setDataBuffersA"])
+
+        status["setDataBuffersB"] = ps.ps4000SetDataBuffers(chandle,
+                                                     ps.PS4000_CHANNEL['PS4000_CHANNEL_B'],
+                                                     bufferBMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+                                                     None,
+                                                     sizeOfOneBuffer)
+        assert_pico_ok(status["setDataBuffersB"])
+
+
+    # def beginStreaming(self): 
+    #     # Begin streaming mode:
+    #     sampleInterval = ctypes.c_int32(250)
+    #     sampleUnits = ps.PS4000_TIME_UNITS['PS4000_US']
+    #     # We are not triggering:
+    #     maxPreTriggerSamples = 0
+    #     autoStopOn = 1
+    #     # No downsampling:
+    #     downsampleRatio = 1
+    #     status["runStreaming"] = ps.ps4000RunStreaming(chandle,
+    #                                                     ctypes.byref(sampleInterval),
+    #                                                     sampleUnits,
+    #                                                     maxPreTriggerSamples,
+    #                                                     totalSamples,
+    #                                                     autoStopOn,
+    #                                                     downsampleRatio,
+    #                                                     sizeOfOneBuffer)
+    #     assert_pico_ok(status["runStreaming"])
+
+    #     actualSampleInterval = sampleInterval.value
+    #     actualSampleIntervalNs = actualSampleInterval * 1000
+
+    #     print("Capturing at sample interval %s ns" % actualSampleIntervalNs)
+
+    #     # We need a big buffer, not registered with the driver, to keep our complete capture in.
+    #     bufferCompleteA = np.zeros(shape=totalSamples, dtype=np.int16)
+    #     bufferCompleteB = np.zeros(shape=totalSamples, dtype=np.int16)
+    #     nextSample = 0
+    #     autoStopOuter = False
+    #     wasCalledBack = False
+
+
+    
+
+    #     # Convert the python function into a C function pointer.
+    #     cFuncPtr = ps.StreamingReadyType(streaming_callback)
+
+    #     # Fetch data from the driver in a loop, copying it out of the registered buffers and into our complete one.
+    #     while nextSample < totalSamples and not autoStopOuter:
+    #         wasCalledBack = False
+    #         status["getStreamingLastestValues"] = ps.ps4000GetStreamingLatestValues(chandle, cFuncPtr, None)
+    #         if not wasCalledBack:
+    #             # If we weren't called back by the driver, this means no data is ready. Sleep for a short while before trying
+    #             # again.
+    #             time.sleep(0.01)
+
+    #     print("Done grabbing values.")
+
+    #     # Find maximum ADC count value
+    #     # handle = chandle
+    #     # pointer to value = ctypes.byref(maxADC)
+    #     maxADC = ctypes.c_int16(32767)
+
+    #     # Convert ADC counts data to mV
+    #     adc2mVChAMax = adc2mV(bufferCompleteA, channel_range, maxADC)
+    #     adc2mVChBMax = adc2mV(bufferCompleteB, channel_range, maxADC)
+
+    #     # Create time data
+    #     time = np.linspace(0, (totalSamples - 1) * actualSampleIntervalNs, totalSamples)
+
+    #     # Plot data from channel A and B
+    #     plt.plot(time, adc2mVChAMax[:])
+    #     plt.plot(time, adc2mVChBMax[:])
+    #     plt.xlabel('Time (ns)')
+    #     plt.ylabel('Voltage (mV)')
+    #     plt.show()
+
+    # def streaming_callback(self,handle, noOfSamples, startIndex, overflow, triggerAt, triggered, autoStop, param):
+    #     global nextSample, autoStopOuter, wasCalledBack
+    #     wasCalledBack = True
+    #     destEnd = nextSample + noOfSamples
+    #     sourceEnd = startIndex + noOfSamples
+    #     bufferCompleteA[nextSample:destEnd] = bufferAMax[startIndex:sourceEnd]
+    #     bufferCompleteB[nextSample:destEnd] = bufferBMax[startIndex:sourceEnd]
+    #     nextSample += noOfSamples
+    #     if autoStop:
+    #         autoStopOuter = True
+
+    # def stopScope(self):
+    #     # Stop the scope
+    #     # handle = chandle
+    #     status["stop"] = ps.ps4000Stop(chandle)
+    #     assert_pico_ok(status["stop"])
+
+    # def disconnectScope(self):
+    #     # Disconnect the scope
+    #     # handle = chandle
+    #     status["close"] = ps.ps4000CloseUnit(chandle)
+    #     assert_pico_ok(status["close"])
