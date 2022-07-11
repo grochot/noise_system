@@ -70,7 +70,7 @@ class NoiseProcedure(Procedure):
        
        ################# PICOSCOPE ###################
         try: 
-            self.oscilloscope = PicoScope("GPIB::25")
+            self.oscilloscope = PicoScope("ASRL1::INSTR")
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
             self.oscilloscope.setSizeCapture(self.sizeBuffer, self.noBuffer)

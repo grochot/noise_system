@@ -37,6 +37,7 @@ class HMC8043(Instrument):
         whether the instrument is in constant current or constant voltage mode,
         this might differ from the actual voltage achieved.""",
     )
+    ### 1,2,3 ###
    
     enable_channel = Instrument.control(
         "OUTP?",
@@ -48,7 +49,7 @@ class HMC8043(Instrument):
         values={True: 1, False: 0},
         map_values=True
     )
-
+### 1 włączony###
 
     set_voltage = Instrument.control(
         "VOLT?", "VOLT %g",

@@ -5,12 +5,9 @@ import logging
 import ctypes
 import numpy as np
 from picosdk.ps4000 import ps4000 as ps
-import matplotlib.pyplot as plt
 from picosdk.functions import adc2mV, assert_pico_ok
 import time
 
-log = logging.getLogger(__name__)
-log.addHandler(logging.NullHandler())
 
 class PicoScope(Instrument): 
 
@@ -65,6 +62,83 @@ class PicoScope(Instrument):
                                     range_list[range])
         assert_pico_ok(self.status["setChB"])
     
+    def setTrigger(self, source = 0):
+        self.status["trigger"] = ps.ps4000SetSimpleTrigger(self.chandle, 1, source, 1024, 2, 0, 1000)
+        assert_pico_ok(self.status["trigger"])
+
+    def set_number_samples(no_samples = 1):
+        preTriggerSamples = round(no_samples/2)
+        postTriggerSamples = round(no_samples/2)
+        maxSamples = preTriggerSamples + postTriggerSamples
+
+    def set_timebase(self, timebase = 1):
+        timeIntervalns = ctypes.c_float()
+        returnedMaxSamples = ctypes.c_int32()
+        oversample = ctypes.c_int16(1)
+        self.status["getTimebase2"] = ps.ps4000GetTimebase2(self.chandle, timebase, self.maxSamples, ctypes.byref(timeIntervalns), oversample, ctypes.byref(returnedMaxSamples), 0)
+        assert_pico_ok(self.status["getTimebase2"])
+
+    def run_block_capture(self):
+        self.status["runBlock"] = ps.ps4000RunBlock(self.chandle, self.preTriggerSamples, self.postTriggerSamples, self.timebase, self.oversample, None, 0, None, None)
+        assert_pico_ok(self.status["runBlock"])
+
+    def check_data_collection(self): 
+        ready = ctypes.c_int16(0)
+        check = ctypes.c_int16(0)
+        while ready.value == check.value:
+            self.status["isReady"] = ps.ps4000IsReady(self.chandle, ctypes.byref(ready))
+
+    def create_buffers(self): 
+        bufferAMax = (ctypes.c_int16 * self.maxSamples)()
+        bufferAMin = (ctypes.c_int16 * self.maxSamples)() # used for downsampling which isn't in the scope of this example
+        bufferBMax = (ctypes.c_int16 * self.maxSamples)()
+        bufferBMin = (ctypes.c_int16 * self.maxSamples)() # used for downsampling which isn't in the scope of this example
+
+    def set_buffer_location(self): 
+        self.status["setDataBuffersA"] = ps.ps4000SetDataBuffers(self.chandle, 0, ctypes.byref(self.bufferAMax), ctypes.byref(self.bufferAMin), self.maxSamples)
+        assert_pico_ok(self.status["setDataBuffersA"])
+        self.status["setDataBuffersB"] = ps.ps4000SetDataBuffers(self.chandle, 1, ctypes.byref(self.bufferBMax), ctypes.byref(self.bufferBMin), self.maxSamples)
+        assert_pico_ok(self.status["setDataBuffersB"])
+        # create overflow loaction
+        overflow = ctypes.c_int16()
+        # create converted type maxSamples
+        cmaxSamples = ctypes.c_int32(self.maxSamples)
+
+    def getValuesfromScope(self): 
+        self.status["getValues"] = ps.ps4000GetValues(self.chandle, 0, ctypes.byref(self.cmaxSamples), 0, 0, 0, ctypes.byref(self.overflow))
+        assert_pico_ok(self.status["getValues"])
+
+    def covert_to_mV(self): 
+        maxADC = ctypes.c_int16(32767)
+        adc2mVChAMax =  adc2mV(self.bufferAMax, self.chARange, maxADC)
+        dc2mVChBMax =  adc2mV(self.bufferBMax, self.chBRange, maxADC)
+
+    def create_time(self): 
+        time = np.linspace(0, (self.cmaxSamples.value - 1) * self.timeIntervalns.value, self.cmaxSamples.value)
+
+    def stop_scope(self):
+        self.status["stop"] = ps.ps4000Stop(self.chandle)
+        assert_pico_ok(self.status["stop"])
+    
+    def disconnect_scope(self): 
+        self.status["close"] = ps.ps4000CloseUnit(self.chandle)
+        assert_pico_ok(self.status["close"])
+
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def setSizeCapture(self,sizeOneBuffer=500, noBuffers=10):
         sizeOfOneBuffer = sizeOfOneBuffer
