@@ -121,7 +121,7 @@ class MainWindow(ManagedWindow):
             directory_input=True,  
             sequencer=True,                                      # Added line
             sequencer_inputs=['bias_field', 'bias_voltage'],    # Added line
-            #inputs_in_scrollarea=True,
+            inputs_in_scrollarea=True,
             
         )
         self.setWindowTitle('Noise Measurement System')
