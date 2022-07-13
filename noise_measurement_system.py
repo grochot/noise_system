@@ -29,10 +29,11 @@ class NoiseProcedure(Procedure):
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1)
     no_time = IntegerParameter('Number of times', default=10)
+    sampling_interval =FloatParameter('Sampling interval', units='s', default=1)
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=1)
     #channelB_enabled = BooleanParameter("Channel B Enabled", default=False)
-    #channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'])
+    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'])
     #channelB_coupling_type = ListParameter("Channel B Coupling Type",  default='AC', choices=['DC','AC'])
     channelA_range = ListParameter("Channel A Range",  default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
     #channelB_range = ListParameter("Channel B Range", default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
@@ -50,7 +51,9 @@ class NoiseProcedure(Procedure):
     def startup(self):
         
         log.info("Setting up instruments") 
-
+        self.no_samples = int(self.period_time/((self.sampling_interval)))
+        if self.no_samples % 2 == 1:
+            self.no_samples = self.no_samples + 1
         ################# BIAS FIELD ###################
         try:
             self.field = HMC8043("ASRL1::INSTR") #connction to field controller
@@ -76,7 +79,7 @@ class NoiseProcedure(Procedure):
             self.oscilloscope = PicoScope("ASRL1::INSTR")
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
-            self.oscilloscope.setSizeCapture(self.sizeBuffer, self.noBuffer)
+            self.oscilloscope.setTrigger(0)
             log.info("setup oscilloscope done")
         except: 
              log.error("Could not connect to oscilloscope")
@@ -87,36 +90,43 @@ class NoiseProcedure(Procedure):
     ##### PROCEDURE ######
     def execute(self):
         log.info("Starting to sweep through time")
+        self.oscilloscope.set_number_samples(self.no_samples)
+        self.oscilloscope.set_timebase(int(self.sampling_interval*10000000)-1)
+        self.oscilloscope.run_block_capture()
+        self.oscilloscope.check_data_collection()
+        self.oscilloscope.create_buffers()
+        self.oscilloscope.set_buffer_location()
         log.info(self.period_time)
         self.steps = self.no_time 
         self.time = self.period_time
         self.stop_time = time()
-        tmp_data = pd.DataFrame(columns=self.DATA_COLUMNS)
         tmp_data_time = pd.DataFrame(columns=['time'])
         tmp_data_voltage = pd.DataFrame(columns=['voltage'])
         tmp_data_magnetic_field = pd.DataFrame(columns=['field'])
         for i in range(self.steps):
-            self.start_time = time()
-            k = 0
-            tmp_time_list = []
-            tmp_voltage_list = []
-            tmp_magnetic_field_list = []
-            while self.stop_time - self.start_time <= self.time:
+            self.oscilloscope.getValuesfromScope()
+            tmp_time_list = self.oscilloscope.create_time()
+            tmp_voltage_list = self.oscilloscope.convert_to_mV()
+            tmp_magnetic_field_list = self.oscilloscope.convert_to_mV()
+            # while self.stop_time - self.start_time <= self.time:
                 
-                voltage = random.random()
-                magnetic_field = random.random()
-                tmp_time_list.append(k)
-                tmp_voltage_list.append(voltage)
-                tmp_magnetic_field_list.append(magnetic_field)
-                self.stop_time = time()
-                k = k + 1
-                sleep(0.1)
+            #     voltage = random.random()
+            #     magnetic_field = random.random()
+
+            #     tmp_time_list.append(k)
+            #     tmp_voltage_list.append(voltage)
+            #     tmp_magnetic_field_list.append(magnetic_field)
+            #     self.stop_time = time()
+            #     k = k + 1
+            #     sleep(0.1)
         
             tmp_data_time.insert(i,"time_{}".format(i),pd.Series(tmp_time_list))
             tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
             tmp_data_magnetic_field.insert(i,"field_{}".format(i),pd.Series(tmp_magnetic_field_list))
             self.emit('progress', 100. * (i / self.steps))
             if self.should_stop():
+                self.oscilloscope.stop_scope()
+                self.oscilloscope.disconnect_scope()
                 log.warning("Catch stop command in procedure")
                 break
         tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
@@ -139,7 +149,8 @@ class NoiseProcedure(Procedure):
     
     
     def shutdown(self):
-        #self.source.shutdown()
+        self.oscilloscope.stop_scope()
+        self.oscilloscope.disconnect_scope()
         log.info("Finished")
 
 
@@ -148,8 +159,8 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['period_time', 'no_time', 'bias_voltage', 'bias_field', 'channelA_range', 'sample_name'],
-            displays=['period_time', 'no_time', 'bias_voltage', 'bias_field', 'sample_name'],
+            inputs=['period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'sample_name'],
+            displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
             x_axis='time',
             y_axis='Voltage (V)',
             directory_input=True,  
