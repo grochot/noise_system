@@ -75,14 +75,14 @@ class NoiseProcedure(Procedure):
              log.error("Could not connect to bias voltage source")
        
        ################# PICOSCOPE ###################
-        try: 
-            self.oscilloscope = PicoScope("ASRL1::INSTR")
-            self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
-            #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
-            self.oscilloscope.setTrigger(0)
-            log.info("setup oscilloscope done")
-        except: 
-             log.error("Could not connect to oscilloscope")
+        
+        self.oscilloscope = PicoScope("ASRL1::INSTR")
+        self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
+        #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
+        self.oscilloscope.setTrigger(0)
+        log.info("setup oscilloscope done")
+        
+        #log.error("Could not connect to oscilloscope")
         
         sleep(2)
 
