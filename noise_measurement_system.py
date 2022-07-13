@@ -1,7 +1,8 @@
 from email.policy import default
 import logging
+import pandas as pd 
 import sys
-from time import sleep
+from time import sleep, time
 import random
 #from typing import no_type_check
 #from argon2 import Parameters
@@ -26,19 +27,20 @@ class NoiseProcedure(Procedure):
 
 
     ################# PARAMETERS ###################
-    period_time = IntegerParameter('Period of Time', units='ms', default=10)
+    period_time = IntegerParameter('Period of Time', units='s', default=1)
     no_time = IntegerParameter('Number of times', default=10)
-    bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.1)
-    bias_field = FloatParameter('Bias Field', units='Oe', default=10)
-    channelB_enabled = BooleanParameter("Channel B Enabled", default=False)
-    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'])
-    channelB_coupling_type = ListParameter("Channel B Coupling Type",  default='AC', choices=['DC','AC'])
+    bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
+    bias_field = FloatParameter('Bias Field Voltage', units='V', default=1)
+    #channelB_enabled = BooleanParameter("Channel B Enabled", default=False)
+    #channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'])
+    #channelB_coupling_type = ListParameter("Channel B Coupling Type",  default='AC', choices=['DC','AC'])
     channelA_range = ListParameter("Channel A Range",  default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
-    channelB_range = ListParameter("Channel B Range", default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
-    sizeBuffer = IntegerParameter('Size of Buffer', default=10)
-    noBuffer = IntegerParameter('Numbers of Buffer', default=1)
-    field_constant = FloatParameter("Field constatnt", default=0)
+    #channelB_range = ListParameter("Channel B Range", default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
+    #sizeBuffer = IntegerParameter('Size of Buffer', default=10)
+    #noBuffer = IntegerParameter('Numbers of Buffer', default=1)
+    #field_constant = FloatParameter("Field constatnt", default=0)
     sample_name = Parameter("Sample Name", default="Noise Measurement")
+    
 
 
     DATA_COLUMNS = ['time', 'Voltage (V)', 'Magnetic field (T)'] #data columns
@@ -46,6 +48,7 @@ class NoiseProcedure(Procedure):
 
 
     def startup(self):
+        
         log.info("Setting up instruments") 
 
         ################# BIAS FIELD ###################
@@ -72,7 +75,7 @@ class NoiseProcedure(Procedure):
         try: 
             self.oscilloscope = PicoScope("ASRL1::INSTR")
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
-            self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
+            #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
             self.oscilloscope.setSizeCapture(self.sizeBuffer, self.noBuffer)
             log.info("setup oscilloscope done")
         except: 
@@ -80,26 +83,58 @@ class NoiseProcedure(Procedure):
         
         sleep(2)
 
+
+
+    ##### PROCEDURE ######
     def execute(self):
         
         log.info("Starting to sweep through time")
+        log.info(self.period_time)
         self.steps = self.no_time 
-    
+        self.time = self.period_time
+        self.stop_time = time()
+        tmp_data = pd.DataFrame(columns=self.DATA_COLUMNS)
+        tmp_data_time = pd.DataFrame(columns=['time'])
+        tmp_data_voltage = pd.DataFrame(columns=['voltage'])
+        tmp_data_magnetic_field = pd.DataFrame(columns=['field'])
         for i in range(self.steps):
-            
-            voltage = random.random()
-            magnetic_field = random.random()
-            data = {
-            'time': i,
-            'Voltage (V)': voltage,
-            'Magnetic field (T)': magnetic_field
-            }
-            self.emit('results', data)
-            self.emit('progress', 100. * i / self.steps)
-            #sleep(self.delay)
+            self.start_time = time()
+            k = 0
+            tmp_time_list = []
+            tmp_voltage_list = []
+            tmp_magnetic_field_list = []
+            while self.stop_time - self.start_time <= self.time:
+                voltage = random.random()
+                magnetic_field = random.random()
+                tmp_time_list.append(k)
+                tmp_voltage_list.append(voltage)
+                tmp_magnetic_field_list.append(magnetic_field)
+                self.stop_time = time()
+                k = k + 1
+                sleep(0.1)
+        
+            tmp_data_time.insert(i,"time_{}".format(i),pd.Series(tmp_time_list))
+            tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
+            tmp_data_magnetic_field.insert(i,"field_{}".format(i),pd.Series(tmp_magnetic_field_list))
+            self.emit('progress', 100. * (i / self.steps))
             if self.should_stop():
                 log.warning("Catch stop command in procedure")
                 break
+        tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
+        tmp_data_voltage["average"] = tmp_data_voltage.mean(axis=1) #average voltage
+        tmp_data_magnetic_field["average"] = tmp_data_magnetic_field.mean(axis=1) #average magnetic field
+
+        tmp_data_time_average = tmp_data_time["average"].to_list()
+        tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
+        tmp_data_magnetic_field_average = tmp_data_magnetic_field["average"].to_list()
+        for elem in range(len(tmp_data_time_average)):
+            data = {
+                    'time': tmp_data_time_average[elem],
+                    'Voltage (V)': tmp_data_voltage_average[elem],
+                    'Magnetic field (T)': tmp_data_magnetic_field_average[elem]
+                    }
+            self.emit('results', data)
+            
         
 
     
@@ -114,7 +149,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['period_time', 'no_time', 'bias_voltage', 'bias_field', 'channelB_enabled', 'channelA_coupling_type', 'channelB_coupling_type', 'channelA_range', 'channelB_range', 'sizeBuffer', 'noBuffer', 'field_constant', 'sample_name'],
+            inputs=['period_time', 'no_time', 'bias_voltage', 'bias_field', 'channelA_range', 'sample_name'],
             displays=['period_time', 'no_time', 'bias_voltage', 'bias_field', 'sample_name'],
             x_axis='time',
             y_axis='Voltage (V)',
