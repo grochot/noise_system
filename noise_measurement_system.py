@@ -27,7 +27,7 @@ class NoiseProcedure(Procedure):
 
 
     ################# PARAMETERS ###################
-    period_time = IntegerParameter('Period of Time', units='s', default=1)
+    period_time = FloatParameter('Period of Time', units='s', default=1)
     no_time = IntegerParameter('Number of times', default=10)
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=1)
@@ -84,10 +84,8 @@ class NoiseProcedure(Procedure):
         sleep(2)
 
 
-
     ##### PROCEDURE ######
     def execute(self):
-        
         log.info("Starting to sweep through time")
         log.info(self.period_time)
         self.steps = self.no_time 
@@ -104,6 +102,7 @@ class NoiseProcedure(Procedure):
             tmp_voltage_list = []
             tmp_magnetic_field_list = []
             while self.stop_time - self.start_time <= self.time:
+                
                 voltage = random.random()
                 magnetic_field = random.random()
                 tmp_time_list.append(k)
