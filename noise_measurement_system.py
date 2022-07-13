@@ -16,7 +16,7 @@ from pymeasure.experiment import (
 )
 
 from hardware.hmc8043 import HMC8043
-#from hardware.picoscope4626 import PicoScope
+from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928
 
 log = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ class NoiseProcedure(Procedure):
        
        ################# PICOSCOPE ###################
         
-        self.oscilloscope = PicoScope("ASRL1::INSTR")
+        self.oscilloscope = PicoScope()
         self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
         #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
         self.oscilloscope.setTrigger(0)

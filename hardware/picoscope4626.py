@@ -9,22 +9,14 @@ from picosdk.functions import adc2mV, assert_pico_ok
 import time
 
 
-class PicoScope(Instrument): 
+class PicoScope(): 
 
     def __init__(self, resourceName, **kwargs):
-        kwargs.setdefault('read_termination', '\n')
-        super().__init__(
-            resourceName,
-            "PicoScope",
-            includeSCPI=True,
-            **kwargs
-        )
         chandle = ctypes.c_int16()
         status = {}
         enabled = 1
         disabled = 0
         analogue_offset = 0.0   
-
         self.status["openunit"] = ps.ps4000OpenUnit(ctypes.byref(chandle))
         assert_pico_ok(status["openunit"])
 
