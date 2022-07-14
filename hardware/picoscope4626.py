@@ -59,7 +59,7 @@ class PicoScope():
     def set_number_samples(self,no_samples = 1):
         preTriggerSamples = round(no_samples/2)
         postTriggerSamples = round(no_samples/2)
-        maxSamples = preTriggerSamples + postTriggerSamples
+        self.maxSamples = preTriggerSamples + postTriggerSamples
 
     def set_timebase(self, timebase = 1):
         timeIntervalns = ctypes.c_float()
