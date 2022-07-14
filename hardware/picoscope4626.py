@@ -12,13 +12,10 @@ import time
 class PicoScope(): 
 
     def __init__(self):
-        chandle = ctypes.c_int16()
-        status = {}
-        enabled = 1
-        disabled = 0
-        analogue_offset = 0.0   
-        self.status["openunit"] = ps.ps4000OpenUnit(ctypes.byref(chandle))
-        assert_pico_ok(status["openunit"])
+        self.chandle = ctypes.c_int16()
+        self.status = {}
+        self.status["openunit"] = ps.ps4000OpenUnit(ctypes.byref(self.chandle))
+        assert_pico_ok(self.status["openunit"])
 
 
     def setChannelA(self, coupling="DC", range="10mV"): 
