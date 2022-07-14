@@ -150,8 +150,8 @@ class NoiseProcedure(Procedure):
     
     
     def shutdown(self):
-        # self.oscilloscope.stop_scope()
-        # self.oscilloscope.disconnect_scope()
+        self.oscilloscope.stop_scope()
+        self.oscilloscope.disconnect_scope()
         log.info("Finished")
 
 
