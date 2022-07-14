@@ -65,8 +65,8 @@ class PicoScope():
         timeIntervalns = ctypes.c_float()
         returnedMaxSamples = ctypes.c_int32()
         self.timebase = timebase
-        oversample = ctypes.c_int16(1)
-        self.status["getTimebase2"] = ps.ps4000GetTimebase2(self.chandle, self.timebase, self.maxSamples, ctypes.byref(timeIntervalns), oversample, ctypes.byref(returnedMaxSamples), 0)
+        self.oversample = ctypes.c_int16(1)
+        self.status["getTimebase2"] = ps.ps4000GetTimebase2(self.chandle, self.timebase, self.maxSamples, ctypes.byref(timeIntervalns), self.oversample, ctypes.byref(returnedMaxSamples), 0)
         assert_pico_ok(self.status["getTimebase2"])
 
     def run_block_capture(self):
