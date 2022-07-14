@@ -139,7 +139,7 @@ class NoiseProcedure(Procedure):
         tmp_data_magnetic_field_average = tmp_data_magnetic_field["average"].to_list()
         for elem in range(len(tmp_data_time_average)):
             data = {
-                    'time': tmp_data_time_average[elem],
+                    'time': tmp_data_time_average[elem]*1e9,
                     'Voltage (V)': tmp_data_voltage_average[elem],
                     'Magnetic field (T)': tmp_data_magnetic_field_average[elem]
                     }
