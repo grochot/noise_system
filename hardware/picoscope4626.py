@@ -57,15 +57,16 @@ class PicoScope():
         assert_pico_ok(self.status["trigger"])
 
     def set_number_samples(self,no_samples = 1):
-        preTriggerSamples = round(no_samples/2)
-        postTriggerSamples = round(no_samples/2)
-        self.maxSamples = preTriggerSamples + postTriggerSamples
+        self.preTriggerSamples = round(no_samples/2)
+        self.postTriggerSamples = round(no_samples/2)
+        self.maxSamples = self.preTriggerSamples + self.postTriggerSamples
 
     def set_timebase(self, timebase = 1):
         timeIntervalns = ctypes.c_float()
         returnedMaxSamples = ctypes.c_int32()
+        self.timebase = timebase
         oversample = ctypes.c_int16(1)
-        self.status["getTimebase2"] = ps.ps4000GetTimebase2(self.chandle, timebase, self.maxSamples, ctypes.byref(timeIntervalns), oversample, ctypes.byref(returnedMaxSamples), 0)
+        self.status["getTimebase2"] = ps.ps4000GetTimebase2(self.chandle, self.timebase, self.maxSamples, ctypes.byref(timeIntervalns), oversample, ctypes.byref(returnedMaxSamples), 0)
         assert_pico_ok(self.status["getTimebase2"])
 
     def run_block_capture(self):
