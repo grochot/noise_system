@@ -162,7 +162,7 @@ class MainWindow(ManagedWindow):
             procedure_class= NoiseProcedure,
             inputs=['period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'sample_name'],
             displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
-            x_axis='time',
+            x_axis='time (s)',
             y_axis='Voltage (V)',
             directory_input=True,  
             sequencer=True,                                      # Added line
