@@ -16,7 +16,7 @@ from pymeasure.experiment import (
 )
 
 from hardware.hmc8043 import HMC8043
-from hardware.picoscope4626_fail import PicoScope
+from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928
 
 log = logging.getLogger(__name__)
