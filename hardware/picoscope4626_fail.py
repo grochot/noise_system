@@ -1,122 +1,57 @@
+from click import pass_obj
 from pymeasure.instruments import Instrument
 from pymeasure.instruments.validators import strict_discrete_set
 
 import logging
 import ctypes
 import numpy as np
-from picosdk.ps4000 import ps4000 as ps
-from picosdk.functions import adc2mV, assert_pico_ok
 import time
 
 
 class PicoScope(): 
 
-    def __init__(self):
-        chandle = ctypes.c_int16()
-        status = {}
-        enabled = 1
-        disabled = 0
-        analogue_offset = 0.0   
-        self.status["openunit"] = ps.ps4000OpenUnit(ctypes.byref(chandle))
-        assert_pico_ok(status["openunit"])
-
-
     def setChannelA(self, coupling="DC", range="10mV"): 
-        if coupling == 'DC':
-            coupling_type = True
-        else: 
-            coupling_type = False
-        
-        range_list = {"10mV":0, "20mV":1, "50mV":2, "100mV":3, "200mV":4, "500mV":5, "1V":6, "2V":7, "5V":8, "10V":9, "20V":10, "50V":11, "100V":12}
-        
-
-        self.status["setChA"] = ps.ps4000SetChannel(self.chandle,
-                                    ps.PS4000_CHANNEL['PS4000_CHANNEL_A'],
-                                    self.enabled,
-                                    coupling_type,
-                                    range_list[range])
-        assert_pico_ok(self.status["setChA"])
-
+       pass
 
     def setChannelB(self, coupling="DC", range="10mV"): 
-        if coupling == 'DC':
-            coupling_type = True
-        else: 
-            coupling_type = False
-        
-        range_list = {"10mV":0, "20mV":1, "50mV":2, "100mV":3, "200mV":4, "500mV":5, "1V":6, "2V":7, "5V":8, "10V":9, "20V":10, "50V":11, "100V":12}
-        
-
-        self.status["setChB"] = ps.ps4000SetChannel(self.chandle,
-                                    ps.PS4000_CHANNEL['PS4000_CHANNEL_B'],
-                                    self.enabled,
-                                    coupling_type,
-                                    range_list[range])
-        assert_pico_ok(self.status["setChB"])
+        pass
     
     def setTrigger(self, source = 0):
-        self.status["trigger"] = ps.ps4000SetSimpleTrigger(self.chandle, 1, source, 1024, 2, 0, 1000)
-        assert_pico_ok(self.status["trigger"])
+        pass
 
     def set_number_samples(self,no_samples = 1):
-        preTriggerSamples = round(no_samples/2)
-        postTriggerSamples = round(no_samples/2)
-        maxSamples = preTriggerSamples + postTriggerSamples
+       pass
 
     def set_timebase(self, timebase = 1):
-        timeIntervalns = ctypes.c_float()
-        returnedMaxSamples = ctypes.c_int32()
-        oversample = ctypes.c_int16(1)
-        self.status["getTimebase2"] = ps.ps4000GetTimebase2(self.chandle, timebase, self.maxSamples, ctypes.byref(timeIntervalns), oversample, ctypes.byref(returnedMaxSamples), 0)
-        assert_pico_ok(self.status["getTimebase2"])
+        pass
 
     def run_block_capture(self):
-        self.status["runBlock"] = ps.ps4000RunBlock(self.chandle, self.preTriggerSamples, self.postTriggerSamples, self.timebase, self.oversample, None, 0, None, None)
-        assert_pico_ok(self.status["runBlock"])
+        pass
 
     def check_data_collection(self): 
-        ready = ctypes.c_int16(0)
-        check = ctypes.c_int16(0)
-        while ready.value == check.value:
-            self.status["isReady"] = ps.ps4000IsReady(self.chandle, ctypes.byref(ready))
+        pass
 
     def create_buffers(self): 
-        bufferAMax = (ctypes.c_int16 * self.maxSamples)()
-        bufferAMin = (ctypes.c_int16 * self.maxSamples)() # used for downsampling which isn't in the scope of this example
-        bufferBMax = (ctypes.c_int16 * self.maxSamples)()
-        bufferBMin = (ctypes.c_int16 * self.maxSamples)() # used for downsampling which isn't in the scope of this example
-
+        pass
     def set_buffer_location(self): 
-        self.status["setDataBuffersA"] = ps.ps4000SetDataBuffers(self.chandle, 0, ctypes.byref(self.bufferAMax), ctypes.byref(self.bufferAMin), self.maxSamples)
-        assert_pico_ok(self.status["setDataBuffersA"])
-        self.status["setDataBuffersB"] = ps.ps4000SetDataBuffers(self.chandle, 1, ctypes.byref(self.bufferBMax), ctypes.byref(self.bufferBMin), self.maxSamples)
-        assert_pico_ok(self.status["setDataBuffersB"])
-        # create overflow loaction
-        overflow = ctypes.c_int16()
-        # create converted type maxSamples
-        cmaxSamples = ctypes.c_int32(self.maxSamples)
+        pass
 
     def getValuesfromScope(self): 
-        self.status["getValues"] = ps.ps4000GetValues(self.chandle, 0, ctypes.byref(self.cmaxSamples), 0, 0, 0, ctypes.byref(self.overflow))
-        assert_pico_ok(self.status["getValues"])
+       pass
 
     def convert_to_mV(self): 
-        maxADC = ctypes.c_int16(32767)
-        adc2mVChAMax =  adc2mV(self.bufferAMax, self.chARange, maxADC)
+        adc2mVChAMax =  1
         return(adc2mVChAMax)
 
     def create_time(self): 
-        time = np.linspace(0, (self.cmaxSamples.value - 1) * self.timeIntervalns.value, self.cmaxSamples.value)
+        time = 1
         return(time)
 
     def stop_scope(self):
-        self.status["stop"] = ps.ps4000Stop(self.chandle)
-        assert_pico_ok(self.status["stop"])
+        pass
     
     def disconnect_scope(self): 
-        self.status["close"] = ps.ps4000CloseUnit(self.chandle)
-        assert_pico_ok(self.status["close"])
-
+        pass
        
 
 

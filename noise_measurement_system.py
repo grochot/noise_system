@@ -16,7 +16,7 @@ from pymeasure.experiment import (
 )
 
 from hardware.hmc8043 import HMC8043
-from hardware.picoscope4626 import PicoScope
+from hardware.picoscope4626_fail import PicoScope
 from hardware.sim928 import SIM928
 
 log = logging.getLogger(__name__)
@@ -54,6 +54,7 @@ class NoiseProcedure(Procedure):
         self.no_samples = int(self.period_time/((self.sampling_interval)))
         if self.no_samples % 2 == 1:
             self.no_samples = self.no_samples + 1
+        print(self.no_samples)
         ################# BIAS FIELD ###################
         try:
             self.field = HMC8043("ASRL1::INSTR") #connction to field controller
@@ -149,8 +150,8 @@ class NoiseProcedure(Procedure):
     
     
     def shutdown(self):
-        self.oscilloscope.stop_scope()
-        self.oscilloscope.disconnect_scope()
+        # self.oscilloscope.stop_scope()
+        # self.oscilloscope.disconnect_scope()
         log.info("Finished")
 
 
