@@ -21,9 +21,9 @@ class PicoScope():
 
     def setChannelA(self, coupling="DC", range="10mV"): 
         if coupling == 'DC':
-            coupling_type = True
+            self.coupling_type = True
         else: 
-            coupling_type = False
+            self.coupling_type = False
         
         self.range_list = {"10mV":0, "20mV":1, "50mV":2, "100mV":3, "200mV":4, "500mV":5, "1V":6, "2V":7, "5V":8, "10V":9, "20V":10, "50V":11, "100V":12}
         
@@ -31,7 +31,7 @@ class PicoScope():
         self.status["setChA"] = ps.ps4000SetChannel(self.chandle,
                                     ps.PS4000_CHANNEL['PS4000_CHANNEL_A'],
                                     self.enabled,
-                                    coupling_type,
+                                    self.coupling_type,
                                     self.range_list[range])
         assert_pico_ok(self.status["setChA"])
 
