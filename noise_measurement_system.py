@@ -34,7 +34,7 @@ class NoiseProcedure(Procedure):
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=1)
     #channelB_enabled = BooleanParameter("Channel B Enabled", default=False)
-    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'])
+    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='DC', choices=['DC','AC'])
     #channelB_coupling_type = ListParameter("Channel B Coupling Type",  default='AC', choices=['DC','AC'])
     channelA_range = ListParameter("Channel A Range",  default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
     #channelB_range = ListParameter("Channel B Range", default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
