@@ -54,7 +54,7 @@ class NoiseProcedure(Procedure):
         self.no_samples = int(self.period_time/((self.sampling_interval)))
         if self.no_samples % 2 == 1:
             self.no_samples = self.no_samples + 1
-        print(self.no_samples)
+        log.info(self.no_samples)
         ################# BIAS FIELD ###################
         try:
             self.field = HMC8043("ASRL1::INSTR") #connction to field controller
@@ -65,6 +65,7 @@ class NoiseProcedure(Procedure):
             log.info("Set bias field to %g" %self.field_to_volatage)
         except:
             log.error("Could not connect to field controller")
+            log.info("Set bias field to %g" %self.field_to_volatage)
        
        ################# BIAS VOLTAGE ###################
         try:   
@@ -74,6 +75,7 @@ class NoiseProcedure(Procedure):
             log.info("Set bias voltage to %g" %self.bias_voltage)
         except: 
              log.error("Could not connect to bias voltage source")
+             log.info("Set bias voltage to %g" %self.bias_voltage)
        
        ################# PICOSCOPE ###################
         
@@ -105,7 +107,7 @@ class NoiseProcedure(Procedure):
         tmp_data_voltage = pd.DataFrame(columns=['voltage'])
         tmp_data_magnetic_field = pd.DataFrame(columns=['field'])
 
-         ########### measure field ########### 
+        ########### measure field ########### 
         tmp_magnetic_field_list = 4
         for i in range(self.steps):
              ######### run oscilloscope #########
@@ -145,7 +147,7 @@ class NoiseProcedure(Procedure):
             data = {
                     'time (s)': tmp_data_time_average[elem]*1e-9,
                     'Voltage (V)': tmp_data_voltage_average[elem],
-                    'Magnetic field (T)': tmp_data_magnetic_field_average
+                    'Magnetic field (T)': tmp_data_magnetic_field_average[0]
                     }
             self.emit('results', data)
             
