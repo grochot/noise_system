@@ -134,18 +134,19 @@ class NoiseProcedure(Procedure):
             tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
             tmp_data_magnetic_field.insert(i,"field_{}".format(i),pd.Series(tmp_magnetic_field_list))
             self.emit('progress', 100. * (i / self.steps))
-            for i in range(len(tmp_time_list)):
-                data = {
-                    'time (s)': tmp_time_list[i]*1e-9,
-                    'Voltage (V)': tmp_voltage_list[i],
-                    'Magnetic field (T)': tmp_magnetic_field_list}
-            self.emit('results', data)
+       
             
             if self.should_stop():
                 self.oscilloscope.stop_scope()
                 self.oscilloscope.disconnect_scope()
                 log.warning("Catch stop command in procedure")
                 break
+        for i in range(len(tmp_time_list)):
+            data = {
+                'time (s)': tmp_time_list[i]*1e-9,
+                'Voltage (V)': tmp_voltage_list[i],
+                'Magnetic field (T)': tmp_magnetic_field_list}
+        self.emit('results', data)
             
         tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
         tmp_data_voltage["average"] = tmp_data_voltage.mean(axis=1) #average voltage
