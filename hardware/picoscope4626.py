@@ -21,9 +21,9 @@ class PicoScope():
 
     def setChannelA(self, coupling="DC", range="10mV"): 
         if coupling == 'DC':
-            self.coupling_type = True
+            self.coupling_type = 1
         else: 
-            self.coupling_type = False
+            self.coupling_type = 0
         
         self.range_list = {"10mV":0, "20mV":1, "50mV":2, "100mV":3, "200mV":4, "500mV":5, "1V":6, "2V":7, "5V":8, "10V":9, "20V":10, "50V":11, "100V":12}
         
@@ -52,8 +52,8 @@ class PicoScope():
                                     range_list[range])
         assert_pico_ok(self.status["setChB"])
     
-    def setTrigger(self, source = 0):
-        self.status["trigger"] = ps.ps4000SetSimpleTrigger(self.chandle, 1, source, 1024, 2, 0, 1000)
+    def setTrigger(self):
+        self.status["trigger"] = ps.ps4000SetSimpleTrigger(self.chandle, 1, 0, 1024, 2, 0, 1000)
         assert_pico_ok(self.status["trigger"])
 
     def set_number_samples(self,no_samples = 1):
@@ -63,10 +63,10 @@ class PicoScope():
 
     def set_timebase(self, timebase = 1):
         self.timeIntervalns = ctypes.c_float()
-        returnedMaxSamples = ctypes.c_int32()
+        self.returnedMaxSamples = ctypes.c_int32()
         self.timebase = timebase
         self.oversample = ctypes.c_int16(1)
-        self.status["getTimebase2"] = ps.ps4000GetTimebase2(self.chandle, self.timebase, self.maxSamples, ctypes.byref(self.timeIntervalns), self.oversample, ctypes.byref(returnedMaxSamples), 0)
+        self.status["getTimebase2"] = ps.ps4000GetTimebase2(self.chandle, self.timebase, self.maxSamples, ctypes.byref(self.timeIntervalns), self.oversample, ctypes.byref(self.returnedMaxSamples), 0)
         assert_pico_ok(self.status["getTimebase2"])
 
     def run_block_capture(self):
