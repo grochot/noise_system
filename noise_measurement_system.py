@@ -90,14 +90,17 @@ class NoiseProcedure(Procedure):
 
     ##### PROCEDURE ######
     def execute(self):
+        ######### measure field #########
+
         log.info("Starting to sweep through time")
+
+        ######### set oscilloscope #########
         self.oscilloscope.set_number_samples(self.no_samples)
         self.oscilloscope.set_timebase(int(self.sampling_interval*10000000)-1)
         self.oscilloscope.run_block_capture()
         self.oscilloscope.check_data_collection()
         self.oscilloscope.create_buffers()
         self.oscilloscope.set_buffer_location()
-        log.info(self.period_time)
         self.steps = self.no_time 
         self.time = self.period_time
         self.stop_time = time()
@@ -105,10 +108,11 @@ class NoiseProcedure(Procedure):
         tmp_data_voltage = pd.DataFrame(columns=['voltage'])
         tmp_data_magnetic_field = pd.DataFrame(columns=['field'])
         for i in range(self.steps):
+             ######### run oscilloscope #########
             self.oscilloscope.getValuesfromScope()
             tmp_time_list = self.oscilloscope.create_time()
             tmp_voltage_list = self.oscilloscope.convert_to_mV()
-            tmp_magnetic_field_list = self.oscilloscope.convert_to_mV()
+            tmp_magnetic_field_list = 4 #self.oscilloscope.convert_to_mV()
             # while self.stop_time - self.start_time <= self.time:
                 
             #     voltage = random.random()
