@@ -99,7 +99,7 @@ class PicoScope():
         self.status["getValues"] = ps.ps4000GetValues(self.chandle, 0, ctypes.byref(self.cmaxSamples), 0, 0, 0, ctypes.byref(self.overflow))
         assert_pico_ok(self.status["getValues"])
 
-    def convert_to_mV(self, range = "10mV"): 
+    def convert_to_mV(self, range): 
         maxADC = ctypes.c_int16(32767)
         adc2mVChAMax =  adc2mV(self.bufferAMax, self.range_list[range], maxADC)
         return(adc2mVChAMax)

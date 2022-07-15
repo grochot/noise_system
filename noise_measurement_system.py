@@ -117,7 +117,7 @@ class NoiseProcedure(Procedure):
             ######### run oscilloscope #########
             self.oscilloscope.getValuesfromScope()
             tmp_time_list = self.oscilloscope.create_time()
-            tmp_voltage_list = self.oscilloscope.convert_to_mV()
+            tmp_voltage_list = self.oscilloscope.convert_to_mV(self.channelA_range)
         
             tmp_data_time.insert(i,"time_{}".format(i),pd.Series(tmp_time_list))
             tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
