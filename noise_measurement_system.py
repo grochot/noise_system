@@ -134,11 +134,18 @@ class NoiseProcedure(Procedure):
             tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
             tmp_data_magnetic_field.insert(i,"field_{}".format(i),pd.Series(tmp_magnetic_field_list))
             self.emit('progress', 100. * (i / self.steps))
-            if self.should_stop():
+            
+            if self.should_stop():f
                 self.oscilloscope.stop_scope()
                 self.oscilloscope.disconnect_scope()
                 log.warning("Catch stop command in procedure")
                 break
+            data = {
+                    'time (s)': tmp_data_time*1e-9,
+                    'Voltage (V)': tmp_data_voltage,
+                    'Magnetic field (T)': tmp_data_magnetic_field
+                    }
+            self.emit('results', data)
         tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
         tmp_data_voltage["average"] = tmp_data_voltage.mean(axis=1) #average voltage
         tmp_data_magnetic_field["average"] = tmp_data_magnetic_field.mean(axis=1) #average magnetic field
@@ -146,13 +153,13 @@ class NoiseProcedure(Procedure):
         tmp_data_time_average = tmp_data_time["average"].to_list()
         tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
         tmp_data_magnetic_field_average = tmp_data_magnetic_field["average"].to_list()
-        for elem in range(len(tmp_data_time_average)):
-            data = {
-                    'time (s)': tmp_data_time_average[elem]*1e-9,
-                    'Voltage (V)': tmp_data_voltage_average[elem],
-                    'Magnetic field (T)': tmp_data_magnetic_field_average[0]
-                    }
-            self.emit('results', data)
+        # for elem in range(len(tmp_data_time_average)):
+        #     data = {
+        #             'time (s)': tmp_data_time_average[elem]*1e-9,
+        #             'Voltage (V)': tmp_data_voltage_average[elem],
+        #             'Magnetic field (T)': tmp_data_magnetic_field_average[0]
+        #             }
+        #     self.emit('results', data)
             
         
 
