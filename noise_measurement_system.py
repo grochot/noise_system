@@ -118,39 +118,17 @@ class NoiseProcedure(Procedure):
             self.oscilloscope.getValuesfromScope()
             tmp_time_list = self.oscilloscope.create_time()
             tmp_voltage_list = self.oscilloscope.convert_to_mV()
-
-            plt.plot(tmp_time_list, tmp_voltage_list)
-            plt.show()
-          
-            # while self.stop_time - self.start_time <= self.time:
-                
-            #     voltage = random.random()
-            #     magnetic_field = random.random()
-
-            #     tmp_time_list.append(k)
-            #     tmp_voltage_list.append(voltage)
-            #     tmp_magnetic_field_list.append(magnetic_field)
-            #     self.stop_time = time()
-            #     k = k + 1
-            #     sleep(0.1)
         
             tmp_data_time.insert(i,"time_{}".format(i),pd.Series(tmp_time_list))
             tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
             tmp_data_magnetic_field.insert(i,"field_{}".format(i),pd.Series(tmp_magnetic_field_list))
             self.emit('progress', 100. * (i / self.steps))
        
-            
             if self.should_stop():
                 self.oscilloscope.stop_scope()
                 self.oscilloscope.disconnect_scope()
                 log.warning("Catch stop command in procedure")
                 break
-        for i in range(len(tmp_time_list)):
-            data = {
-                'time (s)': tmp_time_list[i]*1e-9,
-                'Voltage (V)': tmp_voltage_list[i],
-                'Magnetic field (T)': tmp_magnetic_field_list}
-        self.emit('results', data)
             
         tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
         tmp_data_voltage["average"] = tmp_data_voltage.mean(axis=1) #average voltage
@@ -159,13 +137,13 @@ class NoiseProcedure(Procedure):
         tmp_data_time_average = tmp_data_time["average"].to_list()
         tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
         tmp_data_magnetic_field_average = tmp_data_magnetic_field["average"].to_list()
-        # for elem in range(len(tmp_data_time_average)):
-        #     data = {
-        #             'time (s)': tmp_data_time_average[elem]*1e-9,
-        #             'Voltage (V)': tmp_data_voltage_average[elem],
-        #             'Magnetic field (T)': tmp_data_magnetic_field_average[0]
-        #             }
-        #     self.emit('results', data)
+        for elem in range(len(tmp_data_time_average)):
+            data = {
+                    'time (s)': tmp_data_time_average[elem]*1e-9,
+                    'Voltage (V)': tmp_data_voltage_average[elem],
+                    'Magnetic field (T)': tmp_data_magnetic_field_average[0]
+                    }
+            self.emit('results', data) 
             
         
 
