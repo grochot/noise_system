@@ -134,10 +134,11 @@ class NoiseProcedure(Procedure):
             tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
             tmp_data_magnetic_field.insert(i,"field_{}".format(i),pd.Series(tmp_magnetic_field_list))
             self.emit('progress', 100. * (i / self.steps))
-            data = {
-                'time (s)': tmp_data_time*1e-9,
-                'Voltage (V)': tmp_data_voltage,
-                'Magnetic field (T)': tmp_data_magnetic_field}
+            for i in range(len(tmp_time_list)):
+                data = {
+                    'time (s)': tmp_data_time[i]*1e-9,
+                    'Voltage (V)': tmp_data_voltage[i],
+                    'Magnetic field (T)': tmp_data_magnetic_field}
             self.emit('results', data)
             
             if self.should_stop():
