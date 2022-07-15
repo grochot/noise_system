@@ -138,7 +138,7 @@ class NoiseProcedure(Procedure):
                 data = {
                     'time (s)': tmp_time_list[i]*1e-9,
                     'Voltage (V)': tmp_voltage_list[i],
-                    'Magnetic field (T)': tmp_data_magnetic_field}
+                    'Magnetic field (T)': tmp_magnetic_field_list}
             self.emit('results', data)
             
             if self.should_stop():
