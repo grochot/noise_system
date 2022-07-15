@@ -160,7 +160,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'sample_name'],
+            inputs=['sample_name','period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type'],
             displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
             x_axis='time (s)',
             y_axis='Voltage (V)',
