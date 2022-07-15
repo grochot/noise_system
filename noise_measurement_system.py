@@ -136,8 +136,8 @@ class NoiseProcedure(Procedure):
             self.emit('progress', 100. * (i / self.steps))
             for i in range(len(tmp_time_list)):
                 data = {
-                    'time (s)': tmp_data_time[i]*1e-9,
-                    'Voltage (V)': tmp_data_voltage[i],
+                    'time (s)': tmp_time_list[i]*1e-9,
+                    'Voltage (V)': tmp_voltage_list[i],
                     'Magnetic field (T)': tmp_data_magnetic_field}
             self.emit('results', data)
             
