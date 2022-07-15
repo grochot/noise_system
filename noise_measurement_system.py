@@ -3,6 +3,7 @@ import logging
 import pandas as pd 
 import sys
 from time import sleep, time
+import matplotlib as plt
 import random
 #from typing import no_type_check
 #from argon2 import Parameters
@@ -117,6 +118,8 @@ class NoiseProcedure(Procedure):
             self.oscilloscope.getValuesfromScope()
             tmp_time_list = self.oscilloscope.create_time()
             tmp_voltage_list = self.oscilloscope.convert_to_mV()
+
+            plt.plot(tmp_time_list, tmp_voltage_list)
           
             # while self.stop_time - self.start_time <= self.time:
                 
