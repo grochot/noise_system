@@ -54,27 +54,29 @@ class NoiseProcedure(Procedure):
         self.no_samples = int(self.period_time/((self.sampling_interval)))
         if self.no_samples % 2 == 1:
             self.no_samples = self.no_samples + 1
-        log.info(self.no_samples)
+        log.info("Number of samples: %g" %self.no_samples)
         ################# BIAS FIELD ###################
         try:
             self.field = HMC8043("ASRL1::INSTR") #connction to field controller
             self.field.set_channel(0) #set channnel 1
             self.field.enable_channel(1) #enable channel
             self.field.set_voltage(self.bias_field) #set field 
-            log.info("Set bias field to %g" %self.bias_field)
+            sleep(1)
+            log.info("Set bias field to %g V" %self.bias_field)
         except:
             log.error("Could not connect to field controller")
-            log.info("Set bias field to %g" %self.bias_field)
+            log.info("Set bias field to %g V" %self.bias_field)
        
        ################# BIAS VOLTAGE ###################
         try:   
             self.voltage = SIM928("ASRL1::INSTR") #connect to voltagemeter
             self.voltage.enabled("ON") #enable channel 
             self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
-            log.info("Set bias voltage to %g" %self.bias_voltage)
+            sleep(1)
+            log.info("Set bias voltage to %g V" %self.bias_voltage)
         except: 
              log.error("Could not connect to bias voltage source")
-             log.info("Set bias voltage to %g" %self.bias_voltage)
+             log.info("Set bias voltage to %g V" %self.bias_voltage)
        
        ################# PICOSCOPE ###################
         
@@ -107,9 +109,11 @@ class NoiseProcedure(Procedure):
         tmp_data_magnetic_field = pd.DataFrame(columns=['field'])
 
         ########### measure field ########### 
-        tmp_magnetic_field_list = 4
+
+        tmp_magnetic_field_list = 5
+        #########################################
         for i in range(self.steps):
-             ######### run oscilloscope #########
+            ######### run oscilloscope #########
             self.oscilloscope.getValuesfromScope()
             tmp_time_list = self.oscilloscope.create_time()
             tmp_voltage_list = self.oscilloscope.convert_to_mV()
