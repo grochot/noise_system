@@ -60,12 +60,11 @@ class NoiseProcedure(Procedure):
             self.field = HMC8043("ASRL1::INSTR") #connction to field controller
             self.field.set_channel(0) #set channnel 1
             self.field.enable_channel(1) #enable channel
-            self.field_to_volatage = self.bias_voltage/self.field_constant
-            self.field.set_voltage(self.field_to_volatage) #set field 
-            log.info("Set bias field to %g" %self.field_to_volatage)
+            self.field.set_voltage(self.bias_field) #set field 
+            log.info("Set bias field to %g" %self.bias_field)
         except:
             log.error("Could not connect to field controller")
-            log.info("Set bias field to %g" %self.field_to_volatage)
+            log.info("Set bias field to %g" %self.bias_field)
        
        ################# BIAS VOLTAGE ###################
         try:   
