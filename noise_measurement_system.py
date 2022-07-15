@@ -170,11 +170,12 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System')
+        self.setWindowTitle('Noise Measurement System v.0.7')
+        self.directory = "/"
        
 
     def queue(self, procedure=None):
-        directory = "./"  # Change this to the desired directory
+        directory = self.directory  # Change this to the desired directory
         if procedure is None:
             procedure = self.make_procedure()
         name_of_file = procedure.sample_name
