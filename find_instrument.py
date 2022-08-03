@@ -13,11 +13,14 @@ class FindInstrument():
             inst.close()
         #inst = rm.open_resource('ASRL/dev/ttyS0::INSTR')
         #2print(inst.query("*IDN?"))
+        print(self.hardware)
         return self.hardware
 
 
 
 inst = FindInstrument() 
+inst.find_instrument()
+
 
 
 
