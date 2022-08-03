@@ -1,5 +1,4 @@
 import pyvisa 
-import serial
 
 
 class FindInstrument(): 
