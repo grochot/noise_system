@@ -25,8 +25,6 @@ log.addHandler(logging.NullHandler())
 
 
 class NoiseProcedure(Procedure):
-
-
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1)
     no_time = IntegerParameter('Number of times', default=10)
