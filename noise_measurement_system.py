@@ -4,6 +4,7 @@ import pandas as pd
 import sys
 from time import sleep, time
 import matplotlib.pyplot as plt
+import traceback
 import random
 #from typing import no_type_check
 #from argon2 import Parameters
@@ -27,14 +28,14 @@ log.addHandler(logging.NullHandler())
 class NoiseProcedure(Procedure):
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1)
-    no_time = IntegerParameter('Number of times', default=10)
-    sampling_interval =FloatParameter('Sampling interval', units='s', default=1)
+    no_time = IntegerParameter('Number of times', default=3)
+    sampling_interval =FloatParameter('Sampling interval', units='s', default=0.01)
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
-    bias_field = FloatParameter('Bias Field Voltage', units='V', default=1)
+    bias_field = FloatParameter('Bias Field Voltage', units='V', default=0)
     #channelB_enabled = BooleanParameter("Channel B Enabled", default=False)
-    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='DC', choices=['DC','AC'])
+    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'])
     #channelB_coupling_type = ListParameter("Channel B Coupling Type",  default='AC', choices=['DC','AC'])
-    channelA_range = ListParameter("Channel A Range",  default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
+    channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
     #channelB_range = ListParameter("Channel B Range", default="10mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
     #sizeBuffer = IntegerParameter('Size of Buffer', default=10)
     #noBuffer = IntegerParameter('Numbers of Buffer', default=1)
@@ -55,27 +56,30 @@ class NoiseProcedure(Procedure):
             self.no_samples = self.no_samples + 1
         log.info("Number of samples: %g" %self.no_samples)
         ################# BIAS FIELD ###################
-        try:
-            self.field = HMC8043("ASRL1::INSTR") #connction to field controller
-            self.field.set_channel(0) #set channnel 1
-            self.field.enable_channel(1) #enable channel
-            self.field.set_voltage(self.bias_field) #set field 
-            sleep(1)
-            log.info("Set bias field to %g V" %self.bias_field)
-        except:
-            log.error("Could not connect to field controller")
-            log.info("Set bias field to %g V" %self.bias_field)
+        #try:
+            #self.field = HMC8043("ASRL1::INSTR") #connction to field controller
+            #self.field.set_channel(0) #set channnel 1
+            #self.field.enable_channel(1) #enable channel
+            #self.field.set_voltage(self.bias_field) #set field 
+            #sleep(1)
+            #log.info("Set bias field to %g V" %self.bias_field)
+        #except:
+            #log.error("Could not connect to field controller")
+            #log.info("Set bias field to %g V" %self.bias_field)
        
        ################# BIAS VOLTAGE ###################
         try:   
-            self.voltage = SIM928("ASRL1::INSTR") #connect to voltagemeter
-            self.voltage.enabled("ON") #enable channel 
-            self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
-            sleep(1)
+            #self.voltage = SIM928("ASRL1::INSTR") #connect to voltagemeter
+            self.voltage = SIM928("ASRL/dev/ttyUSB0::INSTR",timeout = 25000, baud_rate = 115200) #connect to voltagemeter
+            self.voltage.enable = "ON" #enable channel 
+            sleep(0.3)
+            self.voltage.voltage_setpoint = self.bias_voltage #set bias voltage
+            sleep(0.2)
             log.info("Set bias voltage to %g V" %self.bias_voltage)
-        except: 
-             log.error("Could not connect to bias voltage source")
-             log.info("Set bias voltage to %g V" %self.bias_voltage)
+        except Exception:
+            traceback.print_exc()
+            log.error("Could not connect to bias voltage source")
+             #log.info("Set bias voltage to %g V" %self.bias_voltage)
        
        ################# PICOSCOPE ###################
         
