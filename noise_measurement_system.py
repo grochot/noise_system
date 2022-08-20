@@ -172,7 +172,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.0.8')
+        self.setWindowTitle('Noise Measurement System v.0.9')
         self.directory = "/"
        
 
