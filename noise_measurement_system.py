@@ -70,9 +70,9 @@ class NoiseProcedure(Procedure):
        ################# BIAS VOLTAGE ###################
         try:   
             self.voltage = SIM928("ASRL/dev/ttyUSB0::INSTR",timeout = 25000, baud_rate = 115200) #connect to voltagemeter
-            self.voltage.enabled = 1 #enable channel 
+            self.voltage.enabled() #enable channel 
             sleep(0.3)
-            self.voltage.voltage_setpoint = self.bias_voltage #set bias voltage
+            self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
             sleep(0.2)
             log.info("Set bias voltage to %g V" %self.bias_voltage)
         except Exception:

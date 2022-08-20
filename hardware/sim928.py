@@ -17,11 +17,12 @@ class SIM928(Instrument):
             **kwargs
         )
 
-    enabled = Instrument.write("OPON %d", *kwargs)
+    def enabled(self):
+        self.write("OPON 1")
 
-
-    voltage_setpoint = Instrument.write("VOLT %g", *kwargs)
-
+    def voltage_setpoint(self, vol = 0): 
+        self.write("VOLT {}".format(vol))
+    
 
     voltage = Instrument.measurement(
         "VOLT?",
@@ -30,7 +31,7 @@ class SIM928(Instrument):
     )
 
     def run_to_zero(self): 
-        self.voltage_setpoint = 0
+        self.voltage_setpoint(0)
 
 
 
