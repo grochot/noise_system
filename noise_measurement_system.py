@@ -69,9 +69,8 @@ class NoiseProcedure(Procedure):
        
        ################# BIAS VOLTAGE ###################
         try:   
-            #self.voltage = SIM928("ASRL1::INSTR") #connect to voltagemeter
             self.voltage = SIM928("ASRL/dev/ttyUSB0::INSTR",timeout = 25000, baud_rate = 115200) #connect to voltagemeter
-            self.voltage.enable = "ON" #enable channel 
+            self.voltage.enabled = 1 #enable channel 
             sleep(0.3)
             self.voltage.voltage_setpoint = self.bias_voltage #set bias voltage
             sleep(0.2)
@@ -154,6 +153,7 @@ class NoiseProcedure(Procedure):
     def shutdown(self):
         self.oscilloscope.stop_scope()
         self.oscilloscope.disconnect_scope()
+        self.voltage.run_to_zero()
         log.info("Finished")
 
 

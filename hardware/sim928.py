@@ -17,25 +17,10 @@ class SIM928(Instrument):
             **kwargs
         )
 
-    enabled = Instrument.control(
-        "EXON?",
-        "EXON %d",
-        """A boolean property that controls whether the source is enabled, takes
-        values True or False.""",
-        validator=strict_discrete_set,
-        values={"ON": 1, "OFF": 0},
-        map_values=True,
-    )
+    enabled = Instrument.write("OPON %d")
 
 
-    voltage_setpoint = Instrument.control(
-        "VOLT?",
-        "VOLT %g",
-        """A floating point property that controls the source voltage
-        in volts. This is not checked against the allowed range. Depending on
-        whether the instrument is in constant current or constant voltage mode,
-        this might differ from the actual voltage achieved.""",
-    )
+    voltage_setpoint = Instrument.write("VOLT %g")
 
 
     voltage = Instrument.measurement(
@@ -43,6 +28,9 @@ class SIM928(Instrument):
         """Reads the voltage (in Volt) the dc power supply is putting out.
         """,
     )
+
+    def run_to_zero(self): 
+        self.voltage_setpoint = 0
 
 
 
