@@ -17,10 +17,10 @@ class SIM928(Instrument):
             **kwargs
         )
 
-    enabled = Instrument.write("OPON %d")
+    enabled = Instrument.write("OPON %d", *kwargs)
 
 
-    voltage_setpoint = Instrument.write("VOLT %g")
+    voltage_setpoint = Instrument.write("VOLT %g", *kwargs)
 
 
     voltage = Instrument.measurement(
