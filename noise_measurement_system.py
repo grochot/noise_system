@@ -20,7 +20,7 @@ from pymeasure.experiment import (
 )
 
 from hardware.hmc8043 import HMC8043
-from hardware.picoscope4626 import PicoScope
+#from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928
 
 log = logging.getLogger(__name__)
@@ -53,7 +53,6 @@ class NoiseProcedure(Procedure):
 
 
     def startup(self):
-        self.path_file.WriteFile()
         #################FIND INSTRUMENTS#################
         log.info("Finding instruments...")
         sleep(0.1)
@@ -90,14 +89,14 @@ class NoiseProcedure(Procedure):
              #log.info("Set bias voltage to %g V" %self.bias_voltage)
        
        ################# PICOSCOPE ###################
-        
-        self.oscilloscope = PicoScope()
-        self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
-        #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
-        self.oscilloscope.setTrigger()
-        log.info("setup oscilloscope done")
-        
-        #log.error("Could not connect to oscilloscope")
+        try: 
+            self.oscilloscope = PicoScope()
+            self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
+            #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
+            self.oscilloscope.setTrigger()
+            log.info("setup oscilloscope done")
+        except:
+            log.error("Could not connect to oscilloscope")
         
         sleep(2)
 
@@ -185,12 +184,13 @@ class MainWindow(ManagedWindow):
             
         )
         self.setWindowTitle('Noise Measurement System v.0.91')
-        self.directory = self.path_file.ReadFile()
+        self.directory = self.procedure_class.path_file.ReadFile()
 
        
 
     def queue(self, procedure=None):
         directory = self.directory  # Change this to the desired directory
+        self.procedure_class.path_file.WriteFile(directory)
         if procedure is None:
             procedure = self.make_procedure()
         name_of_file = procedure.sample_name
