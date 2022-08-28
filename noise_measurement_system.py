@@ -5,6 +5,8 @@ import sys
 from time import sleep, time
 import matplotlib.pyplot as plt
 import traceback
+from find_instrument import FindInstrument
+from save_results_path import SaveFilePath
 import random
 #from typing import no_type_check
 #from argon2 import Parameters
@@ -41,15 +43,22 @@ class NoiseProcedure(Procedure):
     #noBuffer = IntegerParameter('Numbers of Buffer', default=1)
     #field_constant = FloatParameter("Field constatnt", default=0)
     sample_name = Parameter("Sample Name", default="Noise Measurement")
-    
+    find_instruments = FindInstrument()
 
 
     DATA_COLUMNS = ['time (s)', 'Voltage (V)', 'Magnetic field (T)'] #data columns
 
+    path_file = SaveFilePath() 
+
 
 
     def startup(self):
-        
+        self.path_file.WriteFile()
+        #################FIND INSTRUMENTS#################
+        log.info("Finding instruments...")
+        sleep(0.1)
+        log.info("Finded: {}".format(self.find_instruments.find_instrument()))
+        ##################################################
         log.info("Setting up instruments") 
         self.no_samples = int(self.period_time/((self.sampling_interval)))
         if self.no_samples % 2 == 1:
@@ -70,10 +79,10 @@ class NoiseProcedure(Procedure):
        ################# BIAS VOLTAGE ###################
         try:   
             self.voltage = SIM928("ASRL/dev/ttyUSB0::INSTR",timeout = 25000, baud_rate = 115200) #connect to voltagemeter
-            self.voltage.enabled() #enable channel 
             sleep(0.3)
             self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
             sleep(0.2)
+            self.voltage.enabled() #enable channel 
             log.info("Set bias voltage to %g V" %self.bias_voltage)
         except Exception:
             traceback.print_exc()
@@ -153,7 +162,10 @@ class NoiseProcedure(Procedure):
     def shutdown(self):
         self.oscilloscope.stop_scope()
         self.oscilloscope.disconnect_scope()
+        sleep(0.1)
         self.voltage.run_to_zero()
+        sleep(0.1)
+        self.voltage.disabled(1)
         log.info("Finished")
 
 
@@ -172,8 +184,9 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.0.9')
-        self.directory = "/"
+        self.setWindowTitle('Noise Measurement System v.0.91')
+        self.directory = self.path_file.ReadFile()
+
        
 
     def queue(self, procedure=None):

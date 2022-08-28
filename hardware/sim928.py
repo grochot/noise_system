@@ -17,8 +17,11 @@ class SIM928(Instrument):
             **kwargs
         )
 
-    def enabled(self):
-        self.write("OPON 1")
+    def enabled(self, value = 1):
+        self.write("OPON {}".format(value))
+   
+    def disabled(self, value = 1):
+        self.write("OPOF {}".format(value))
 
     def voltage_setpoint(self, vol = 0): 
         self.write("VOLT {}".format(vol))
@@ -32,6 +35,7 @@ class SIM928(Instrument):
 
     def run_to_zero(self): 
         self.voltage_setpoint(0)
+        self.disabled(1)
 
 
 
