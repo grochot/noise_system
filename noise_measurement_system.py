@@ -8,9 +8,6 @@ import traceback
 from find_instrument import FindInstrument
 from save_results_path import SaveFilePath
 import random
-#from typing import no_type_check
-#from argon2 import Parameters
-#from more_itertools import sample
 import numpy as np
 
 from pymeasure.display.Qt import QtGui
@@ -20,7 +17,7 @@ from pymeasure.experiment import (
 )
 
 from hardware.hmc8043 import HMC8043
-#from hardware.picoscope4626 import PicoScope
+from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928
 
 log = logging.getLogger(__name__)
@@ -28,12 +25,17 @@ log.addHandler(logging.NullHandler())
 
 
 class NoiseProcedure(Procedure):
+    find_instruments = FindInstrument()
+    finded_instruments = find_instruments.show_instrument() 
+    print(finded_instruments)
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1)
     no_time = IntegerParameter('Number of times', default=3)
     sampling_interval =FloatParameter('Sampling interval', units='s', default=0.01)
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0)
+    voltage_adress = ListParameter("SIM928 adress",  default="ASRL/dev/ttyS0::INSTR", choices=finded_instruments)
+    field_adress = ListParameter("HMC8043 adress",  default="ASRL/dev/ttyS0::INSTR", choices=finded_instruments)
     #channelB_enabled = BooleanParameter("Channel B Enabled", default=False)
     channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'])
     #channelB_coupling_type = ListParameter("Channel B Coupling Type",  default='AC', choices=['DC','AC'])
@@ -43,7 +45,7 @@ class NoiseProcedure(Procedure):
     #noBuffer = IntegerParameter('Numbers of Buffer', default=1)
     #field_constant = FloatParameter("Field constatnt", default=0)
     sample_name = Parameter("Sample Name", default="Noise Measurement")
-    find_instruments = FindInstrument()
+    
 
 
     DATA_COLUMNS = ['time (s)', 'Voltage (V)', 'Magnetic field (T)'] #data columns
@@ -56,7 +58,7 @@ class NoiseProcedure(Procedure):
         #################FIND INSTRUMENTS#################
         log.info("Finding instruments...")
         sleep(0.1)
-        log.info("Finded: {}".format(self.find_instruments.find_instrument()))
+        log.info("Finded: {}".format(self.finded_instruments))
         ##################################################
         log.info("Setting up instruments") 
         self.no_samples = int(self.period_time/((self.sampling_interval)))
@@ -75,9 +77,9 @@ class NoiseProcedure(Procedure):
             #log.error("Could not connect to field controller")
             #log.info("Set bias field to %g V" %self.bias_field)
        
-       ################# BIAS VOLTAGE ###################
+       ################ BIAS VOLTAGE ###################
         try:   
-            self.voltage = SIM928("ASRL/dev/ttyUSB0::INSTR",timeout = 25000, baud_rate = 115200) #connect to voltagemeter
+            self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             sleep(0.3)
             self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
             sleep(0.2)
@@ -89,7 +91,7 @@ class NoiseProcedure(Procedure):
              #log.info("Set bias voltage to %g V" %self.bias_voltage)
        
        ################# PICOSCOPE ###################
-        try: 
+        try:
             self.oscilloscope = PicoScope()
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
@@ -154,17 +156,23 @@ class NoiseProcedure(Procedure):
                     }
             self.emit('results', data) 
             
+    def stop_scope(self):
+        self.oscilloscope.stop_scope()
+        
+    
+    def disconnect_scope(self): 
+        self.oscilloscope.disconnect_scope()
         
 
     
     
     def shutdown(self):
-        self.oscilloscope.stop_scope()
-        self.oscilloscope.disconnect_scope()
-        sleep(0.1)
-        self.voltage.run_to_zero()
-        sleep(0.1)
-        self.voltage.disabled(1)
+        self.stop_scope()
+        self.disconnect_scope()
+        #sleep(0.1)
+        #self.voltage.run_to_zero()
+        #sleep(0.1)
+        #self.voltage.disabled(1)
         log.info("Finished")
 
 
@@ -173,7 +181,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['sample_name','period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type'],
+            inputs=['sample_name','voltage_adress','field_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type'],
             displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
             x_axis='time (s)',
             y_axis='Voltage (V)',

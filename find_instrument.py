@@ -13,6 +13,9 @@ class FindInstrument():
             self.hardware[inst.query('*IDN?')] = i
             inst.close()
         return self.hardware
+    
+    def show_instrument(self): 
+    	return self.rm.list_resources()
 
 
 
