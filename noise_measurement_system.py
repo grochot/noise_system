@@ -1,13 +1,15 @@
+from ast import Num
 from email.policy import default
 import logging
 import pandas as pd 
+
+import math
 import sys
 from time import sleep, time
-import matplotlib.pyplot as plt
 import traceback
 from find_instrument import FindInstrument
 from save_results_path import SaveFilePath
-import random
+
 import numpy as np
 
 from pymeasure.display.Qt import QtGui
@@ -17,11 +19,12 @@ from pymeasure.experiment import (
 )
 
 from hardware.hmc8043 import HMC8043
-from hardware.picoscope4626 import PicoScope
-from hardware.sim928 import SIM928
+#from hardware.picoscope4626 import PicoScope
+from hardware.sim928 import SIM928 
 
-log = logging.getLogger(__name__)
-log.addHandler(logging.NullHandler())
+log = logging.getLogger(__name__) 
+log.addHandler(logging.NullHandler()) 
+
 
 
 class NoiseProcedure(Procedure):
@@ -34,8 +37,8 @@ class NoiseProcedure(Procedure):
     sampling_interval =FloatParameter('Sampling interval', units='s', default=0.01)
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0)
-    voltage_adress = ListParameter("SIM928 adress",  default="ASRL/dev/ttyS0::INSTR", choices=finded_instruments)
-    field_adress = ListParameter("HMC8043 adress",  default="ASRL/dev/ttyS0::INSTR", choices=finded_instruments)
+    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments)
+    field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments)
     #channelB_enabled = BooleanParameter("Channel B Enabled", default=False)
     channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'])
     #channelB_coupling_type = ListParameter("Channel B Coupling Type",  default='AC', choices=['DC','AC'])
@@ -45,13 +48,14 @@ class NoiseProcedure(Procedure):
     #noBuffer = IntegerParameter('Numbers of Buffer', default=1)
     #field_constant = FloatParameter("Field constatnt", default=0)
     sample_name = Parameter("Sample Name", default="Noise Measurement")
-    
+    treshold = FloatParameter("Treshold")
+    divide = FloatParameter("Divide number")
 
 
-    DATA_COLUMNS = ['time (s)', 'Voltage (V)', 'Magnetic field (T)'] #data columns
+
+    DATA_COLUMNS = ['time (s)', 'Voltage (V)', 'Magnetic field (T)', 'frequency (Hz)', 'FFT (V)', 'treshold_time (s)', 'treshold_voltage (V)', 'divide_voltage (V)'] #data columns
 
     path_file = SaveFilePath() 
-
 
 
     def startup(self):
@@ -106,7 +110,7 @@ class NoiseProcedure(Procedure):
     ##### PROCEDURE ######
     def execute(self):
         log.info("Starting to sweep through time")
-        ######### set oscilloscope #########
+        ######## set oscilloscope #########
         self.oscilloscope.set_number_samples(self.no_samples)
         self.oscilloscope.set_timebase(int(self.sampling_interval*10000000)-1)
         self.oscilloscope.run_block_capture()
@@ -125,7 +129,7 @@ class NoiseProcedure(Procedure):
         tmp_magnetic_field_list = 5
         #########################################
         for i in range(self.steps):
-            ######### run oscilloscope #########
+            ####### run oscilloscope #########
             self.oscilloscope.getValuesfromScope()
             tmp_time_list = self.oscilloscope.create_time()
             tmp_voltage_list = self.oscilloscope.convert_to_mV(self.channelA_range)
@@ -148,66 +152,102 @@ class NoiseProcedure(Procedure):
         tmp_data_time_average = tmp_data_time["average"].to_list()
         tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
         tmp_data_magnetic_field_average = tmp_data_magnetic_field["average"].to_list()
-        for elem in range(len(tmp_data_time_average)):
-            data = {
-                    'time (s)': tmp_data_time_average[elem]*1e-9,
-                    'Voltage (V)': tmp_data_voltage_average[elem],
-                    'Magnetic field (T)': tmp_data_magnetic_field_average[0]
+       ########################## FFT Counting ##########################
+        smpl_freq = 1/self.sampling_interval
+        ft_ = np.fft.fft(tmp_data_voltage_average) / len(tmp_data_voltage_average)  # Normalize amplitude and apply the FFT
+        ft_ = ft_[range(int(len(tmp_data_voltage_average)/2))]   # Exclude sampling frequency
+        tp_cnt = len(tmp_data_voltage_average)
+        val_ = np.arange(int(tp_cnt / 2))
+        tm_period_ = tp_cnt / smpl_freq
+        freq_ = val_ / tm_period_
+       
+       ########################## Send results#############################
+        for ele in range(len(tmp_data_time_average)):
+            data2 = {
+                      'frequency (Hz)': freq_[ele] if ele < len(freq_) else math.nan, 
+                      'FFT (V)': abs(ft_[ele]) if ele < len(freq_) else math.nan, 
+                      'time (s)': tmp_data_time_average[ele]*1e-9,
+                      'Voltage (V)': tmp_data_voltage_average[ele],
+                      'Magnetic field (T)': tmp_data_magnetic_field_average[0],
+                      'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if tmp_data_voltage_average[ele] >= self.treshold else math.nan)[self.treshold != 0],
+                      'treshold_voltage (V)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold else math.nan)[self.treshold != 0],
+                      'divide_voltage (V)': (math.nan, tmp_data_voltage_average[ele]/self.divide)[self.divide != 0]
                     }
-            self.emit('results', data) 
-            
+            self.emit('results', data2) 
+    
+
     def stop_scope(self):
         self.oscilloscope.stop_scope()
+        log.info("Stop_scope")
         
     
     def disconnect_scope(self): 
         self.oscilloscope.disconnect_scope()
-        
+        log.info("disconnect_scope")
+
+    def run_to_zero(self):
+        self.voltage.voltage_setpoint(0)
+        log.info("run_to_zero")
+
+    def voltage_disabled(self): 
+        self.voltage.disabled()
+        log.info("voltage_disabled")
 
     
-    
+ 
     def shutdown(self):
+       pass
+       
+
+    def shutdown_definetly(self):
         self.stop_scope()
         self.disconnect_scope()
-        #sleep(0.1)
-        #self.voltage.run_to_zero()
-        #sleep(0.1)
-        #self.voltage.disabled(1)
-        log.info("Finished")
+        # sleep(0.1)
+        self.run_to_zero()
+        # sleep(0.2)
+        self.voltage_disabled()
+        print("shutdown!")
 
-
+        
+      
 class MainWindow(ManagedWindow):
 
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['sample_name','voltage_adress','field_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type'],
+            inputs=['sample_name','voltage_adress','field_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide'],
             displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
             x_axis='time (s)',
             y_axis='Voltage (V)',
             directory_input=True,  
-            sequencer=True,                                      # Added line
-            sequencer_inputs=['bias_field', 'bias_voltage'],    # Added line
+            sequencer=True,                                      
+            sequencer_inputs=['bias_field', 'bias_voltage'],    
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.0.91')
+        self.setWindowTitle('Noise Measurement System v.0.98')
         self.directory = self.procedure_class.path_file.ReadFile()
-
-       
+        
 
     def queue(self, procedure=None):
         directory = self.directory  # Change this to the desired directory
         self.procedure_class.path_file.WriteFile(directory)
+        
         if procedure is None:
             procedure = self.make_procedure()
+       
         name_of_file = procedure.sample_name
         filename = unique_filename(directory, prefix="{}_".format(name_of_file))
         results = Results(procedure, filename)
         experiment = self.new_experiment(results)
-
         self.manager.queue(experiment)
-
+        try:
+            self.wynik = procedure.last_in_sequence
+            if self.wynik == "True": 
+                procedure.shutdown_definetly()
+        except:     
+            procedure.shutdown_definetly()
+ 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     window = MainWindow()

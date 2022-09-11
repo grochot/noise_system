@@ -1,5 +1,6 @@
 from pymeasure.instruments import Instrument
 from pymeasure.instruments.validators import strict_discrete_set
+from time import sleep
 
 import time
 import logging
@@ -17,14 +18,16 @@ class SIM928(Instrument):
             **kwargs
         )
 
-    def enabled(self, value = 1):
-        self.write("OPON {}".format(value))
+    def enabled(self):
+        self.write("OPON")
    
-    def disabled(self, value = 1):
-        self.write("OPOF {}".format(value))
+    def disabled(self):
+        self.write("OPOF")
 
     def voltage_setpoint(self, vol = 0): 
+        sleep(0.5)
         self.write("VOLT {}".format(vol))
+        sleep(0.5)
     
 
     voltage = Instrument.measurement(
@@ -35,7 +38,8 @@ class SIM928(Instrument):
 
     def run_to_zero(self): 
         self.voltage_setpoint(0)
-        self.disabled(1)
+        sleep(0.3)
+        self.disabled()
 
 
 
