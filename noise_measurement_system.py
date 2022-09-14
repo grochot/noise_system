@@ -19,7 +19,7 @@ from pymeasure.experiment import (
 )
 
 from hardware.hmc8043 import HMC8043
-#from hardware.picoscope4626 import PicoScope
+from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928 
 
 log = logging.getLogger(__name__) 
@@ -95,14 +95,15 @@ class NoiseProcedure(Procedure):
              #log.info("Set bias voltage to %g V" %self.bias_voltage)
        
        ################# PICOSCOPE ###################
-        try:
-            self.oscilloscope = PicoScope()
-            self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
-            #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
-            self.oscilloscope.setTrigger()
-            log.info("setup oscilloscope done")
-        except:
-            log.error("Could not connect to oscilloscope")
+        
+        self.oscilloscope = PicoScope()
+        self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
+        #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
+        self.oscilloscope.setTrigger()
+        log.info("setup oscilloscope done")
+    
+
+        #log.error("Could not connect to oscilloscope")
         
         sleep(2)
 
@@ -171,7 +172,7 @@ class NoiseProcedure(Procedure):
                       'Magnetic field (T)': tmp_data_magnetic_field_average[0],
                       'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if tmp_data_voltage_average[ele] >= self.treshold else math.nan)[self.treshold != 0],
                       'treshold_voltage (V)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold else math.nan)[self.treshold != 0],
-                      'divide_voltage (V)': (math.nan, tmp_data_voltage_average[ele]/self.divide)[self.divide != 0]
+                      'divide_voltage (V)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
                     }
             self.emit('results', data2) 
     
@@ -196,12 +197,16 @@ class NoiseProcedure(Procedure):
     
  
     def shutdown(self):
-       pass
+        self.stop_scope()
+        self.disconnect_scope()
+        self.run_to_zero()
+        sleep(1)
+        self.voltage_disabled()
+        
        
 
     def shutdown_definetly(self):
-        self.stop_scope()
-        self.disconnect_scope()
+        
         # sleep(0.1)
         self.run_to_zero()
         # sleep(0.2)
@@ -241,12 +246,15 @@ class MainWindow(ManagedWindow):
         results = Results(procedure, filename)
         experiment = self.new_experiment(results)
         self.manager.queue(experiment)
-        try:
-            self.wynik = procedure.last_in_sequence
-            if self.wynik == "True": 
-                procedure.shutdown_definetly()
-        except:     
-            procedure.shutdown_definetly()
+        
+        # try:
+        #     self.wynik = procedure.last_in_sequence
+        #     print(self.wynik)
+        #     if self.wynik == "True": 
+        #         procedure.shutdown_definetly()
+        # except:     
+        #     print("No procedure")
+        #     #procedure.shutdown_definetly()
  
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
