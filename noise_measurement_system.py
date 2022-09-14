@@ -251,10 +251,12 @@ class MainWindow(ManagedWindow):
         #     self.wynik = procedure.last_in_sequence
         #     print(self.wynik)
         #     if self.wynik == "True": 
-        #         procedure.shutdown_definetly()
+        #         print("ok")
+        #         self.procedure_class.voltage.disabled()
+                
         # except:     
         #     print("No procedure")
-        #     #procedure.shutdown_definetly()
+            
  
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
