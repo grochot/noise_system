@@ -52,17 +52,20 @@ class NoiseProcedure(Procedure):
     #noBuffer = IntegerParameter('Numbers of Buffer', default=1)
     #field_constant = FloatParameter("Field constatnt", default=0)
     sample_name = Parameter("Sample Name", default="Noise Measurement")
-    treshold = FloatParameter("Treshold")
-    divide = FloatParameter("Divide number")
+    treshold = FloatParameter("Treshold", units='mV')
+    divide = FloatParameter("Divide number", units = 'mV')
 
 
 
     DATA_COLUMNS = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
 
     path_file = SaveFilePath() 
-
-
+   
+    
+    
     def startup(self):
+        self.oscilloscope = PicoScope()
+        self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
         #################FIND INSTRUMENTS#################
         log.info("Finding instruments...")
         sleep(0.1)
@@ -76,7 +79,7 @@ class NoiseProcedure(Procedure):
 
         ################# FIELD SENSOR #################
 
-        field_sensor = FieldSensor()
+        self.field_sensor = FieldSensor(self.field_sensor_adress)
 
         ################# BIAS FIELD ###################
         # try:
@@ -92,8 +95,7 @@ class NoiseProcedure(Procedure):
        
        ################ BIAS VOLTAGE ###################
         try:   
-            self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
-            sleep(1)
+           
             self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
             sleep(1)
             self.voltage.enabled() #enable channel 
@@ -103,15 +105,15 @@ class NoiseProcedure(Procedure):
             log.error("Could not connect to bias voltage source")
         
        ################ PICOSCOPE ###################
-        try:
-            self.oscilloscope = PicoScope()
-            self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
-            #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
-            self.oscilloscope.setTrigger()
-            log.info("setup oscilloscope done")
+        
+       
+        self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
+        #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
+        self.oscilloscope.setTrigger()
+        log.info("setup oscilloscope done")
     
-        except:
-            log.error("Could not connect to oscilloscope")
+       
+        #log.error("Could not connect to oscilloscope")
         
         sleep(2)
 
@@ -131,26 +133,28 @@ class NoiseProcedure(Procedure):
         self.stop_time = time()
         tmp_data_time = pd.DataFrame(columns=['time'])
         tmp_data_voltage = pd.DataFrame(columns=['voltage'])
-        tmp_data_magnetic_field_x = pd.DataFrame(columns=['field_x'])
-        tmp_data_magnetic_field_y = pd.DataFrame(columns=['field_y'])
-        tmp_data_magnetic_field_z = pd.DataFrame(columns=['field_z'])
+        tmp_data_magnetic_field_x = []
+        tmp_data_magnetic_field_y = []
+        tmp_data_magnetic_field_z = []
 
         ########## measure field ########### 
+        
         
         for i in range(5):
             tmp_x = self.field_sensor.read_field()[0]
             tmp_y = self.field_sensor.read_field()[1]
             tmp_z = self.field_sensor.read_field()[2]
             
-            tmp_data_magnetic_field_x.append(tmp_x)
-            tmp_data_magnetic_field_y.append(tmp_y)
-            tmp_data_magnetic_field_z.append(tmp_z)
-            sleep(0.1)
+            
+            tmp_data_magnetic_field_x.append(float(tmp_x))
+            tmp_data_magnetic_field_y.append(float(tmp_y))
+            tmp_data_magnetic_field_z.append(float(tmp_z))
+            sleep(1)
         
-        magnetic_field_value = tmp_magnetic_field_list_tmp.mean(axis =1)
-        tmp_data_magnetic_field_x_mean = tmp_data_magnetic_field_x.mean(axis = 1).to_list()
-        tmp_data_magnetic_field_y_mean = tmp_data_magnetic_field_y.mean(axis = 1).to_list()
-        tmp_data_magnetic_field_z_mean = tmp_data_magnetic_field_z.mean(axis = 1).to_list()
+       
+        tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))
+        tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))
+        tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))
         #########################################
         for i in range(self.steps):
             ####### run oscilloscope #########
@@ -191,47 +195,48 @@ class NoiseProcedure(Procedure):
                       'FFT (mV)': abs(ft_[ele]) if ele < len(freq_) else math.nan, 
                       'time (s)': tmp_data_time_average[ele]*1e-9,
                       'Voltage (mV)': tmp_data_voltage_average[ele],
-                      'X field (Oe)': tmp_data_magnetic_field_x_mean[0],
-                      'Y field (Oe)': tmp_data_magnetic_field_y_mean[0],
-                      'Z field (Oe)': tmp_data_magnetic_field_z_mean[0],
-                      'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if (tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold) else math.nan)[self.treshold != 0],
-                      'treshold_voltage (mV)': (math.nan, tmp_data_voltage_average[ele]  if (tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold ) else math.nan)[self.treshold != 0],
+                      'X field (Oe)': tmp_data_magnetic_field_x_mean,
+                      'Y field (Oe)': tmp_data_magnetic_field_y_mean,
+                      'Z field (Oe)': tmp_data_magnetic_field_z_mean,
+                      'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
+                      'treshold_voltage (mV)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
                       'divide_voltage (mV)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
                     }
             self.emit('results', data2) 
-            print("wyniki_wysłane")
     
 
     def stop_scope(self):
-        self.oscilloscope.stop_scope()
+        
         print("Stop_scope")
         
     
     def disconnect_scope(self): 
-        self.oscilloscope.disconnect_scope()
+        
         print("disconnect_scope")
 
     def run_to_zero(self):
-        self.voltage.voltage_setpoint(0)
+        
         print("run_to_zero")
     
 
     def voltage_disabled(self): 
-        self.voltage.disabled()
+        
         print("voltage_disabled")
 
     
  
     def shutdown(self):
         print("funkcja_shutdown")
-        self.stop_scope()
-        self.licznik += 1
-        self.disconnect_scope()
-        if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik-1: 
-            self.run_to_zero()
+        self.oscilloscope.stop_scope()
+        self.oscilloscope.disconnect_scope()
+        
+        if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
+            self.voltage.voltage_setpoint(0)
             sleep(1)
-            self.voltage_disabled()
+            self.voltage.disabled()
+            NoiseProcedure.licznik = 0
         NoiseProcedure.licznik += 1
+        print(NoiseProcedure.licznik)
         
 
         
@@ -274,10 +279,13 @@ class MainWindow(ManagedWindow):
         
 
         try:
+            
             MainWindow.wynik =  procedure.seq
-            # MainWindow.wynik_list.append(procedure.seq)
-            # MainWindow.wynik = max(MainWindow.wynik_list)
-            print(self.wynik)
+            MainWindow.wynik_list.append(procedure.seq)
+            MainWindow.wynik = max(MainWindow.wynik_list)
+            print(MainWindow.wynik)
+            MainWindow.last = False
+            
 
                 
         except:     
