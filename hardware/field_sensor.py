@@ -28,6 +28,22 @@ class FieldSensor(Instrument):
     def read_field(self): 
         self.address = self.resource[4:16]
         ser = serial.Serial(self.address, 115200, timeout=1) 
-        x, y, z = ser.readline().decode("utf-8").split(',')    
+        try:
+            ser.write("d".encode())
+            out = ''
+
+            
+            out += str(ser.readline().decode())
+
+            if out:
+                print(out)
+        except:
+            pass
+
+        x, y, z = out.split(',')
+        x = float(x)
+        y = float(y)
+        z = float(z)
         #field = np.sqrt(x**2+y**2+z**2)
+       
         return x,y,z
