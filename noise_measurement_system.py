@@ -37,7 +37,7 @@ class NoiseProcedure(Procedure):
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1)
     no_time = IntegerParameter('Number of times', default=3)
-    sampling_interval =FloatParameter('Sampling interval', units='s', default=0.01)
+    sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100)
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0)
     voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments)
@@ -54,6 +54,7 @@ class NoiseProcedure(Procedure):
     sample_name = Parameter("Sample Name", default="Noise Measurement")
     treshold = FloatParameter("Treshold", units='mV')
     divide = FloatParameter("Divide number", units = 'mV')
+    
 
 
 
@@ -64,6 +65,7 @@ class NoiseProcedure(Procedure):
     
     
     def startup(self):
+        
         self.oscilloscope = PicoScope()
         self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
         #################FIND INSTRUMENTS#################
@@ -72,7 +74,7 @@ class NoiseProcedure(Procedure):
         log.info("Finded: {}".format(self.finded_instruments))
         ##################################################
         log.info("Setting up instruments") 
-        self.no_samples = int(self.period_time/((self.sampling_interval)))
+        self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
         if self.no_samples % 2 == 1:
             self.no_samples = self.no_samples + 1
         log.info("Number of samples: %g" %self.no_samples)
@@ -123,7 +125,7 @@ class NoiseProcedure(Procedure):
         log.info("Starting to sweep through time")
         ######## set oscilloscope #########
         self.oscilloscope.set_number_samples(self.no_samples)
-        self.oscilloscope.set_timebase(int(self.sampling_interval*10000000)-1)
+        self.oscilloscope.set_timebase(int((1/self.sampling_interval)*10000000)-1)
         self.oscilloscope.run_block_capture()
         self.oscilloscope.check_data_collection()
         self.oscilloscope.create_buffers()
@@ -165,7 +167,7 @@ class NoiseProcedure(Procedure):
         
             tmp_data_time.insert(i,"time_{}".format(i),pd.Series(tmp_time_list))
             tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
-            self.emit('progress', 100. * (i / self.steps))
+            self.emit('progress', 100 * int(i / self.steps))
 
             # if self.should_stop():
             #     self.oscilloscope.stop_scope()
@@ -180,7 +182,7 @@ class NoiseProcedure(Procedure):
         tmp_data_time_average = tmp_data_time["average"].to_list()
         tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
        ########################## FFT Counting ##########################
-        smpl_freq = 1/self.sampling_interval
+        smpl_freq = self.sampling_interval
         ft_ = np.fft.fft(tmp_data_voltage_average) / len(tmp_data_voltage_average)  # Normalize amplitude and apply the FFT
         ft_ = ft_[range(int(len(tmp_data_voltage_average)/2))]   # Exclude sampling frequency
         tp_cnt = len(tmp_data_voltage_average)
