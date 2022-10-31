@@ -9,14 +9,16 @@ from time import sleep
 from pymeasure.log import console_log
 from pymeasure.display.Qt import QtGui
 from pymeasure.display.windows import ManagedWindow
-from pymeasure.experiment import Procedure, Results
-from pymeasure.experiment import IntegerParameter, FloatParameter, Parameter
+from pymeasure.experiment import Procedure, Results, unique_filename
+from pymeasure.experiment import IntegerParameter, FloatParameter, Parameter, ListParameter
 
 class RandomProcedure(Procedure):
-
+    finded = [0, 1, 2]
     iterations = IntegerParameter('Loop Iterations')
     delay = FloatParameter('Delay Time', units='s', default=0.2)
     seed = Parameter('Random Seed', default='12345')
+    f = ListParameter("dd", choices=finded) 
+
 
     DATA_COLUMNS = ['Iteration', 'Random Number']
 
@@ -45,15 +47,18 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class=RandomProcedure,
-            inputs=['iterations', 'delay', 'seed'],
+            inputs=['iterations', 'delay', 'seed','f'],
             displays=['iterations', 'delay', 'seed'],
             x_axis='Iteration',
+            directory_input=True, 
             y_axis='Random Number'
         )
         self.setWindowTitle('GUI Example')
+        self.directory = r'C:/Path/to/default/directory'
 
     def queue(self):
-        filename = tempfile.mktemp()
+        directory = self.directory                               # Added line
+        filename = unique_filename(directory) 
 
         procedure = self.make_procedure()
         results = Results(procedure, filename)

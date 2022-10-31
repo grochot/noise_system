@@ -260,7 +260,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.0.99 beta')
+        self.setWindowTitle('Noise Measurement System v.1.00 alpha')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
