@@ -32,7 +32,7 @@ log.addHandler(logging.NullHandler())
 class NoiseProcedure(Procedure):
     licznik = 0
     find_instruments = FindInstrument()
-    finded_instruments = find_instruments.show_instrument() 
+    finded_instruments = find_instruments.find_instrument()
     print(finded_instruments)
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1)

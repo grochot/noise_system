@@ -1,4 +1,4 @@
-import pyvisa 
+import pyvisa
 
 
 class FindInstrument(): 
@@ -8,27 +8,30 @@ class FindInstrument():
    
     def find_instrument(self):
         for i in self.rm.list_resources(): 
-            print(i) 
-            inst = self.rm.open_resource(i)  
-            self.hardware[inst.query('*IDN?')] = i
-            inst.close()
-            file = open("finded_instruments.txt", "r")
-            content = file.read()
-            file.close()
-            content_tab = content.split(",") 
-            for k in self.hardware.keys(): 
-                if k in content_tab: 
-                    pass 
-                else: 
-                    file.open("finded_instruments.txt", 'a')
-                    save_data = k + ","
-                    file.write(save_data)
-                    file.close()
+            try:
+                inst = self.rm.open_resource(i)  
+                self.hardware[inst.query('*IDN?')] = i
+                inst.close()
+            except:
+                print("nie udało się zidentyfikowac")
+                self.hardware[i] = i
+        self.file = open("finded_instruments.txt", "r")
+        self.content = self.file.read()
+        self.file.close()
+        self.content_tab = self.content.split(",") 
+        for k in self.hardware.keys(): 
+            if k in self.content_tab: 
+                pass 
+            else: 
+                self.file = open("finded_instruments.txt", 'a')
+                self.save_data =  "," + k 
+                self.file.write(self.save_data)
+                self.file.close()
 
-            file.open("finded_instrumnets.txt", 'r') 
-            instruments = file.read().split(',')
+        self.file = open("finded_instruments.txt", 'r') 
+        self.instruments = self.file.read().split(',')
 
-            return instruments
+        return self.instruments
 
     
     def show_instrument(self): 
