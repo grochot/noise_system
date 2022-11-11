@@ -80,7 +80,7 @@ class IVTransfer(Procedure):
          ####### Config DAQ ############ 
         self.field = FieldCalibration
         log.info('Start config DAQ') 
-        self.daq = DAQ("/TestDevice/ao0")
+        self.daq = DAQ("/6124/ao0")
         self.daq.shutdown()
 
         log.info("Config DAQ done")
@@ -385,7 +385,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= IVTransfer,
-            inputs=['acquire_type','keithley_adress', 'keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
+            inputs=['acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
             'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'voltage_vector', 'current_vector', 'field_vector'],
             displays=[],
             x_axis='time (s)',
