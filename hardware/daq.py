@@ -1,13 +1,14 @@
 from pymeasure.instruments import Instrument
 from pymeasure.instruments.validators import strict_discrete_set
 from time import sleep
+import nidaqmx
 
 import time
 import logging
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
-import PyDAQmx 
+
 
 
 
@@ -23,11 +24,10 @@ class DAQ(Instrument):
         self.adapter = adapter 
    
     def set_voltage (self, value =1) :
-        task = PyDAQmx.Task()
-        task.CreateAOVoltageChan(self.adapter,"",-10.0,10.0,PyDAQmx.DAQmx_Val_Volts,None) 
-        task.StartTask()
-        task.WriteAnalogScalarF64(1,10.0,value,None)
-        task.StopTask()
+        with nidaqmx.Task() as task:
+            task.ao_channels.add_ao_voltage_chan(self.adapter)
+            task.write(value)
+
 
     
 
