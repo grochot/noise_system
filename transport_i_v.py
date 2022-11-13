@@ -43,11 +43,13 @@ class IVTransfer(Procedure):
     keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by='keithley_source_type', group_condition='Current')
     keithley_current_bias = FloatParameter('Current bias', units='A', default=0.01, group_by='acquire_type', group_condition='V(Hmb) |set Ib')
     keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by='acquire_type', group_condition='I(Hmb) | set Vb')
-    field_bias = FloatParameter('Field bias', units='Oe', default=1, group_by='acquire_type', group_condition=['I(Vb) | set Hmb', 'V(Ib) | set Hmb'])
-    voltage_vector = VectorParameter('Voltage', units='V', group_by='acquire_type', group_condition='I(Vb) | set Hmb')
-    current_vector = VectorParameter('Current', units='A', group_by='acquire_type', group_condition='V(Ib) | set Hmb')
-    field_vector = VectorParameter('Field', units='Oe', group_by='acquire_type', group_condition=['I(Hmb) | set Vb', 'V(Hmb) |set Ib'])
-    
+    field_bias = FloatParameter('Field bias', units='Oe', default=1, group_by='acquire_type', group_condition=lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb')
+    #voltage_vector = VectorParameter('Voltage', units='V', group_by='acquire_type', group_condition='I(Vb) | set Hmb')
+    #current_vector = VectorParameter('Current', units='A', group_by='acquire_type', group_condition='V(Ib) | set Hmb')
+    #field_vector = VectorParameter('Field', units='Oe', group_by='acquire_type', group_condition=lambda v: v =='V(Hmb) |set Ib' or v == 'I(Hmb) | set Vb')
+    start = FloatParameter("Start")
+    stop = FloatParameter("Stop")
+    no_points = FloatParameter("No Points")
     delay = FloatParameter("Delay", units = "ms", default = 100)
 
     # field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments)
@@ -60,7 +62,7 @@ class IVTransfer(Procedure):
     # #sizeBuffer = IntegerParameter('Size of Buffer', default=10)
     # #noBuffer = IntegerParameter('Numbers of Buffer', default=1)
     # #field_constant = FloatParameter("Field constatnt", default=0)
-    # sample_name = Parameter("Sample Name", default="Noise Measurement")
+    sample_name = Parameter("Sample Name", default="sample name")
     # treshold = FloatParameter("Treshold", units='mV')
     # divide = FloatParameter("Divide number", units = 'mV')
     
@@ -82,8 +84,8 @@ class IVTransfer(Procedure):
         self.field = FieldCalibration
         log.info('Start config DAQ') 
         self.daq = DAQ("/6124/ao0")
-        self.daq.shutdown()
-
+        #self.daq.shutdown()
+        vector = [1,2,3]#np.linspace(self.start, self.stop,self.no_points)
         log.info("Config DAQ done")
         ############## KEITHLEY CONFIG ###############
         log.info("Start config Keithley")
@@ -185,7 +187,7 @@ class IVTransfer(Procedure):
     def execute(self):
         log.info("Starting to sweep through time")
         if self.acquire_type == 'I(Hmb) | set Vb': 
-            for i in self.field_vector:
+            for i in self.vector:
                 self.field.field_cal(i)
                 sleep(self.delay)
                 self.tmp_x = self.field_sensor.read_field()[0]
@@ -205,7 +207,7 @@ class IVTransfer(Procedure):
 
 
         elif self.acquire_type == 'V(Hmb) |set Ib': 
-            for i in self.field_vector:
+            for i in self.vector:
                 self.field.field_cal(i)
                 sleep(self.delay)
                 self.tmp_x = self.field_sensor.read_field()[0]
@@ -223,7 +225,7 @@ class IVTransfer(Procedure):
             self.emit('results', data) 
                  
         elif self.acquire_type == 'I(Vb) | set Hmb': 
-            for i in self.voltage_vector:
+            for i in self.vector:
                 self.keithley.source_voltage =  i
                 sleep(self.delay)
                 self.tmp_current = self.keithley.current
@@ -241,7 +243,7 @@ class IVTransfer(Procedure):
             self.emit('results', data) 
             
         elif self.acquire_type == 'V(Ib) | set Hmb': 
-            for i in self.current_vector:
+            for i in self.vector:
                 self.keithley.source_current =  i
                 sleep(self.delay)
                 self.tmp_volatage = self.keithley.voltage
@@ -386,24 +388,24 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= IVTransfer,
-            inputs=['acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'voltage_vector', 'current_vector', 'field_vector'],
-            displays=[],
+            inputs=['sample_name','acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'start', 'stop', 'no_points'],
+            displays=['sample_name', 'acquire_type'],
             x_axis='time (s)',
             y_axis='Voltage (mV)',
             directory_input=True,  
             sequencer=True,                                      
-            sequencer_inputs=[],    
+            sequencer_inputs=['field_bias'],    
             inputs_in_scrollarea=True,
             
         )
         self.setWindowTitle('Noise Measurement System v.1.00')
-        self.directory = self.procedure_class.path_file.ReadFile()
+        self.directory = 'C://' #self.procedure_class.path_file.ReadFile()
         
 
     def queue(self, procedure=None):
         directory = self.directory  # Change this to the desired directory
-        self.procedure_class.path_file.WriteFile(directory)
+        #self.procedure_class.path_file.WriteFile(directory)
         
         if procedure is None:
             procedure = self.make_procedure()
