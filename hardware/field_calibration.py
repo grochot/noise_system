@@ -1,5 +1,5 @@
 
-from noise_system.hardware.daq import DAQ
+from daq import DAQ
 
 class FieldCalibration(): 
     def __init__(self):
@@ -10,7 +10,3 @@ class FieldCalibration():
         self.daq.set_voltage(value/self.calibration_constant)
 
 
-        
-field = FieldCalibration()
-
-field.set_field(0.1)

@@ -21,7 +21,6 @@ from pymeasure.experiment import (
 
 from pymeasure.instruments.keithley import Keithley2400
 from hardware.daq import DAQ
-from logic.field_calibration import FieldCalibration
 from hardware.field_sensor import FieldSensor 
 
 log = logging.getLogger(__name__) 
@@ -49,7 +48,7 @@ class IVTransfer(Procedure):
     #field_vector = VectorParameter('Field', units='Oe', group_by='acquire_type', group_condition=lambda v: v =='V(Hmb) |set Ib' or v == 'I(Hmb) | set Vb')
     start = FloatParameter("Start")
     stop = FloatParameter("Stop")
-    no_points = FloatParameter("No Points")
+    no_points = IntegerParameter("No Points")
     delay = FloatParameter("Delay", units = "ms", default = 100)
 
     # field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments)
@@ -80,52 +79,61 @@ class IVTransfer(Procedure):
         log.info("Finding instruments...")
         sleep(0.1)
         log.info("Finded: {}".format(self.finded_instruments))
-         ####### Config DAQ ############ 
-        self.field = FieldCalibration
+         ####### Config DAQ ############
         log.info('Start config DAQ') 
-        self.daq = DAQ("/6124/ao0")
-        #self.daq.shutdown()
-        vector = [1,2,3]#np.linspace(self.start, self.stop,self.no_points)
-        log.info("Config DAQ done")
+        try:
+            self.field = DAQ("6124/ao0")
+            log.info("Config DAQ done")
+        except:
+            log.error("Config DAQ failed")
+        
+        self.vector = np.linspace(self.start, self.stop,self.no_points)
+        
         ############## KEITHLEY CONFIG ###############
         log.info("Start config Keithley")
-        self.keithley = Keithley2400(self.keithley_adress)
-        if self.acquire_type == 'I(Hmb) | set Vb': 
-            self.keithley.apply_voltage()
-            self.keithley.compliance_current = self.keithley_compliance_current
-            self.keithley.source_voltage = self.keithley_voltage_bias             # Sets the source current to 0 mA
-            self.keithley.enable_source()                # Enables the source output
-            self.keithley.measure_current()  
-        elif self.acquire_type == 'V(Hmb) |set Ib': 
-            self.keithley.apply_current()
-            self.keithley.compliance_voltage = self.keithley_compliance_voltage
-            self.keithley.source_current= self.keithley_current_bias            # Sets the source current to 0 mA
-            self.keithley.enable_source()                # Enables the source output
-            self.keithley.measure_voltage()         
-        elif self.acquire_type == 'I(Vb) | set Hmb': 
-            self.keithley.apply_voltage()
-            self.keithley.compliance_current = self.keithley_compliance_current
-            self.keithley.source_voltage =  0         # Sets the source current to 0 mA
-            self.keithley.enable_source()                # Enables the source output
-            self.keithley.measure_current()
-            self.field.field_cal(self.field_bias)
-        elif self.acquire_type == 'V(Ib) | set Hmb': 
-            self.keithley.apply_current()
-            self.keithley.compliance_voltage = self.keithley_compliance_voltage
-            self.keithley.source_current=  0         # Sets the source current to 0 mA
-            self.keithley.enable_source()                # Enables the source output
-            self.keithley.measure_voltage()
-            self.field.field_cal(self.field_bias)
-        log.info("Config Keithley done")
+        try:
+            self.keithley = Keithley2400(self.keithley_adress)
+            if self.acquire_type == 'I(Hmb) | set Vb': 
+                self.keithley.apply_voltage()
+                self.keithley.compliance_current = self.keithley_compliance_current
+                self.keithley.source_voltage = self.keithley_voltage_bias             # Sets the source current to 0 mA
+                self.keithley.enable_source()                # Enables the source output
+                self.keithley.measure_current()  
+            elif self.acquire_type == 'V(Hmb) |set Ib': 
+                self.keithley.apply_current()
+                self.keithley.compliance_voltage = self.keithley_compliance_voltage
+                self.keithley.source_current= self.keithley_current_bias            # Sets the source current to 0 mA
+                self.keithley.enable_source()                # Enables the source output
+                self.keithley.measure_voltage()         
+            elif self.acquire_type == 'I(Vb) | set Hmb': 
+                self.keithley.apply_voltage()
+                self.keithley.compliance_current = self.keithley_compliance_current
+                self.keithley.source_voltage =  0         # Sets the source current to 0 mA
+                self.keithley.enable_source()                # Enables the source output
+                self.keithley.measure_current()
+                self.field.set_field(self.field_bias)
+            elif self.acquire_type == 'V(Ib) | set Hmb': 
+                self.keithley.apply_current()
+                self.keithley.compliance_voltage = self.keithley_compliance_voltage
+                self.keithley.source_current=  0         # Sets the source current to 0 mA
+                self.keithley.enable_source()                # Enables the source output
+                self.keithley.measure_voltage()
+                self.field.set_field(self.field_bias)
+            log.info("Config Keithley done")
+
+        except:
+            log.error("Config Keithley failed")
 
        
-
+        
         ####### Config FieldSensor ######## 
         log.info("Config Field Sensor")
+        try:
+            self.field_sensor = FieldSensor(self.field_sensor_adress)
 
-        self.field_sensor = FieldSensor(self.field_sensor_adress)
-
-        log.info("Config FieldSensor done")
+            log.info("Config FieldSensor done")
+        except:
+            log.error("Config FieldSensor failed")
 
 
 
@@ -185,15 +193,16 @@ class IVTransfer(Procedure):
 
     ##### PROCEDURE ######
     def execute(self):
-        log.info("Starting to sweep through time")
-        if self.acquire_type == 'I(Hmb) | set Vb': 
+        
+        if self.acquire_type == 'I(Hmb) | set Vb':
+            log.info("Starting to sweep through field")
             for i in self.vector:
-                self.field.field_cal(i)
-                sleep(self.delay)
+                self.field.set_field(i)
+                sleep(self.delay*0.001)
                 self.tmp_x = self.field_sensor.read_field()[0]
                 self.tmp_y = self.field_sensor.read_field()[1]
                 self.tmp_z = self.field_sensor.read_field()[2]
-                sleep(self.delay)
+                sleep(self.delay*0.001)
                 self.tmp_current = self.keithley.current
                 data = {
                       'Voltage (V)':  self.keithley_voltage_bias,
@@ -202,18 +211,20 @@ class IVTransfer(Procedure):
                       'Y field (Oe)': self.tmp_y,
                       'Z field (Oe)': self.tmp_z,
                     }
-            self.emit('results', data) 
+                self.emit('results', data) 
 
 
 
-        elif self.acquire_type == 'V(Hmb) |set Ib': 
+        elif self.acquire_type == 'V(Hmb) |set Ib':
+            log.info("Starting to sweep through field")
             for i in self.vector:
-                self.field.field_cal(i)
-                sleep(self.delay)
-                self.tmp_x = self.field_sensor.read_field()[0]
-                self.tmp_y = self.field_sensor.read_field()[1]
-                self.tmp_z = self.field_sensor.read_field()[2]
-                sleep(self.delay)
+                self.field.set_field(i)
+                print(i)
+                sleep(self.delay*0.001)
+                self.tmp_x = 1#self.field_sensor.read_field()[0]
+                self.tmp_y = 1#self.field_sensor.read_field()[1]
+                self.tmp_z = 1#self.field_sensor.read_field()[2]
+                sleep(self.delay*0.001)
                 self.tmp_volatege = self.keithley.voltage
                 data = {
                       'Voltage (V)':  self.tmp_volatege,
@@ -222,14 +233,15 @@ class IVTransfer(Procedure):
                       'Y field (Oe)': self.tmp_y,
                       'Z field (Oe)': self.tmp_z,
                     }
-            self.emit('results', data) 
+                self.emit('results', data) 
                  
-        elif self.acquire_type == 'I(Vb) | set Hmb': 
+        elif self.acquire_type == 'I(Vb) | set Hmb':
+            log.info("Starting to sweep through voltage")
             for i in self.vector:
                 self.keithley.source_voltage =  i
-                sleep(self.delay)
+                sleep(self.delay*0.001)
                 self.tmp_current = self.keithley.current
-                sleep(self.delay)
+                sleep(self.delay*0.001)
                 self.tmp_x = self.field_sensor.read_field()[0]
                 self.tmp_y = self.field_sensor.read_field()[1]
                 self.tmp_z = self.field_sensor.read_field()[2]
@@ -240,14 +252,15 @@ class IVTransfer(Procedure):
                       'Y field (Oe)': self.tmp_y,
                       'Z field (Oe)': self.tmp_z,
                     }
-            self.emit('results', data) 
+                self.emit('results', data) 
             
-        elif self.acquire_type == 'V(Ib) | set Hmb': 
+        elif self.acquire_type == 'V(Ib) | set Hmb':
+            log.info("Starting to sweep through current")
             for i in self.vector:
                 self.keithley.source_current =  i
-                sleep(self.delay)
+                sleep(self.delay*0.001)
                 self.tmp_volatage = self.keithley.voltage
-                sleep(self.delay)
+                sleep(self.delay*0.001)
                 self.tmp_x = self.field_sensor.read_field()[0]
                 self.tmp_y = self.field_sensor.read_field()[1]
                 self.tmp_z = self.field_sensor.read_field()[2]
@@ -258,7 +271,7 @@ class IVTransfer(Procedure):
                       'Y field (Oe)': self.tmp_y,
                       'Z field (Oe)': self.tmp_z,
                     }
-            self.emit('results', data) 
+                self.emit('results', data) 
             
         ######## set oscilloscope #########
     #     self.oscilloscope.set_number_samples(self.no_samples)
@@ -382,30 +395,30 @@ class IVTransfer(Procedure):
         
 
 class MainWindow(ManagedWindow):
-    # last = False
-    # wynik = 0
-    # wynik_list = []
+    last = False
+    wynik = 0
+    wynik_list = []
     def __init__(self):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['sample_name','acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'start', 'stop', 'no_points'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'delay', 'start', 'stop', 'no_points'],
             displays=['sample_name', 'acquire_type'],
-            x_axis='time (s)',
-            y_axis='Voltage (mV)',
+            x_axis='Current (A)',
+            y_axis='Voltage (V)',
             directory_input=True,  
             sequencer=True,                                      
             sequencer_inputs=['field_bias'],    
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.00')
-        self.directory = 'C://' #self.procedure_class.path_file.ReadFile()
+        self.setWindowTitle('IV Measurement System v.0.1')
+        self.directory = self.procedure_class.path_file.ReadFile()
         
 
     def queue(self, procedure=None):
         directory = self.directory  # Change this to the desired directory
-        #self.procedure_class.path_file.WriteFile(directory)
+        self.procedure_class.path_file.WriteFile(directory)
         
         if procedure is None:
             procedure = self.make_procedure()
