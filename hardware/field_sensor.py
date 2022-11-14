@@ -13,21 +13,22 @@ log.addHandler(logging.NullHandler())
 
 class FieldSensor(Instrument):
 
-    def __init__(self, resourceName, **kwargs):
-        kwargs.setdefault('read_termination', '\n')
+    def __init__(self, resourceName):
         self.resource = resourceName
-        super().__init__(
-            resourceName,
-            "FieldSensor",
-            includeSCPI=True,
-            **kwargs
-            
-        )
      
     
     def read_field(self): 
-        self.address = self.resource[4:16]
-        ser = serial.Serial(self.address, 115200, timeout=1) 
+        self.address = self.resource
+        ser = serial.Serial(self.address, 115200, timeout=1)
+        ser.write("d".encode())
+        ser.readline()
+        sleep(0.3)
+        ser.write("d".encode())
+        ser.readline()
+        sleep(0.3)
+        ser.write("d".encode())
+        ser.readline()
+        sleep(0.3)
         try:
             ser.write("d".encode())
             out = ''
@@ -47,3 +48,4 @@ class FieldSensor(Instrument):
         #field = np.sqrt(x**2+y**2+z**2)
        
         return x,y,z
+

@@ -28,7 +28,7 @@ class DAQ():
 
     def shutdown(self):
         """ Disable output, call parent function"""
-        self.set_voltage(0)
+        self.set_field(0)
 
 
 
