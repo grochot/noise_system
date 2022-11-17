@@ -143,9 +143,10 @@ class NoiseProcedure(Procedure):
         
         
         for i in range(5):
-            tmp_x = self.field_sensor.read_field()[0]
-            tmp_y = self.field_sensor.read_field()[1]
-            tmp_z = self.field_sensor.read_field()[2]
+            tmp_field = self.field.read_field()
+            tmp_x = tmp_field[0]
+            tmp_y = tmp_field[1]
+            tmp_z = tmp_field[2]
             
             
             tmp_data_magnetic_field_x.append(float(tmp_x))
