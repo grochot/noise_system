@@ -6,7 +6,7 @@ class FieldCalibration():
         self.daq = DAQ("6124/ao0")
 
     def set_field(self, value):
-        self.calibration_constant = 1
+        self.calibration_constant = 10 #Oe-V
         self.daq.set_voltage(value/self.calibration_constant)
 
 

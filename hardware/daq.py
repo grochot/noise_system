@@ -18,10 +18,10 @@ class DAQ():
         
    
     def set_field (self, value =1):
-        self.constant_field = 1
         with nidaqmx.Task() as task:
             task.ao_channels.add_ao_voltage_chan(self.adapter)
-            task.write(value/self.constant_field)
+            task.write(value)
+        return value
 
 
     

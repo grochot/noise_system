@@ -40,16 +40,17 @@ class IVTransfer(Procedure):
     keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
     keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by='keithley_source_type', group_condition='Voltage')
     keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by='keithley_source_type', group_condition='Current')
-    keithley_current_bias = FloatParameter('Current bias', units='A', default=0.01, group_by='acquire_type', group_condition='V(Hmb) |set Ib')
+    keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by='acquire_type', group_condition='V(Hmb) |set Ib')
     keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by='acquire_type', group_condition='I(Hmb) | set Vb')
-    field_bias = FloatParameter('Field bias', units='Oe', default=1, group_by='acquire_type', group_condition=lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb')
+    field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by='acquire_type', group_condition=lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb')
+    coil = ListParameter("Coil",  choices=["Large", "Small"] )
     start = FloatParameter("Start")
     stop = FloatParameter("Stop")
     no_points = IntegerParameter("No Points")
-    delay = FloatParameter("Delay", units = "ms", default = 100)
+    delay = FloatParameter("Delay", units = "ms", default = 1000)
     sample_name = Parameter("Sample Name", default="sample name")
  
-    DATA_COLUMNS = ['Voltage (V)', 'Current (A)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)'] #data columns
+    DATA_COLUMNS = ['Voltage (V)', 'Current (A)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
 
     path_file = SaveFilePath() 
    
@@ -92,14 +93,22 @@ class IVTransfer(Procedure):
                 self.keithley.source_voltage =  0         # Sets the source current to 0 mA
                 self.keithley.enable_source()                # Enables the source output
                 self.keithley.measure_current()
-                self.field.set_field(self.field_bias)
+                if self.coil == "Large":
+                    self.field_const = 5
+                else:
+                    self.field_const = 10
+                self.set_field = self.field.set_field(self.field_bias/self.field_const)
             elif self.acquire_type == 'V(Ib) | set Hmb': 
                 self.keithley.apply_current()
                 self.keithley.compliance_voltage = self.keithley_compliance_voltage
                 self.keithley.source_current=  0         # Sets the source current to 0 mA
                 self.keithley.enable_source()                # Enables the source output
                 self.keithley.measure_voltage()
-                self.field.set_field(self.field_bias)
+                if self.coil == "Large":
+                    self.field_const = 5
+                else:
+                    self.field_const = 10 
+                self.set_field = self.field.set_field(self.field_bias/self.field_const)
             log.info("Config Keithley done")
 
         except:
@@ -124,7 +133,11 @@ class IVTransfer(Procedure):
         if self.acquire_type == 'I(Hmb) | set Vb':
             log.info("Starting to sweep through field")
             for i in self.vector:
-                self.field.set_field(i)
+                if self.coil == "Large":
+                    self.field_const = 5
+                else:
+                    self.field_const = 10 
+                self.set_field = self.field.set_field(i/self.field_const)
                 sleep(self.delay*0.001)
                 self.tmp_field = self.field_sensor.read_field()
                 self.tmp_x = self.tmp_field[0]
@@ -138,6 +151,7 @@ class IVTransfer(Procedure):
                       'X field (Oe)': self.tmp_x,
                       'Y field (Oe)': self.tmp_y,
                       'Z field (Oe)': self.tmp_z,
+                      'Field set (Oe)': self.set_field*self.field_const,
                     }
                 self.emit('results', data) 
 
@@ -146,8 +160,11 @@ class IVTransfer(Procedure):
         elif self.acquire_type == 'V(Hmb) |set Ib':
             log.info("Starting to sweep through field")
             for i in self.vector:
-                self.field.set_field(i)
-                print(i)
+                if self.coil == "Large":
+                    self.field_const = 5
+                else:
+                    self.field_const = 10 
+                self.set_field = self.field.set_field(i/self.field_const)
                 sleep(self.delay*0.001)
                 self.tmp_field = self.field_sensor.read_field()
                 self.tmp_x = self.tmp_field[0]
@@ -161,6 +178,7 @@ class IVTransfer(Procedure):
                       'X field (Oe)': self.tmp_x,
                       'Y field (Oe)': self.tmp_y,
                       'Z field (Oe)': self.tmp_z,
+                      'Field set (Oe)': self.set_field*self.field_const,
                     }
                 self.emit('results', data) 
                  
@@ -181,6 +199,7 @@ class IVTransfer(Procedure):
                       'X field (Oe)': self.tmp_x,
                       'Y field (Oe)': self.tmp_y,
                       'Z field (Oe)': self.tmp_z,
+                      'Field set (Oe)': self.set_field*self.field_const,
                     }
                 self.emit('results', data) 
             
@@ -201,12 +220,15 @@ class IVTransfer(Procedure):
                       'X field (Oe)': self.tmp_x,
                       'Y field (Oe)': self.tmp_y,
                       'Z field (Oe)': self.tmp_z,
+                      'Field set (Oe)': self.set_field*self.field_const,
                     }
                 self.emit('results', data) 
       
     
     def shutdown(self):
         self.field.shutdown()
+        self.keithley.disable_source()
+
         
 
         
@@ -218,7 +240,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= IVTransfer,
-            inputs=['sample_name','acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
+            inputs=['sample_name','coil','acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
             'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'delay', 'start', 'stop', 'no_points'],
             displays=['sample_name', 'acquire_type'],
             x_axis='Current (A)',

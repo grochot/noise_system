@@ -36,8 +36,3 @@ class FindInstrument():
     
     def show_instrument(self): 
     	return self.rm.list_resources()
-
-
-dd = FindInstrument()
-
-dd.find_instrument()
