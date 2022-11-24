@@ -21,7 +21,7 @@ from pymeasure.experiment import (
 
 from pymeasure.instruments.keithley import Keithley2400
 from hardware.daq import DAQ
-from hardware.field_sensor import FieldSensor 
+from hardware.field_sensor_iv import FieldSensor 
 
 log = logging.getLogger(__name__) 
 log.addHandler(logging.NullHandler()) 
@@ -251,7 +251,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.2')
+        self.setWindowTitle('IV Measurement System v.0.3')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
