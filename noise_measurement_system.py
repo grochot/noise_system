@@ -81,7 +81,7 @@ class NoiseProcedure(Procedure):
 
         ################# FIELD SENSOR #################
 
-        self.field_sensor = FieldSensor(self.field_sensor_adress)
+        self.field = FieldSensor(self.field_sensor_adress)
 
         ################# BIAS FIELD ###################
         # try:

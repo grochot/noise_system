@@ -1,7 +1,7 @@
 import time
 import serial
 
-ser = serial.Serial('COM6', 115200, timeout=1)
+ser = serial.Serial('ttyUSB1', 115200, timeout=1)
 
 if ser.isOpen():
     ser.close()
