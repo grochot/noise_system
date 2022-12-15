@@ -250,7 +250,7 @@ class MainWindow(ManagedWindow):
             procedure_class= IVTransfer,
             inputs=['sample_name','coil','acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
             'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'delay', 'start', 'stop', 'no_points'],
-            displays=['sample_name', 'acquire_type'],
+            displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
             y_axis='Voltage (V)',
             directory_input=True,  
@@ -259,7 +259,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.35')
+        self.setWindowTitle('IV Measurement System v.0.40')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
