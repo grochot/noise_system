@@ -36,7 +36,7 @@ class IVTransfer(Procedure):
     print(finded_instruments)
     ################# PARAMETERS ###################
     acquire_type = ListParameter("Acquire type", choices = ['I(Hmb) | set Vb', 'V(Hmb) |set Ib', 'I(Vb) | set Hmb', 'V(Ib) | set Hmb'])
-    keithley_adress = ListParameter("Keithley2400 adress", choices=finded_instruments)
+    keithley_adress = ListParameter("Keithley2400 adress", choices=["GPIB1::24::INSTR"])
     field_sensor_adress = ListParameter("Field_sensor",  choices=["COM6"] )
     keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
     keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by='keithley_source_type', group_condition='Voltage')
