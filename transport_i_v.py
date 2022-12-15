@@ -226,15 +226,18 @@ class IVTransfer(Procedure):
                       'Z field (Oe)': self.tmp_z,
                       'Field set (Oe)': self.set_field*self.field_const,
                     }
-                self.emit('results', data) 
-      
-    
+                self.emit('results', data)
+
     def shutdown(self):
-        self.field.shutdown()
-        self.keithley.disable_source()
+        print("funkcja_shutdown")
 
-        
-
+        if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
+            self.field.shutdown()
+            sleep(1)
+            self.keithley.disable_source()
+            IVTransfer.licznik = 0
+        IVTransfer.licznik += 1
+        print(IVTransfer.licznik)
         
 
 class MainWindow(ManagedWindow):
