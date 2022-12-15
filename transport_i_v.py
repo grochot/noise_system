@@ -251,7 +251,7 @@ class MainWindow(ManagedWindow):
             y_axis='Voltage (V)',
             directory_input=True,  
             sequencer=True,                                      
-            sequencer_inputs=['field_bias'],    
+            sequencer_inputs=['field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             inputs_in_scrollarea=True,
             
         )
