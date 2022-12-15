@@ -229,12 +229,13 @@ class IVTransfer(Procedure):
                 self.emit('results', data)
 
     def shutdown(self):
-        print("funkcja_shutdown")
+        print("next loop")
 
         if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
             self.field.shutdown()
             sleep(1)
             self.keithley.disable_source()
+            print("shutdown")
             IVTransfer.licznik = 0
         IVTransfer.licznik += 1
         print(IVTransfer.licznik)
@@ -283,7 +284,6 @@ class MainWindow(ManagedWindow):
             MainWindow.wynik =  procedure.seq
             MainWindow.wynik_list.append(procedure.seq)
             MainWindow.wynik = max(MainWindow.wynik_list)
-            print(MainWindow.wynik)
             MainWindow.last = False
             
 
