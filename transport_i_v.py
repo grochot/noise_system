@@ -21,7 +21,8 @@ from pymeasure.experiment import (
 
 from pymeasure.instruments.keithley import Keithley2400
 from hardware.daq import DAQ
-from hardware.field_sensor_iv import FieldSensor 
+from hardware.field_sensor_iv import FieldSensor
+from hardware.dummy_field_sensor_iv import DummyFieldSensor
 
 log = logging.getLogger(__name__) 
 log.addHandler(logging.NullHandler()) 
@@ -124,6 +125,9 @@ class IVTransfer(Procedure):
             log.info("Config FieldSensor done")
         except:
             log.error("Config FieldSensor failed")
+            self.field_sensor = DummyFieldSensor()
+            log.error("Config FieldSensor failed")
+            log.info("Use DummyFieldSensor")
 
 
 
@@ -251,7 +255,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.3')
+        self.setWindowTitle('IV Measurement System v.0.35')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
