@@ -229,7 +229,7 @@ class IVTransfer(Procedure):
                 self.emit('results', data)
 
     def shutdown(self):
-        print("next loop")
+
 
         if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
             self.field.shutdown()
@@ -237,6 +237,8 @@ class IVTransfer(Procedure):
             self.keithley.disable_source()
             print("shutdown")
             IVTransfer.licznik = 0
+        else:
+            print("next loop")
         IVTransfer.licznik += 1
         print(IVTransfer.licznik)
         
