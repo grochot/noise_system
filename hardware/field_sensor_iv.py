@@ -49,3 +49,8 @@ class FieldSensor(Instrument):
        
         return x,y,z
 
+    def read_field_init(self):
+        self.address = self.resource
+        ser = serial.Serial(self.address, 115200, timeout=1)
+        ser.write("d".encode())
+        ser.readline()

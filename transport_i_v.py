@@ -121,7 +121,7 @@ class IVTransfer(Procedure):
         log.info("Config Field Sensor")
         try:
             self.field_sensor = FieldSensor(self.field_sensor_adress)
-
+            self.field_sensor.read_field_init()
             log.info("Config FieldSensor done")
         except:
             log.error("Config FieldSensor failed")
