@@ -19,7 +19,7 @@ from pymeasure.experiment import (
     Procedure, FloatParameter, BooleanParameter, IntegerParameter, Parameter,ListParameter, unique_filename, Results, VectorParameter
 )
 
-from pymeasure.instruments.keithley import Keithley2400
+from hardware.keithley2400 import Keithley2400
 from hardware.daq import DAQ
 from hardware.field_sensor_iv import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
