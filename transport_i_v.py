@@ -263,7 +263,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.40')
+        self.setWindowTitle('IV Measurement System v.0.44')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
