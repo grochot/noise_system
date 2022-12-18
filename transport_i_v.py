@@ -233,18 +233,14 @@ class IVTransfer(Procedure):
 
         if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
             self.field.shutdown()
-            print(self.keithley.voltage)
-            sleep(1)
-            self.keithley.source_voltage = 0
-            self.keithley.source_current = 0
-            sleep(1)
-            print(self.keithley.voltage)
-            sleep(1)
-            self.keithley.disable_source()
-            print("shutdown")
+            sleep(0.2)
+            self.keithley.shutdown()
+            print("keithley shutdown done")
             IVTransfer.licznik = 0
         else:
-            print("next loop")
+            self.keithley.shutdown()
+            print("keithley shutdown done")
+            print("go next loop...")
         IVTransfer.licznik += 1
         print(IVTransfer.licznik)
         
