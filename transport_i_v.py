@@ -238,6 +238,8 @@ class IVTransfer(Procedure):
             print("shutdown")
             IVTransfer.licznik = 0
         else:
+            self.keithley.source_voltage = 0
+            self.keithley.source_current = 0
             print("next loop")
         IVTransfer.licznik += 1
         print(IVTransfer.licznik)
