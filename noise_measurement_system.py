@@ -34,12 +34,13 @@ class NoiseProcedure(Procedure):
     licznik = 0
     find_instruments = FindInstrument()
     finded_instruments = find_instruments.find_instrument()
+    finded_instrumnets = finded_instruments.append("none")
     print(finded_instruments)
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1)
     no_time = IntegerParameter('Number of times', default=3)
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100)
-    bias_voltage = FloatParameter('Bias Voltage', units='V', default=1)
+    bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01)
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0)
     voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments)
     field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments)
@@ -82,15 +83,20 @@ class NoiseProcedure(Procedure):
 
         ################# FIELD SENSOR #################
         log.info("Config Field Sensor")
-        try:
-            self.field_sensor = FieldSensor(self.field_sensor_adress)
-            self.field_sensor.read_field_init()
-            log.info("Config FieldSensor done")
-        except:
-            log.error("Config FieldSensor failed")
-            self.field_sensor = DummyFieldSensor()
-            log.error("Config FieldSensor failed")
-            log.info("Use DummyFieldSensor")
+        # try:
+        #     self.field = FieldSensor(self.field_sensor_adress)
+        #     self.field.read_field_init()
+        #     log.info("Config FieldSensor done")
+        # except:
+        #     log.error("Config FieldSensor failed")
+        #     self.field = DummyFieldSensor()
+        #     log.error("Config FieldSensor failed")
+        #     log.info("Use DummyFieldSensor")
+
+        self.field = FieldSensor(self.field_sensor_adress)
+        self.field.read_field_init()
+        log.info("Config FieldSensor done")
+       
 
         ################# BIAS FIELD ###################
         # try:

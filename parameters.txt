@@ -1,1 +1,1 @@
-/home/pw/fr_measurements
+/media/pw/Data1/test

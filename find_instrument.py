@@ -13,7 +13,7 @@ class FindInstrument():
                 self.hardware[inst.query('*IDN?')] = i
                 inst.close()
             except:
-                print("nie udało się zidentyfikowac")
+                
                 self.hardware[i] = i
         self.file = open("finded_instruments.txt", "r")
         self.content = self.file.read()
@@ -23,13 +23,14 @@ class FindInstrument():
             if k in self.content_tab: 
                 pass 
             else: 
-                self.file = open("finded_instruments.txt", 'a')
-                self.save_data =  "," + k 
-                self.file.write(self.save_data)
-                self.file.close()
+                if k != '':
+                    self.file = open("finded_instruments.txt", 'a')
+                    self.save_data =   ","+k  
+                    self.file.write(self.save_data)
+                    self.file.close()
 
         self.file = open("finded_instruments.txt", 'r') 
-        self.instruments = self.file.read().split(',')
+        self.instruments = self.file.read().split(',')[1:]
 
         return self.instruments
 

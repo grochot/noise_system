@@ -1,7 +1,7 @@
 import time
 import serial
 
-ser = serial.Serial('ttyUSB1', 115200, timeout=1)
+ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
 
 if ser.isOpen():
     ser.close()
@@ -10,6 +10,7 @@ ser.open()
 while(True):
 
     try:
+        print("dd")
         ser.write(input().encode())
         out = ''
 
