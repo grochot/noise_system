@@ -22,7 +22,8 @@ from pymeasure.experiment import (
 from hardware.hmc8043 import HMC8043
 from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928 
-from hardware.field_sensor import FieldSensor 
+from hardware.field_sensor_noise import FieldSensor 
+from hardware.dummy_field_sensor_iv import DummyFieldSensor
 
 log = logging.getLogger(__name__) 
 log.addHandler(logging.NullHandler()) 
@@ -80,8 +81,16 @@ class NoiseProcedure(Procedure):
         log.info("Number of samples: %g" %self.no_samples)
 
         ################# FIELD SENSOR #################
-
-        self.field = FieldSensor(self.field_sensor_adress)
+        log.info("Config Field Sensor")
+        try:
+            self.field_sensor = FieldSensor(self.field_sensor_adress)
+            self.field_sensor.read_field_init()
+            log.info("Config FieldSensor done")
+        except:
+            log.error("Config FieldSensor failed")
+            self.field_sensor = DummyFieldSensor()
+            log.error("Config FieldSensor failed")
+            log.info("Use DummyFieldSensor")
 
         ################# BIAS FIELD ###################
         # try:
