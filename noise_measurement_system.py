@@ -40,7 +40,7 @@ class NoiseProcedure(Procedure):
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1)
     mode = ListParameter("Mode",  default='Mean', choices=['Mean','Mean + Raw', 'One Shot'])
-    no_time = IntegerParameter('Number of times', default=3)
+    no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition='Mean')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100)
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition='Mean')
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode', group_condition='Mean')
@@ -51,14 +51,13 @@ class NoiseProcedure(Procedure):
     channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
     sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition='Mean')
     treshold = FloatParameter("Treshold", units='mV',group_by='mode', group_condition='Mean')
-    divide = FloatParameter("Divide number", units = 'mV,group_by='mode', group_condition='Mean')
+    divide = FloatParameter("Divide number", units = 'mV',group_by='mode', group_condition='Mean')
     
 
 
-    if mode == 'Mean':
-        DATA_COLUMNS = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log(frequency) (Hz)' ,'log(FFT) (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
-    if mode == "One Shot":
-        DATA_COLUMNS = ['time (s)', 'Voltage (mV)']
+   
+    DATA_COLUMNS = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log(frequency) (Hz)' ,'log(FFT) (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
+   
     path_file = SaveFilePath() 
    
     
@@ -128,6 +127,11 @@ class NoiseProcedure(Procedure):
             sleep(2)
         if self.mode == 'One Shot':
             self.oscilloscope = PicoScope()
+            self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
+            if self.no_samples % 2 == 1:
+                self.no_samples = self.no_samples + 1
+            self.oscilloscope.setChannelA('AC', self.channelA_range )
+            self.oscilloscope.setTrigger()
             
 
     ##### PROCEDURE ######
@@ -208,14 +212,15 @@ class NoiseProcedure(Procedure):
             tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
             tmp_data_fft_average = tmp_fft["average"].to_list()
             tmp_data_frequency_average = tmp_frequency["average"].to_list()
+            print(tmp_data_frequency_average)
         
         ########################## Send results#############################
             for ele in range(len(tmp_data_time_average)):
                 data2 = {
                         'frequency (Hz)': tmp_data_frequency_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
                         'FFT (mV)': abs(tmp_data_fft_average[ele]) if ele < len(tmp_data_frequency_average) else math.nan, 
-                        'log(frequency) (Hz)': math.log(tmp_data_frequency_average[ele]) if ele < len(tmp_data_frequency_average) else math.nan,
-                        'log(FFT) (mV)':  math.log(abs(tmp_data_fft_average[ele])) if ele < len(tmp_data_frequency_average) else math.nan,
+                        'log(frequency) (Hz)': math.log10(tmp_data_frequency_average[ele+1]) if ele < len(tmp_data_frequency_average)-1 else math.nan,
+                        'log(FFT) (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                         'time (s)': tmp_data_time_average[ele]*1e-9,
                         'Voltage (mV)': tmp_data_voltage_average[ele],
                         'X field (Oe)': tmp_data_magnetic_field_x_mean,
@@ -229,8 +234,7 @@ class NoiseProcedure(Procedure):
        
        
        
-        if self.mode == 'One shot':
-            log.info("One shot mode")
+        if self.mode == 'One Shot':
             self.oscilloscope.set_number_samples(self.no_samples)
             self.oscilloscope.set_timebase(int((1/self.sampling_interval)*10000000)-1)
             self.oscilloscope.run_block_capture()
@@ -241,13 +245,26 @@ class NoiseProcedure(Procedure):
             self.stop_time = time()
             self.oscilloscope.getValuesfromScope()
             tmp_time_list = self.oscilloscope.create_time()
+            
+           
             tmp_voltage_list = self.oscilloscope.convert_to_mV(self.channelA_range)  
+         
             self.emit('progress', 100)
         ########################## Send results#############################
             for ele in range(len(tmp_time_list)):
                 data2 = {
                         'time (s)': tmp_time_list[ele]*1e-9,
                         'Voltage (mV)': tmp_voltage_list[ele],
+                        'frequency (Hz)': math.nan, 
+                        'FFT (mV)': math.nan,
+                        'log(frequency) (Hz)': math.nan,
+                        'log(FFT) (mV)': math.nan,
+                        'X field (Oe)': math.nan,
+                        'Y field (Oe)':math.nan,
+                        'Z field (Oe)': math.nan,
+                        'treshold_time (s)':math.nan,
+                        'treshold_voltage (mV)': math.nan,
+                        'divide_voltage (mV)': math.nan,
                         }
                 self.emit('results', data2) 
             
@@ -276,14 +293,15 @@ class NoiseProcedure(Procedure):
         print("funkcja_shutdown")
         self.oscilloscope.stop_scope()
         self.oscilloscope.disconnect_scope()
-        
-        if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
-            self.voltage.voltage_setpoint(0)
-            sleep(1)
-            self.voltage.disabled()
-            NoiseProcedure.licznik = 0
-        NoiseProcedure.licznik += 1
-        print(NoiseProcedure.licznik)
+        if self.mode == "Mean":
+            print("ddd")
+            if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
+                self.voltage.voltage_setpoint(0)
+                sleep(1)
+                self.voltage.disabled()
+                NoiseProcedure.licznik = 0
+            NoiseProcedure.licznik += 1
+            print(NoiseProcedure.licznik)
         
 
         
