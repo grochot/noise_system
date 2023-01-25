@@ -127,6 +127,7 @@ class NoiseProcedure(Procedure):
             sleep(2)
         if self.mode == 'One Shot':
             self.oscilloscope = PicoScope()
+            self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
                 self.no_samples = self.no_samples + 1

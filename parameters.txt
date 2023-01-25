@@ -1,1 +1,1 @@
-/media/pw/Data1/test
+/media/Data1/test
