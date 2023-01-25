@@ -119,7 +119,7 @@ class NoiseProcedure(Procedure):
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
             self.oscilloscope.setTrigger()
-            log.info("setup oscilloscope done")
+            log.info("Setup oscilloscope done")
         
         
             #log.error("Could not connect to oscilloscope")
