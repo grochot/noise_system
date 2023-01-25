@@ -42,9 +42,9 @@ class NoiseProcedure(Procedure):
     mode = ListParameter("Mode",  default='Mean', choices=['Mean','Mean + Raw', 'One Shot'])
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition='Mean')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100)
-    bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition='Mean')
+    bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot')
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode', group_condition='Mean')
-    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition='Mean')
+    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot')
     field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition='Mean')
     field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition='Mean')
     channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'],group_by='mode', group_condition='Mean')
@@ -132,6 +132,14 @@ class NoiseProcedure(Procedure):
                 self.no_samples = self.no_samples + 1
             self.oscilloscope.setChannelA('AC', self.channelA_range )
             self.oscilloscope.setTrigger()
+            try:   
+                self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
+                sleep(0.1)
+                self.voltage.enabled() #enable channel 
+                log.info("Set bias voltage to %g V" %self.bias_voltage)
+            except Exception:
+                traceback.print_exc()
+                log.error("Could not connect to bias voltage source")
             
 
     ##### PROCEDURE ######
@@ -323,7 +331,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.00 alpha')
+        self.setWindowTitle('Noise Measurement System v.1.00 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
