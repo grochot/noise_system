@@ -38,25 +38,25 @@ class NoiseProcedure(Procedure):
     print(finded_instruments)
     
     ################# PARAMETERS ###################
-    period_time = FloatParameter('Period of Time', units='s', default=1)
+    period_time = FloatParameter('Period of Time', units='s', default=1, group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
     mode = ListParameter("Mode",  default='Mean', choices=['Mean','Mean + Raw', 'One Shot'])
-    no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition='Mean')
-    sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100)
-    bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot')
-    bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode', group_condition='Mean')
-    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot')
-    field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition='Mean')
-    field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition='Mean')
-    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'],group_by='mode', group_condition='Mean')
-    channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"])
-    sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition='Mean')
-    treshold = FloatParameter("Treshold", units='mV',group_by='mode', group_condition='Mean')
-    divide = FloatParameter("Divide number", units = 'mV',group_by='mode', group_condition='Mean')
+    no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'One Shot')
+    bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
+    bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
+    field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"],group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    treshold = FloatParameter("Treshold", units='mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    divide = FloatParameter("Divide number", units = 'mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     
 
 
    
-    DATA_COLUMNS = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log(frequency) (Hz)' ,'log(FFT) (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
+    DATA_COLUMNS = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
    
     path_file = SaveFilePath() 
    
@@ -228,8 +228,8 @@ class NoiseProcedure(Procedure):
                 data2 = {
                         'frequency (Hz)': tmp_data_frequency_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
                         'FFT (mV)': abs(tmp_data_fft_average[ele]) if ele < len(tmp_data_frequency_average) else math.nan, 
-                        'log(frequency) (Hz)': math.log10(tmp_data_frequency_average[ele+1]) if ele < len(tmp_data_frequency_average)-1 else math.nan,
-                        'log(FFT) (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
+                        'log[frequency] (Hz)': math.log10(tmp_data_frequency_average[ele+1]) if ele < len(tmp_data_frequency_average)-1 else math.nan,
+                        'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                         'time (s)': tmp_data_time_average[ele]*1e-9,
                         'Voltage (mV)': tmp_data_voltage_average[ele],
                         'X field (Oe)': tmp_data_magnetic_field_x_mean,
@@ -266,8 +266,8 @@ class NoiseProcedure(Procedure):
                         'Voltage (mV)': tmp_voltage_list[ele],
                         'frequency (Hz)': math.nan, 
                         'FFT (mV)': math.nan,
-                        'log(frequency) (Hz)': math.nan,
-                        'log(FFT) (mV)': math.nan,
+                        'log[frequency] (Hz)': math.nan,
+                        'log[FFT] (mV)': math.nan,
                         'X field (Oe)': math.nan,
                         'Y field (Oe)':math.nan,
                         'Z field (Oe)': math.nan,
