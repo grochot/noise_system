@@ -63,23 +63,23 @@ class NoiseProcedure(Procedure):
     
     
     def startup(self):
-        if self.mode == 'Mean':
+        if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             self.oscilloscope = PicoScope()
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
         
-            #################FIND INSTRUMENTS#################
+    
             log.info("Finding instruments...")
             sleep(0.1)
             log.info("Finded: {}".format(self.finded_instruments))
         
-            ##################################################
+        
             log.info("Setting up instruments") 
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
                 self.no_samples = self.no_samples + 1
             log.info("Number of samples: %g" %self.no_samples)
 
-            ################# FIELD SENSOR #################
+#Field Sensor:
             log.info("Config Field Sensor")
             if self.field_sensor_adress == "none":
                 self.field = DummyFieldSensor()
@@ -103,7 +103,7 @@ class NoiseProcedure(Procedure):
             #     log.error("Could not connect to field controller")
                 
         
-        ################ BIAS VOLTAGE ###################
+#Bias voltage:
             try:   
                 self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
                 sleep(1)
@@ -113,7 +113,7 @@ class NoiseProcedure(Procedure):
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
             
-        ################ PICOSCOPE ###################
+#Picoscope:
             
         
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
@@ -125,6 +125,7 @@ class NoiseProcedure(Procedure):
             #log.error("Could not connect to oscilloscope")
             
             sleep(2)
+######################################## ONE SHOT ###########################3
         if self.mode == 'One Shot':
             self.oscilloscope = PicoScope()
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
@@ -143,11 +144,11 @@ class NoiseProcedure(Procedure):
                 log.error("Could not connect to bias voltage source")
             
 
-    ##### PROCEDURE ######
+#procedure:
     def execute(self):
-        if self.mode == 'Mean':
+        if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             log.info("Starting to sweep through time")
-            ######## set oscilloscope #########
+          
             self.oscilloscope.set_number_samples(self.no_samples)
             self.oscilloscope.set_timebase(int((1/self.sampling_interval)*10000000)-1)
             self.oscilloscope.run_block_capture()
@@ -165,7 +166,7 @@ class NoiseProcedure(Procedure):
             tmp_data_magnetic_field_y = []
             tmp_data_magnetic_field_z = []
 
-            ########## measure field ########### 
+#Measure field:
             
             
             for i in range(3):
@@ -178,20 +179,19 @@ class NoiseProcedure(Procedure):
                 tmp_data_magnetic_field_x.append(float(tmp_x))
                 tmp_data_magnetic_field_y.append(float(tmp_y))
                 tmp_data_magnetic_field_z.append(float(tmp_z))
-                sleep(1)
+                sleep(0.1)
             
         
             tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
             tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
             tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
-            #########################################
+        
             for i in range(self.steps):
-                ####### run oscilloscope #########
                 self.oscilloscope.getValuesfromScope()
                 tmp_time_list = self.oscilloscope.create_time()
                 tmp_voltage_list = self.oscilloscope.convert_to_mV(self.channelA_range)
             
-            ########################## FFT Counting ##########################
+#FFT Counting:
                 smpl_freq = self.sampling_interval
                 ft_tmp = np.fft.fft(tmp_voltage_list) / len(tmp_voltage_list)  # Normalize amplitude and apply the FFT
                 ft_tmp = ft_tmp[range(int(len(tmp_voltage_list)/2))]   # Exclude sampling frequency ---> FFT value
@@ -199,7 +199,7 @@ class NoiseProcedure(Procedure):
                 val_tmp = np.arange(int(tp_cnt_tmp / 2))
                 tm_period_tmp = tp_cnt_tmp / smpl_freq
                 freq_tmp = val_tmp / tm_period_tmp        # Frequency value 
-                print("zmierzone!")
+               
 
                 tmp_data_time.insert(i,"time_{}".format(i),pd.Series(tmp_time_list))
                 tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
@@ -221,9 +221,9 @@ class NoiseProcedure(Procedure):
             tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
             tmp_data_fft_average = tmp_fft["average"].to_list()
             tmp_data_frequency_average = tmp_frequency["average"].to_list()
-            print(tmp_data_frequency_average)
+           
         
-        ########################## Send results#############################
+#Send results:
             for ele in range(len(tmp_data_time_average)):
                 data2 = {
                         'frequency (Hz)': tmp_data_frequency_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
@@ -242,7 +242,7 @@ class NoiseProcedure(Procedure):
                 self.emit('results', data2) 
        
        
-       
+       ###### ONE SHOT MODE #############
         if self.mode == 'One Shot':
             self.oscilloscope.set_number_samples(self.no_samples)
             self.oscilloscope.set_timebase(int((1/self.sampling_interval)*10000000)-1)
@@ -259,7 +259,6 @@ class NoiseProcedure(Procedure):
             tmp_voltage_list = self.oscilloscope.convert_to_mV(self.channelA_range)  
          
             self.emit('progress', 100)
-        ########################## Send results#############################
             for ele in range(len(tmp_time_list)):
                 data2 = {
                         'time (s)': tmp_time_list[ele]*1e-9,
