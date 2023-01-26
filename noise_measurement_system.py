@@ -39,7 +39,7 @@ class NoiseProcedure(Procedure):
     
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1, group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    mode = ListParameter("Mode",  default='Mean', choices=['Mean','Mean + Raw', 'One Shot'])
+    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot'])
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
