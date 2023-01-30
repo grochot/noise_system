@@ -8,8 +8,8 @@ import sys
 import random
 from time import sleep, time
 import traceback
-from find_instrument import FindInstrument
-from save_results_path import SaveFilePath
+from logic.find_instrument import FindInstrument
+from logic.save_results_path import SaveFilePath
 
 import numpy as np
 
@@ -48,6 +48,7 @@ class IVTransfer(Procedure):
     start = FloatParameter("Start")
     stop = FloatParameter("Stop")
     no_points = IntegerParameter("No Points")
+    reverse_field = BooleanParameter("Reverse field", default=False)
     delay = FloatParameter("Delay", units = "ms", default = 1000)
     sample_name = Parameter("Sample Name", default="sample name")
  
@@ -69,8 +70,12 @@ class IVTransfer(Procedure):
             log.info("Config DAQ done")
         except:
             log.error("Config DAQ failed")
-        
-        self.vector = np.linspace(self.start, self.stop,self.no_points)
+        if self.reverse_field == True: 
+            self.vector_to = np.linspace(self.start, self.stop,self.no_points)
+            self.vector_rev = self.vector[::-1]
+            self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+        else: 
+            self.vector = np.linspace(self.start, self.stop,self.no_points)
         
         ############## KEITHLEY CONFIG ###############
         log.info("Start config Keithley")
@@ -253,7 +258,7 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['sample_name','coil','acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'delay', 'start', 'stop', 'no_points'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'delay', 'start', 'stop', 'no_points', 'reverse_field'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
             y_axis='Voltage (V)',
@@ -263,7 +268,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.44')
+        self.setWindowTitle('IV Measurement System v.0.60')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 

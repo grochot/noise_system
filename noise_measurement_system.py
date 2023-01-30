@@ -8,8 +8,8 @@ import sys
 import random
 from time import sleep, time
 import traceback
-from find_instrument import FindInstrument
-from save_results_path import SaveFilePath
+from logic.find_instrument import FindInstrument
+from logic.save_results_path import SaveFilePath
 
 import numpy as np
 
