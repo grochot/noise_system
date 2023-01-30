@@ -70,13 +70,15 @@ class IVTransfer(Procedure):
             log.info("Config DAQ done")
         except:
             log.error("Config DAQ failed")
-        if self.reverse_field == True: 
-            self.vector_to = np.linspace(self.start, self.stop,self.no_points)
-            self.vector_rev = self.vector[::-1]
-            self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
-        else: 
-            self.vector = np.linspace(self.start, self.stop,self.no_points)
-        
+        try:
+            if self.reverse_field == True: 
+                self.vector_to = np.linspace(self.start, self.stop,self.no_points)
+                self.vector_rev = self.vector_to[::-1]
+                self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+            else: 
+                self.vector = np.linspace(self.start, self.stop,self.no_points)
+        except:
+            log.error("Vector set failed")
         ############## KEITHLEY CONFIG ###############
         log.info("Start config Keithley")
         try:
