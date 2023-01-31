@@ -38,9 +38,9 @@ class IVTransfer(Procedure):
     acquire_type = ListParameter("Acquire type", choices = ['I(Hmb) | set Vb', 'V(Hmb) |set Ib', 'I(Vb) | set Hmb', 'V(Ib) | set Hmb'])
     keithley_adress = ListParameter("Keithley2400 adress", choices=["GPIB1::24::INSTR"])
     field_sensor_adress = ListParameter("Field_sensor",  choices=["COM6"] )
-    keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
-    keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by='keithley_source_type', group_condition='Voltage')
-    keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by='keithley_source_type', group_condition='Current')
+    #keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
+    keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by='acquire_type', group_condition=lambda v: v =='I(Hmb) | set Vb' or v == 'I(Vb) | set Hmb')
+    keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by='acquire_type', group_condition=lambda v: v =='V(Hmb) |set Ib' or v == 'V(Ib) | set Hmb')
     keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by='acquire_type', group_condition='V(Hmb) |set Ib')
     keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by='acquire_type', group_condition='I(Hmb) | set Vb')
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by='acquire_type', group_condition=lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb')
@@ -85,18 +85,21 @@ class IVTransfer(Procedure):
             self.keithley = Keithley2400(self.keithley_adress)
             if self.acquire_type == 'I(Hmb) | set Vb': 
                 self.keithley.apply_voltage()
+                self.keithley.source_voltage_range = 20
                 self.keithley.compliance_current = self.keithley_compliance_current
                 self.keithley.source_voltage = self.keithley_voltage_bias             # Sets the source current to 0 mA
                 self.keithley.enable_source()                # Enables the source output
                 self.keithley.measure_current()  
             elif self.acquire_type == 'V(Hmb) |set Ib': 
                 self.keithley.apply_current()
+                self.keithley.source_current_range = 0.1
                 self.keithley.compliance_voltage = self.keithley_compliance_voltage
                 self.keithley.source_current= self.keithley_current_bias            # Sets the source current to 0 mA
                 self.keithley.enable_source()                # Enables the source output
                 self.keithley.measure_voltage()         
             elif self.acquire_type == 'I(Vb) | set Hmb': 
                 self.keithley.apply_voltage()
+                self.keithley.source_voltage_range = 20
                 self.keithley.compliance_current = self.keithley_compliance_current
                 self.keithley.source_voltage =  0         # Sets the source current to 0 mA
                 self.keithley.enable_source()                # Enables the source output
@@ -108,6 +111,7 @@ class IVTransfer(Procedure):
                 self.set_field = self.field.set_field(self.field_bias/self.field_const)
             elif self.acquire_type == 'V(Ib) | set Hmb': 
                 self.keithley.apply_current()
+                self.keithley.source_current_range = 0.1
                 self.keithley.compliance_voltage = self.keithley_compliance_voltage
                 self.keithley.source_current=  0         # Sets the source current to 0 mA
                 self.keithley.enable_source()                # Enables the source output
@@ -133,7 +137,6 @@ class IVTransfer(Procedure):
         except:
             log.error("Config FieldSensor failed")
             self.field_sensor = DummyFieldSensor()
-            log.error("Config FieldSensor failed")
             log.info("Use DummyFieldSensor")
 
 
@@ -259,7 +262,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= IVTransfer,
-            inputs=['sample_name','coil','acquire_type','keithley_adress','field_sensor_adress','keithley_source_type', 'keithley_compliance_current', 'keithley_compliance_voltage',
+            inputs=['sample_name','coil','acquire_type','keithley_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
             'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'delay', 'start', 'stop', 'no_points', 'reverse_field'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
@@ -270,7 +273,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.60')
+        self.setWindowTitle('IV Measurement System v.0.65')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
