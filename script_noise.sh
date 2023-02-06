@@ -1,5 +1,6 @@
 #!/bin/bash
-
+sudo umount /media/Data2 
+sudo umount /media/Data1
 sudo chmod 777 /dev/ttyUSB*
 sudo mkdir /media/Data1 
 sudo mkdir /media/Data2
