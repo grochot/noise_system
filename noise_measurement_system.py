@@ -242,7 +242,7 @@ class NoiseProcedure(Procedure):
                 self.emit('results', data2) 
        
        
-       ###### ONE SHOT MODE #############
+###### ONE SHOT MODE #############
         if self.mode == 'One Shot':
             self.oscilloscope.set_number_samples(self.no_samples)
             self.oscilloscope.set_timebase(int((1/self.sampling_interval)*10000000)-1)
@@ -302,7 +302,6 @@ class NoiseProcedure(Procedure):
         self.oscilloscope.stop_scope()
         self.oscilloscope.disconnect_scope()
         if self.mode == "Mean":
-            print("ddd")
             if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
                 self.voltage.voltage_setpoint(0)
                 sleep(1)
@@ -331,7 +330,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.00 beta')
+        self.setWindowTitle('Noise Measurement System v.1.05 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 

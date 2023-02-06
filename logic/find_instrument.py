@@ -1,4 +1,5 @@
 import pyvisa
+import os
 
 
 class FindInstrument(): 
@@ -15,7 +16,11 @@ class FindInstrument():
             except:
                 
                 self.hardware[i] = i
-        self.file = open("finded_instruments.txt", "r")
+        self.isExist = os.path.exists("finded_instruments.txt")
+        if self.isExist == True:
+            self.file = open("finded_instruments.txt", "r")
+        else: 
+            self.file = open("finded_instruments.txt",'w+')    
         self.content = self.file.read()
         self.file.close()
         self.content_tab = self.content.split(",") 
