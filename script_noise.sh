@@ -8,5 +8,6 @@ sudo mount /dev/sda6 /media/Data2
 sudo mount /dev/sda7 /media/Data1
 #git stash
 #git pull
+#
 python3 noise_measurement_system.py
 
