@@ -143,7 +143,7 @@ class IVTransfer(Procedure):
         elif self.mode == "Fast Resistance": 
             
             ############## KEITHLEY CONFIG ###############
-            log.info("Start config Keithley")
+           
             try:
                 self.keithley = Keithley2400(self.keithley_adress)
                 self.keithley.apply_voltage()
@@ -151,9 +151,7 @@ class IVTransfer(Procedure):
                 self.keithley.compliance_current = 0.1
                 self.keithley.source_voltage = self.keithley_voltage_bias             # Sets the source current to 0 mA
                 self.keithley.enable_source()                # Enables the source output
-                self.keithley.mean_resistance()  
-                
-                log.info("Config Keithley done")
+                self.keithley.measure_resistance()  
 
             except:
                 log.error("Config Keithley failed")
@@ -257,12 +255,20 @@ class IVTransfer(Procedure):
         elif self.mode == "Fast Resistance":
             self.tmp_resistance = self.keithley.resistance
             log.info(self.tmp_resistance)
+            # self.emit('results',  data = {
+            #             'Voltage (V)':  0,
+            #             'Current (A)':  0,
+            #             'X field (Oe)': 0,
+            #             'Y field (Oe)': 0,
+            #             'Z field (Oe)': 0,
+            #             'Field set (Oe)': 0,
+            #             })
 
     def shutdown(self):
 
-
         if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
-            self.field.shutdown()
+            if self.mode != "Fast Resistance":
+                self.field.shutdown()
             sleep(0.2)
             self.keithley.shutdown()
             print("keithley shutdown done")
@@ -293,7 +299,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.65')
+        self.setWindowTitle('IV Measurement System v.0.68')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
