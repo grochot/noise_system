@@ -2,6 +2,7 @@ from ast import Num
 from email.policy import default
 import logging
 import pandas as pd 
+import json
 
 import math
 import sys
@@ -39,7 +40,7 @@ class NoiseProcedure(Procedure):
     
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1, group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot'])
+    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot', 'Mean + Raw'])
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
@@ -57,13 +58,42 @@ class NoiseProcedure(Procedure):
 
    
     DATA_COLUMNS = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
-   
+    DATA_COLUMNS2 = []
     path_file = SaveFilePath() 
    
+    @staticmethod
+    def generate_columns():
+        try:
+            with open("json_data.json", "r") as file:
+                num_iterations = json.load(file)
+                file.close()
+        except FileNotFoundError:
+            num_iterations1 = {'steps': 0}
+            with open('json_data.json', 'w') as json_file:
+                json.dump(num_iterations1, json_file)
+                json_file.close()
+            with open("json_data.json", "r") as file:
+                num_iterations = json.load(file)
+                file.close()
+        DATA_COLUMNS2 = []
+        DATA_COLUMNS2 = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] 
+        DATA_COLUMNS3 = []
+        for i in range(int(num_iterations['steps'])):
+            for k in DATA_COLUMNS2:
+                DATA_COLUMNS3.append(k+"_"+str(i))
+        DATA_COLUMNS2.append(DATA_COLUMNS3)
+        return DATA_COLUMNS2
+
+    @staticmethod
+    def delete_columns():
+        DATA_COLUMNS2 = []
     
     
     def startup(self):
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
+            self.num_iterations = {'steps': self.no_time}
+            with open('json_data.json', 'w') as json_file:
+                json.dump(self.num_iterations, json_file)
             self.oscilloscope = PicoScope()
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
         
@@ -165,11 +195,12 @@ class NoiseProcedure(Procedure):
             tmp_data_magnetic_field_x = []
             tmp_data_magnetic_field_y = []
             tmp_data_magnetic_field_z = []
+            data_tmp = {}
 
 #Measure field:
             
             
-            for i in range(3):
+            for i in range(1):
                 tmp_field = self.field.read_field()
                 tmp_x = tmp_field[0]
                 tmp_y = tmp_field[1]
@@ -205,9 +236,29 @@ class NoiseProcedure(Procedure):
                 tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
                 tmp_frequency.insert(i,"frequency_{}".format(i),pd.Series(freq_tmp))
                 tmp_fft.insert(i,"fft_{}".format(i),pd.Series(ft_tmp))
+                if  self.mode == 'Mean + Raw':
+                    tmp_data_time_list= tmp_data_time["time_{}".format(i)].to_list()
+                    tmp_data_voltage_list = tmp_data_voltage["voltage_{}".format(i)].to_list()
+                    tmp_frequency_list = tmp_frequency["frequency_{}".format(i)].to_list()
+                    tmp_fft_list = tmp_fft["fft_{}".format(i)].to_list()
+                    
+                    for tmp_ele in range(len(tmp_data_time_list)):
+                        data_tmp["tmp_{}".format(i)] = {
+                            'frequency (Hz)_{}'.format(i): tmp_frequency_list[tmp_ele] if tmp_ele < len(tmp_frequency_list) else math.nan, 
+                            'FFT (mV)_{}'.format(i): abs(tmp_fft_list[tmp_ele]) if tmp_ele < len(tmp_frequency_list) else math.nan, 
+                            'log[frequency] (Hz)_{}'.format(i): math.log10(tmp_frequency_list[tmp_ele+1]) if tmp_ele < len(tmp_frequency_list)-1 else math.nan,
+                            'log[FFT] (mV)_{}'.format(i):  math.log10(abs(tmp_fft_list[tmp_ele+1])) if tmp_ele < len(tmp_frequency_list)-1 else math.nan,
+                            'time (s)_{}'.format(i): tmp_data_time_list[tmp_ele]*1e-9,
+                            'Voltage (mV)_{}'.format(i): tmp_data_voltage_list[tmp_ele],
+                            'X field (Oe)_{}'.format(i): tmp_data_magnetic_field_x_mean,
+                            'Y field (Oe)_{}'.format(i): tmp_data_magnetic_field_y_mean,
+                            'Z field (Oe)_{}'.format(i): tmp_data_magnetic_field_z_mean,
+                            'treshold_time (s)_{}'.format(i): (math.nan, tmp_time_list[tmp_ele]*1e-9 if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
+                            'treshold_voltage (mV)_{}'.format(i): (math.nan, tmp_voltage_list[tmp_ele]  if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
+                            'divide_voltage (mV)_{}'.format(i): math.nan if self.divide == 0 else tmp_voltage_list[tmp_ele]/self.divide
+                            }
 
-                
-                
+                    self.emit('results', data_tmp["tmp_{}".format(i)])
                 self.emit('progress', 100 * int(i / self.steps))
 
                 
@@ -239,8 +290,13 @@ class NoiseProcedure(Procedure):
                         'treshold_voltage (mV)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
                         'divide_voltage (mV)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
                         }
+                
+            
+
                 self.emit('results', data2) 
-       
+
+
+        NoiseProcedure.delete_columns()
        
 ###### ONE SHOT MODE #############
         if self.mode == 'One Shot':
