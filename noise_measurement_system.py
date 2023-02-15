@@ -80,8 +80,9 @@ class NoiseProcedure(Procedure):
         DATA_COLUMNS3 = []
         for i in range(int(num_iterations['steps'])):
             for k in DATA_COLUMNS2:
-                DATA_COLUMNS3.append(k+"_"+str(i))
-        DATA_COLUMNS2.append(DATA_COLUMNS3)
+                DATA_COLUMNS3.append(str(i)+k)
+        DATA_COLUMNS2 = DATA_COLUMNS2 +  DATA_COLUMNS3
+        print(DATA_COLUMNS2)
         return DATA_COLUMNS2
 
     @staticmethod
@@ -244,18 +245,18 @@ class NoiseProcedure(Procedure):
                     
                     for tmp_ele in range(len(tmp_data_time_list)):
                         data_tmp["tmp_{}".format(i)] = {
-                            'frequency (Hz)_{}'.format(i): tmp_frequency_list[tmp_ele] if tmp_ele < len(tmp_frequency_list) else math.nan, 
-                            'FFT (mV)_{}'.format(i): abs(tmp_fft_list[tmp_ele]) if tmp_ele < len(tmp_frequency_list) else math.nan, 
-                            'log[frequency] (Hz)_{}'.format(i): math.log10(tmp_frequency_list[tmp_ele+1]) if tmp_ele < len(tmp_frequency_list)-1 else math.nan,
-                            'log[FFT] (mV)_{}'.format(i):  math.log10(abs(tmp_fft_list[tmp_ele+1])) if tmp_ele < len(tmp_frequency_list)-1 else math.nan,
-                            'time (s)_{}'.format(i): tmp_data_time_list[tmp_ele]*1e-9,
-                            'Voltage (mV)_{}'.format(i): tmp_data_voltage_list[tmp_ele],
-                            'X field (Oe)_{}'.format(i): tmp_data_magnetic_field_x_mean,
-                            'Y field (Oe)_{}'.format(i): tmp_data_magnetic_field_y_mean,
-                            'Z field (Oe)_{}'.format(i): tmp_data_magnetic_field_z_mean,
-                            'treshold_time (s)_{}'.format(i): (math.nan, tmp_time_list[tmp_ele]*1e-9 if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
-                            'treshold_voltage (mV)_{}'.format(i): (math.nan, tmp_voltage_list[tmp_ele]  if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
-                            'divide_voltage (mV)_{}'.format(i): math.nan if self.divide == 0 else tmp_voltage_list[tmp_ele]/self.divide
+                            '{}frequency (Hz)'.format(i): tmp_frequency_list[tmp_ele] if tmp_ele < len(tmp_frequency_list) else math.nan, 
+                            '{}FFT (mV)'.format(i): abs(tmp_fft_list[tmp_ele]) if tmp_ele < len(tmp_frequency_list) else math.nan, 
+                            '{}log[frequency] (Hz)'.format(i): math.log10(tmp_frequency_list[tmp_ele+1]) if tmp_ele < len(tmp_frequency_list)-1 else math.nan,
+                            '{}log[FFT] (mV)'.format(i):  math.log10(abs(tmp_fft_list[tmp_ele+1])) if tmp_ele < len(tmp_frequency_list)-1 else math.nan,
+                            '{}time (s)'.format(i): tmp_data_time_list[tmp_ele]*1e-9,
+                            '{}Voltage (mV)'.format(i): tmp_data_voltage_list[tmp_ele],
+                            '{}X field (Oe)'.format(i): tmp_data_magnetic_field_x_mean,
+                            '{}Y field (Oe)'.format(i): tmp_data_magnetic_field_y_mean,
+                            '{}Z field (Oe)'.format(i): tmp_data_magnetic_field_z_mean,
+                            '{}treshold_time (s)'.format(i): (math.nan, tmp_time_list[tmp_ele]*1e-9 if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
+                            '{}treshold_voltage (mV)'.format(i): (math.nan, tmp_voltage_list[tmp_ele]  if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
+                            '{}divide_voltage (mV)'.format(i): math.nan if self.divide == 0 else tmp_voltage_list[tmp_ele]/self.divide
                             }
 
                     self.emit('results', data_tmp["tmp_{}".format(i)])
