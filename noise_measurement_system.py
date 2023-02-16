@@ -83,7 +83,13 @@ class NoiseProcedure(Procedure):
                 DATA_COLUMNS3.append(str(i)+k)
         DATA_COLUMNS2 = DATA_COLUMNS2 +  DATA_COLUMNS3
         print(DATA_COLUMNS2)
+        NoiseProcedure.generate_columns2(DATA_COLUMNS2)
         return DATA_COLUMNS2
+    @staticmethod 
+    def generate_columns2(columns):
+        DATA_COLUMNS = columns
+        return DATA_COLUMNS
+
 
     @staticmethod
     def delete_columns():
@@ -254,12 +260,12 @@ class NoiseProcedure(Procedure):
                             '{}X field (Oe)'.format(i): tmp_data_magnetic_field_x_mean,
                             '{}Y field (Oe)'.format(i): tmp_data_magnetic_field_y_mean,
                             '{}Z field (Oe)'.format(i): tmp_data_magnetic_field_z_mean,
-                            '{}treshold_time (s)'.format(i): (math.nan, tmp_time_list[tmp_ele]*1e-9 if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
-                            '{}treshold_voltage (mV)'.format(i): (math.nan, tmp_voltage_list[tmp_ele]  if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
-                            '{}divide_voltage (mV)'.format(i): math.nan if self.divide == 0 else tmp_voltage_list[tmp_ele]/self.divide
+                            '{}treshold_time (s)'.format(i): (math.nan, tmp_data_time_list[tmp_ele]*1e-9 if tmp_data_voltage_list[tmp_ele] >= self.treshold or tmp_data_voltage_list[tmp_ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
+                            '{}treshold_voltage (mV)'.format(i): (math.nan, tmp_data_voltage_list[tmp_ele]  if tmp_data_voltage_list[tmp_ele] >= self.treshold or tmp_data_voltage_list[tmp_ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
+                            '{}divide_voltage (mV)'.format(i): math.nan if self.divide == 0 else tmp_data_voltage_list[tmp_ele]/self.divide
                             }
 
-                    self.emit('results', data_tmp["tmp_{}".format(i)])
+                        self.emit('results', data_tmp["tmp_{}".format(i)])
                 self.emit('progress', 100 * int(i / self.steps))
 
                 
