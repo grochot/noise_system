@@ -352,7 +352,7 @@ class NoiseProcedure(Procedure):
   
         self.oscilloscope.stop_scope()
         self.oscilloscope.disconnect_scope()
-        if self.mode == "Mean":
+        if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
                 self.voltage.voltage_setpoint(0)
                 sleep(1)
