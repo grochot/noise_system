@@ -2,6 +2,7 @@ from ast import Num
 from email.policy import default
 import logging
 import pandas as pd 
+import json
 
 import math
 import sys
@@ -24,6 +25,7 @@ from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928 
 from hardware.field_sensor_noise import FieldSensor 
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
+from logic.generate_headers import GenerateHeader
 
 log = logging.getLogger(__name__) 
 log.addHandler(logging.NullHandler()) 
@@ -35,11 +37,11 @@ class NoiseProcedure(Procedure):
     find_instruments = FindInstrument()
     finded_instruments = find_instruments.find_instrument()
     finded_instrumnets = finded_instruments.append("none")
-    print(finded_instruments)
+    
     
     ################# PARAMETERS ###################
     period_time = FloatParameter('Period of Time', units='s', default=1, group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot'])
+    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot', 'Mean + Raw'])
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
@@ -52,44 +54,48 @@ class NoiseProcedure(Procedure):
     sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     treshold = FloatParameter("Treshold", units='mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     divide = FloatParameter("Divide number", units = 'mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    
+    rolling_window = IntegerParameter("Rolling window" ,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
 
 
    
     DATA_COLUMNS = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
-   
     path_file = SaveFilePath() 
-   
     
+    def prepare_columns(self,columns):
+        columns_f = []
+        columns_f.append(columns[0])
+        for k in range(1,len(columns)):
+            columns_f.append(","+ columns[k])
+        return columns_f
     
     def startup(self):
+######################################## MEAN SET ###########################
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
+            if self.mode == 'Mean + Raw':
+                self.header = GenerateHeader()
+                self.header_columns = self.prepare_columns(self.DATA_COLUMNS)
             self.oscilloscope = PicoScope()
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
-        
     
-            log.info("Finding instruments...")
             sleep(0.1)
-            log.info("Finded: {}".format(self.finded_instruments))
+            log.info("Finding instrument done")
         
         
-            log.info("Setting up instruments") 
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
                 self.no_samples = self.no_samples + 1
-            log.info("Number of samples: %g" %self.no_samples)
+          
 
 #Field Sensor:
-            log.info("Config Field Sensor")
+            
             if self.field_sensor_adress == "none":
                 self.field = DummyFieldSensor()
-                log.info("Use DummyFieldSensor")
+                log.warning("Use DummyFieldSensor")
             
             else:
                 self.field = FieldSensor(self.field_sensor_adress)
                 self.field.read_field_init()
-                log.info("Config FieldSensor done")
-
+               
 
             ################# BIAS FIELD ###################
             # try:
@@ -108,7 +114,7 @@ class NoiseProcedure(Procedure):
                 self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
                 sleep(1)
                 self.voltage.enabled() #enable channel 
-                log.info("Set bias voltage to %g V" %self.bias_voltage)
+               
             except Exception:
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
@@ -119,13 +125,13 @@ class NoiseProcedure(Procedure):
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
             self.oscilloscope.setTrigger()
-            log.info("Setup oscilloscope done")
+            log.info("Setup instrument done")
         
         
             #log.error("Could not connect to oscilloscope")
             
             sleep(2)
-######################################## ONE SHOT ###########################3
+######################################## ONE SHOT SET###########################
         if self.mode == 'One Shot':
             self.oscilloscope = PicoScope()
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
@@ -138,7 +144,7 @@ class NoiseProcedure(Procedure):
                 self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
                 sleep(0.1)
                 self.voltage.enabled() #enable channel 
-                log.info("Set bias voltage to %g V" %self.bias_voltage)
+                
             except Exception:
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
@@ -147,14 +153,10 @@ class NoiseProcedure(Procedure):
 #procedure:
     def execute(self):
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
-            log.info("Starting to sweep through time")
+            log.info("Start measurement")
           
             self.oscilloscope.set_number_samples(self.no_samples)
             self.oscilloscope.set_timebase(int((1/self.sampling_interval)*10000000)-1)
-            self.oscilloscope.run_block_capture()
-            self.oscilloscope.check_data_collection()
-            self.oscilloscope.create_buffers()
-            self.oscilloscope.set_buffer_location()
             self.steps = self.no_time 
             self.time = self.period_time
             self.stop_time = time()
@@ -166,30 +168,45 @@ class NoiseProcedure(Procedure):
             tmp_data_magnetic_field_y = []
             tmp_data_magnetic_field_z = []
 
+
 #Measure field:
             
             
-            for i in range(3):
-                tmp_field = self.field.read_field()
-                tmp_x = tmp_field[0]
-                tmp_y = tmp_field[1]
-                tmp_z = tmp_field[2]
+            for i in range(1):
+                try:
+                    tmp_field = self.field.read_field()
+                    tmp_x = tmp_field[0]
+                    tmp_y = tmp_field[1]
+                    tmp_z = tmp_field[2]
+                    
                 
+                    tmp_data_magnetic_field_x.append(float(tmp_x))
+                    tmp_data_magnetic_field_y.append(float(tmp_y))
+                    tmp_data_magnetic_field_z.append(float(tmp_z))
+                    sleep(0.1)
+
+        
+                    tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
+                    tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
+                    tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
+                except: 
+                    log.error("Field sensor adress wrong!")
+                    self.should_stop()
                 
-                tmp_data_magnetic_field_x.append(float(tmp_x))
-                tmp_data_magnetic_field_y.append(float(tmp_y))
-                tmp_data_magnetic_field_z.append(float(tmp_z))
-                sleep(0.1)
-            
-        
-            tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
-            tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
-            tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
-        
+
+#MAIN LOOP ###
             for i in range(self.steps):
+                if self.mode == 'Mean + Raw':
+                    self.sample_name_raw = unique_filename(self.path_file.ReadFile()+ "/", prefix="{}_".format(str(self.sample_name) + "_raw{}".format(i)))
+                    self.header.set_parameters(self.sample_name_raw, self.header_columns, self.bias_field, self.bias_voltage, self.channelA_coupling_type, self.channelA_range, self.divide, self.field_adress, self.field_sensor_adress, self.no_time, self.period_time, self.sample_name, self.sampling_interval, self.treshold, self.voltage_adress )
+                self.oscilloscope.run_block_capture()
+                self.oscilloscope.check_data_collection()
+                self.oscilloscope.create_buffers()
+                self.oscilloscope.set_buffer_location()
                 self.oscilloscope.getValuesfromScope()
                 tmp_time_list = self.oscilloscope.create_time()
                 tmp_voltage_list = self.oscilloscope.convert_to_mV(self.channelA_range)
+                
             
 #FFT Counting:
                 smpl_freq = self.sampling_interval
@@ -205,16 +222,41 @@ class NoiseProcedure(Procedure):
                 tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
                 tmp_frequency.insert(i,"frequency_{}".format(i),pd.Series(freq_tmp))
                 tmp_fft.insert(i,"fft_{}".format(i),pd.Series(ft_tmp))
+               
+##### Mean + Raw #####      
+                if  self.mode == 'Mean + Raw':
 
-                
-                
-                self.emit('progress', 100 * int(i / self.steps))
+                    
+                    # tmp_data_time_list= tmp_data_time["time_{}".format(i)].to_list()
+                    # tmp_data_voltage_list = tmp_data_voltage["voltage_{}".format(i)].to_list()
+                    # tmp_frequency_list = tmp_frequency["frequency_{}".format(i)].to_list()
+                    # tmp_fft_list = tmp_fft["fft_{}".format(i)].to_list()
+                    
+                    for tmp_ele in range(len(tmp_time_list)):
+                        self.data_tmp = [
+                            str(tmp_time_list[tmp_ele]*1e-9),
+                            ','+str(tmp_voltage_list[tmp_ele]),
+                            ','+str(tmp_data_magnetic_field_x_mean),
+                            ','+str(tmp_data_magnetic_field_y_mean),
+                            ','+str(tmp_data_magnetic_field_z_mean),
+                            ','+ str(freq_tmp[tmp_ele] if tmp_ele < len(freq_tmp) else math.nan), 
+                            ','+str(abs(ft_tmp[tmp_ele]) if tmp_ele < len(freq_tmp) else math.nan), 
+                            ',' + str(math.log10(freq_tmp[tmp_ele+1]) if tmp_ele < len(freq_tmp)-1 else math.nan),
+                            ','+ str(math.log10(abs(ft_tmp[tmp_ele+1])) if tmp_ele < len(freq_tmp)-1 else math.nan),
+                            ',' + str((math.nan, tmp_time_list[tmp_ele]*1e-9 if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold else math.nan)[self.treshold != 0]),
+                            ',' + str((math.nan, tmp_voltage_list[tmp_ele]  if tmp_voltage_list[tmp_ele] >= self.treshold or tmp_voltage_list[tmp_ele] <= -1*self.treshold  else math.nan)[self.treshold != 0]),
+                            ',' + str(math.nan if self.divide == 0 else tmp_voltage_list[tmp_ele]/self.divide)
+                            ]
+
+                        self.header.write_data(self.sample_name_raw,self.data_tmp)
+                    
+                self.emit('progress', 100 * i / self.steps)
 
                 
             tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
             tmp_data_voltage["average"] = tmp_data_voltage.mean(axis=1) #average voltage
-            tmp_fft["average"] = tmp_fft.mean(axis=1) #average fft
-            tmp_frequency["average"] = tmp_frequency.mean(axis=1) #average frequency
+            tmp_fft["average"] = tmp_fft.rolling(self.rolling_window, axis=1).mean() #average fft
+            tmp_frequency["average"] = tmp_frequency.rolling(self.rolling_window, axis=1).mean() #average frequency
             
 
             tmp_data_time_average = tmp_data_time["average"].to_list()
@@ -225,22 +267,33 @@ class NoiseProcedure(Procedure):
         
 #Send results:
             for ele in range(len(tmp_data_time_average)):
-                data2 = {
-                        'frequency (Hz)': tmp_data_frequency_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
-                        'FFT (mV)': abs(tmp_data_fft_average[ele]) if ele < len(tmp_data_frequency_average) else math.nan, 
-                        'log[frequency] (Hz)': math.log10(tmp_data_frequency_average[ele+1]) if ele < len(tmp_data_frequency_average)-1 else math.nan,
-                        'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
-                        'time (s)': tmp_data_time_average[ele]*1e-9,
-                        'Voltage (mV)': tmp_data_voltage_average[ele],
-                        'X field (Oe)': tmp_data_magnetic_field_x_mean,
-                        'Y field (Oe)': tmp_data_magnetic_field_y_mean,
-                        'Z field (Oe)': tmp_data_magnetic_field_z_mean,
-                        'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
-                        'treshold_voltage (mV)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
-                        'divide_voltage (mV)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
-                        }
-                self.emit('results', data2) 
-       
+                try:
+                    data2 = {
+                            'frequency (Hz)': tmp_data_frequency_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
+                            'FFT (mV)': abs(tmp_data_fft_average[ele]) if ele < len(tmp_data_frequency_average) else math.nan, 
+                            'log[frequency] (Hz)': math.log10(tmp_data_frequency_average[ele+1]) if ele < len(tmp_data_frequency_average)-1 else math.nan,
+                            'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
+                            'time (s)': tmp_data_time_average[ele]*1e-9,
+                            'Voltage (mV)': tmp_data_voltage_average[ele],
+                            'X field (Oe)': tmp_data_magnetic_field_x_mean,
+                            'Y field (Oe)': tmp_data_magnetic_field_y_mean,
+                            'Z field (Oe)': tmp_data_magnetic_field_z_mean,
+                            'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
+                            'treshold_voltage (mV)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
+                            'divide_voltage (mV)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
+                            }
+                    
+                
+
+                    self.emit('results', data2) 
+                except:
+                    self.should_stop()
+                if self.should_stop():
+                    log.warning("Caught the stop flag in the procedure")
+                    break
+
+
+        
        
 ###### ONE SHOT MODE #############
         if self.mode == 'One Shot':
@@ -294,21 +347,20 @@ class NoiseProcedure(Procedure):
     def voltage_disabled(self): 
         
         print("voltage_disabled")
-
     
  
     def shutdown(self):
-        print("funkcja_shutdown")
+  
         self.oscilloscope.stop_scope()
         self.oscilloscope.disconnect_scope()
-        if self.mode == "Mean":
+        if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
                 self.voltage.voltage_setpoint(0)
                 sleep(1)
                 self.voltage.disabled()
                 NoiseProcedure.licznik = 0
             NoiseProcedure.licznik += 1
-            print(NoiseProcedure.licznik)
+         
         
 
         
@@ -330,7 +382,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.05 beta')
+        self.setWindowTitle('Noise Measurement System v.1.10 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
@@ -355,13 +407,13 @@ class MainWindow(ManagedWindow):
             MainWindow.wynik =  procedure.seq
             MainWindow.wynik_list.append(procedure.seq)
             MainWindow.wynik = max(MainWindow.wynik_list)
-            print(MainWindow.wynik)
+           
             MainWindow.last = False
             
 
                 
         except:     
-            print("No procedure")
+            
             MainWindow.last = True
             
             # while run:

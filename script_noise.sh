@@ -9,5 +9,5 @@ sudo mount /dev/sda7 /media/Data1
 #git stash
 #git pull
 #
-python3 noise_measurement_system.py
+python3 /home/pw/git/noise_system/noise_measurement_system.py
 
