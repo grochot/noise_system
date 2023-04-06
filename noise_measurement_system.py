@@ -54,7 +54,7 @@ class NoiseProcedure(Procedure):
     sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     treshold = FloatParameter("Treshold", units='mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     divide = FloatParameter("Divide number", units = 'mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    
+    rolling_window = IntegerParameter("Rolling window" ,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
 
 
    
@@ -69,6 +69,7 @@ class NoiseProcedure(Procedure):
         return columns_f
     
     def startup(self):
+######################################## MEAN SET ###########################
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             if self.mode == 'Mean + Raw':
                 self.header = GenerateHeader()
@@ -130,7 +131,7 @@ class NoiseProcedure(Procedure):
             #log.error("Could not connect to oscilloscope")
             
             sleep(2)
-######################################## ONE SHOT ###########################3
+######################################## ONE SHOT SET###########################
         if self.mode == 'One Shot':
             self.oscilloscope = PicoScope()
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
@@ -222,7 +223,7 @@ class NoiseProcedure(Procedure):
                 tmp_frequency.insert(i,"frequency_{}".format(i),pd.Series(freq_tmp))
                 tmp_fft.insert(i,"fft_{}".format(i),pd.Series(ft_tmp))
                
-         ##### Mean + Raw #####      
+##### Mean + Raw #####      
                 if  self.mode == 'Mean + Raw':
 
                     
@@ -254,8 +255,8 @@ class NoiseProcedure(Procedure):
                 
             tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
             tmp_data_voltage["average"] = tmp_data_voltage.mean(axis=1) #average voltage
-            tmp_fft["average"] = tmp_fft.mean(axis=1) #average fft
-            tmp_frequency["average"] = tmp_frequency.mean(axis=1) #average frequency
+            tmp_fft["average"] = tmp_fft.rolling(self.rolling_window, axis=1).mean() #average fft
+            tmp_frequency["average"] = tmp_frequency.rolling(self.rolling_window, axis=1).mean() #average frequency
             
 
             tmp_data_time_average = tmp_data_time["average"].to_list()
