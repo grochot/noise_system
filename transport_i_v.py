@@ -16,8 +16,9 @@ import numpy as np
 from pymeasure.display.Qt import QtGui
 from pymeasure.display.windows import ManagedWindow
 from pymeasure.experiment import (
-    Procedure, FloatParameter, BooleanParameter, IntegerParameter, Parameter,ListParameter, unique_filename, Results, VectorParameter
+    Procedure, FloatParameter, BooleanParameter, IntegerParameter, Parameter,ListParameter, Results, VectorParameter
 )
+from logic.unique_name import unique_name
 
 from hardware.keithley2400 import Keithley2400
 from hardware.daq import DAQ
@@ -299,7 +300,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.68')
+        self.setWindowTitle('IV Measurement System v.0.80')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
@@ -311,7 +312,7 @@ class MainWindow(ManagedWindow):
             procedure = self.make_procedure()
        
         name_of_file = procedure.sample_name
-        filename = unique_filename(directory, prefix="{}_".format(name_of_file))
+        filename = unique_name(directory, prefix="{}_".format(name_of_file))
         results = Results(procedure, filename)
         experiment = self.new_experiment(results)
         self.manager.queue(experiment)
