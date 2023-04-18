@@ -17,9 +17,9 @@ import numpy as np
 from pymeasure.display.Qt import QtGui
 from pymeasure.display.windows import ManagedWindow
 from pymeasure.experiment import (
-    Procedure, FloatParameter, BooleanParameter, IntegerParameter, Parameter,ListParameter, unique_filename, Results
+    Procedure, FloatParameter, BooleanParameter, IntegerParameter, Parameter,ListParameter, Results
 )
-
+from logic.unique_name import unique_name
 from hardware.hmc8043 import HMC8043
 from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928 
@@ -220,8 +220,8 @@ class NoiseProcedure(Procedure):
 
                 tmp_data_time.insert(i,"time_{}".format(i),pd.Series(tmp_time_list))
                 tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
-                tmp_frequency.insert(i,"frequency_{}".format(i),pd.Series(freq_tmp))
-                tmp_fft.insert(i,"fft_{}".format(i),pd.Series(ft_tmp))
+                tmp_frequency.insert(i,"frequency_{}".format(i),pd.Series(freq_tmp.real).rolling(self.rolling_window).mean()[:])
+                tmp_fft.insert(i,"fft_{}".format(i),pd.Series(ft_tmp.real).rolling(self.rolling_window).mean()[:])
                
 ##### Mean + Raw #####      
                 if  self.mode == 'Mean + Raw':
@@ -255,9 +255,12 @@ class NoiseProcedure(Procedure):
                 
             tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
             tmp_data_voltage["average"] = tmp_data_voltage.mean(axis=1) #average voltage
-            tmp_fft["average"] = tmp_fft.rolling(self.rolling_window, axis=1).mean() #average fft
-            tmp_frequency["average"] = tmp_frequency.rolling(self.rolling_window, axis=1).mean() #average frequency
+            #tmp_fft["average"] = tmp_fft.rolling(self.rolling_window, axis=1).mean() #average fft
+            tmp_fft["average"] = tmp_fft.mean(axis=1)
+            tmp_frequency["average"] = tmp_frequency.mean(axis=1)
+            #tmp_frequency["average"] = tmp_frequency.rolling(self.rolling_window, axis=1).mean() #average frequency
             
+            print(tmp_fft)
 
             tmp_data_time_average = tmp_data_time["average"].to_list()
             tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
@@ -372,7 +375,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide'],
+            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'rolling_window'],
             displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
             x_axis='time (s)',
             y_axis='Voltage (mV)',
@@ -394,7 +397,7 @@ class MainWindow(ManagedWindow):
             procedure = self.make_procedure()
        
         name_of_file = procedure.sample_name
-        filename = unique_filename(directory, prefix="{}_".format(name_of_file))
+        filename = unique_name(directory, prefix="{}_".format(name_of_file))
         results = Results(procedure, filename)
         experiment = self.new_experiment(results)
         self.manager.queue(experiment)
