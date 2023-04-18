@@ -397,7 +397,7 @@ class MainWindow(ManagedWindow):
             procedure = self.make_procedure()
        
         name_of_file = procedure.sample_name
-        filename = unique_name(directory, prefix="{}_".format(name_of_file))
+        filename = unique_name(directory, prefix="{}".format(name_of_file))
         results = Results(procedure, filename)
         experiment = self.new_experiment(results)
         self.manager.queue(experiment)
