@@ -197,7 +197,7 @@ class NoiseProcedure(Procedure):
 #MAIN LOOP ###
             for i in range(self.steps):
                 if self.mode == 'Mean + Raw':
-                    self.sample_name_raw = unique_name(self.path_file.ReadFile()+ "/", prefix="{}_".format(str(self.sample_name) + "_raw{}".format(i)))
+                    self.sample_name_raw = unique_name(self.path_file.ReadFile()+ "/", prefix="{}".format(str(self.sample_name) + "_raw{}".format(i)))
                     self.header.set_parameters(self.sample_name_raw, self.header_columns, self.bias_field, self.bias_voltage, self.channelA_coupling_type, self.channelA_range, self.divide, self.field_adress, self.field_sensor_adress, self.no_time, self.period_time, self.sample_name, self.sampling_interval, self.treshold, self.voltage_adress )
                 self.oscilloscope.run_block_capture()
                 self.oscilloscope.check_data_collection()
@@ -260,7 +260,6 @@ class NoiseProcedure(Procedure):
             tmp_frequency["average"] = tmp_frequency.mean(axis=1)
             #tmp_frequency["average"] = tmp_frequency.rolling(self.rolling_window, axis=1).mean() #average frequency
             
-            print(tmp_fft)
 
             tmp_data_time_average = tmp_data_time["average"].to_list()
             tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
