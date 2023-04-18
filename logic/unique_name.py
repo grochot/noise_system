@@ -107,10 +107,10 @@ def unique_name(directory, prefix='DATA', suffix='', ext='csv',
         i = 1
         basename = f"{prefix}"
         basepath = os.path.join(directory, basename)
-        filename = "%s_%d%s.%s" % (basepath, i.zfill(5), suffix, ext)
+        filename = "%s_%d%s.%s" % (basepath, str(i).zfill(5), suffix, ext)
         while os.path.exists(filename):
             i += 1
-            filename = "%s_%d%s.%s" % (basepath, i, suffix, ext)
+            filename = "%s_%d%s.%s" % (basepath, str(i).zfill(5), suffix, ext)
     else:
         basename = f"{prefix}{now.strftime(datetimeformat)}{suffix}.{ext}"
         filename = os.path.join(directory, basename)
