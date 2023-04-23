@@ -26,6 +26,7 @@ from hardware.sim928 import SIM928
 from hardware.field_sensor_noise import FieldSensor 
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 from logic.generate_headers import GenerateHeader
+from logic.fft_mean import FFT_mean
 
 log = logging.getLogger(__name__) 
 log.addHandler(logging.NullHandler()) 
@@ -54,7 +55,7 @@ class NoiseProcedure(Procedure):
     sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     treshold = FloatParameter("Treshold", units='mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     divide = FloatParameter("Divide number", units = 'mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    rolling_window = IntegerParameter("Rolling window" ,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    
 
 
    
@@ -167,6 +168,7 @@ class NoiseProcedure(Procedure):
             tmp_data_magnetic_field_x = []
             tmp_data_magnetic_field_y = []
             tmp_data_magnetic_field_z = []
+            fft_tmp_rms_noise = []
 
 
 #Measure field:
@@ -206,6 +208,7 @@ class NoiseProcedure(Procedure):
                 self.oscilloscope.getValuesfromScope()
                 tmp_time_list = self.oscilloscope.create_time()
                 tmp_voltage_list = self.oscilloscope.convert_to_mV(self.channelA_range)
+
                 
             
 #FFT Counting:
@@ -220,8 +223,12 @@ class NoiseProcedure(Procedure):
 
                 tmp_data_time.insert(i,"time_{}".format(i),pd.Series(tmp_time_list))
                 tmp_data_voltage.insert(i,"voltage_{}".format(i),pd.Series(tmp_voltage_list))
-                tmp_frequency.insert(i,"frequency_{}".format(i),pd.Series(freq_tmp.real).rolling(self.rolling_window).mean()[:])
-                tmp_fft.insert(i,"fft_{}".format(i),pd.Series(ft_tmp.real).rolling(self.rolling_window).mean()[:])
+                tmp_frequency.insert(i,"frequency_{}".format(i),pd.Series(freq_tmp.real))
+                tmp_fft.insert(i,"fft_{}".format(i),pd.Series(ft_tmp.real))
+
+                fft_tmp_rms_noise.append(FFT_mean(ft_tmp)) #list of RMS noise FFTs
+
+                
                
 ##### Mean + Raw #####      
                 if  self.mode == 'Mean + Raw':
@@ -255,10 +262,9 @@ class NoiseProcedure(Procedure):
                 
             tmp_data_time["average"] = tmp_data_time.mean(axis=1) #average time
             tmp_data_voltage["average"] = tmp_data_voltage.mean(axis=1) #average voltage
-            #tmp_fft["average"] = tmp_fft.rolling(self.rolling_window, axis=1).mean() #average fft
-            tmp_fft["average"] = tmp_fft.mean(axis=1)
-            tmp_frequency["average"] = tmp_frequency.mean(axis=1)
-            #tmp_frequency["average"] = tmp_frequency.rolling(self.rolling_window, axis=1).mean() #average frequency
+            tmp_fft["average"] = np.mean(fft_tmp_rms_noise, axis=0)
+            tmp_frequency["average"] = np.mean(tmp_frequency, axis=1) 
+            
             
 
             tmp_data_time_average = tmp_data_time["average"].to_list()
@@ -272,7 +278,7 @@ class NoiseProcedure(Procedure):
                 try:
                     data2 = {
                             'frequency (Hz)': tmp_data_frequency_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
-                            'FFT (mV)': abs(tmp_data_fft_average[ele]) if ele < len(tmp_data_frequency_average) else math.nan, 
+                            'FFT (mV)': tmp_data_fft_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
                             'log[frequency] (Hz)': math.log10(tmp_data_frequency_average[ele+1]) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'time (s)': tmp_data_time_average[ele]*1e-9,
@@ -374,7 +380,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'rolling_window'],
+            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide'],
             displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
             x_axis='time (s)',
             y_axis='Voltage (mV)',
