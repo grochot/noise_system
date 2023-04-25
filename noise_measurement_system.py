@@ -49,7 +49,7 @@ class NoiseProcedure(Procedure):
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v=='One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
+    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
     field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
