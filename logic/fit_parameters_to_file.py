@@ -11,4 +11,5 @@ def fit_parameters_from_file(file_name="fit_parameters.json"):
     with open(file_name, 'r') as f:
         fit_parameters = json.load(f)
     list_parameters = list(fit_parameters.values())
+    print(list_parameters)
     return list_parameters
