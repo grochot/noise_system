@@ -52,7 +52,7 @@ class NoiseProcedure(Procedure):
     voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
     field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v =='Vbias calibration' or v == 'Vbias' )
+    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='DC', choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v =='Vbias calibration' or v == 'Vbias' )
     channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"],group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'V bias calibration' or v == 'Vbias')
     sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     treshold = FloatParameter("Treshold", units='mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
@@ -120,14 +120,22 @@ class NoiseProcedure(Procedure):
                 
         
     ##Bias voltage:
-            try:   
-                self.voltage.voltage_setpoint(0) #set bias voltage
+        elif self.mode == 'Mean' or self.mode == 'Mean + Raw':
+            log.info("read calibration parameters from file")
+            try:
+                fit_parameters = fit_parameters_from_file()
+                set_vol = calculationbias(self.bias_voltage, fit_parameters)
+                self.voltage.voltage_setpoint(set_vol) #set bias voltage  
+                log.info("read parameters succesfull")
                 sleep(0.5)
                 self.voltage.enabled() #enable channel 
-               
+                    
             except Exception:
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
+                
+                 
+
             
     ##Picoscope:
             
@@ -226,19 +234,7 @@ class NoiseProcedure(Procedure):
                 except: 
                     log.error("Field sensor adress wrong!")
                     self.should_stop()
-   
-    #SET BIAS VOLTAGE: 
-            log.info("read calibration parameters from file")
-            try:
-                fit_parameters = fit_parameters_from_file()
-                log.info("read parameters succesfull")
-            except:
-                self.should_stop()
-                
-            self.voltage.enabled() #enable channel 
-            
-            set_vol = calculationbias(i, fit_parameters)
-            self.voltage.voltage_setpoint(set_vol) #set bias voltage            
+       
 
     #MAIN LOOP 
             for i in range(self.steps):
