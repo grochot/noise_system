@@ -323,7 +323,7 @@ class NoiseProcedure(Procedure):
                             'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'time (s)': tmp_data_time_average[ele]*1e-9,
                             'Sense Voltage (mV)': tmp_data_voltage_average[ele],
-                            'Bias voltage (mV)': math.nan,
+                            'Bias voltage (mV)': self.bias_voltage,
                             'X field (Oe)': tmp_data_magnetic_field_x_mean,
                             'Y field (Oe)': tmp_data_magnetic_field_y_mean,
                             'Z field (Oe)': tmp_data_magnetic_field_z_mean,
