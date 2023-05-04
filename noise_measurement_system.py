@@ -120,7 +120,6 @@ class NoiseProcedure(Procedure):
                 
         
     ##Bias voltage:
-        elif self.mode == 'Mean' or self.mode == 'Mean + Raw':
             log.info("read calibration parameters from file")
             try:
                 fit_parameters = fit_parameters_from_file()
