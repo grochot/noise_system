@@ -564,7 +564,7 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= NoiseProcedure,
             inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
-            displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
+            displays=['bias_voltage', 'period_time', 'no_time','sampling_interval', 'sample_name'],
             x_axis='time (s)',
             y_axis='Sense Voltage (mV)',
             directory_input=True,  
