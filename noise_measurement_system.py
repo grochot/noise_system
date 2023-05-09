@@ -27,7 +27,7 @@ from hardware.field_sensor_noise import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 from logic.generate_headers import GenerateHeader
 from logic.fft_mean import FFT_mean
-from logic.vbiascalibration import vbiascalibration, calculationbias, func
+from logic.vbiascalibration import vbiascalibration, calculationbias, func, linear_func
 from logic.fit_parameters_to_file import fit_parameters_to_file, fit_parameters_from_file
 
 log = logging.getLogger(__name__) 
@@ -47,7 +47,7 @@ class NoiseProcedure(Procedure):
     mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot', 'Mean + Raw', 'Vbias calibration', "Vbias"])
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v=='One Shot')
-    bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
+    bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
     field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
@@ -59,8 +59,8 @@ class NoiseProcedure(Procedure):
     divide = FloatParameter("Divide number", units = 'mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     
 #Bias mode:
-    start = FloatParameter("Start", group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
-    stop = FloatParameter("Stop", group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
+    start = FloatParameter("Start",units='mV', group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
+    stop = FloatParameter("Stop", units='mV', group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
     no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
     reverse_voltage = BooleanParameter("Reverse voltage", default=False, group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
     delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
@@ -125,9 +125,8 @@ class NoiseProcedure(Procedure):
                 fit_parameters = fit_parameters_from_file()
                 a = fit_parameters[0]
                 b = fit_parameters[1]
-                c = fit_parameters[2]
-                print(a,b,c)
-                set_vol = calculationbias(0.1, a,b,c)
+                print(a,b)
+                set_vol = calculationbias(self.bias_voltage, a,b,0, "linear")
                 print(set_vol)
                 self.voltage.voltage_setpoint(set_vol) #set bias voltage  
                 log.info("read parameters succesfull")
@@ -412,20 +411,20 @@ class NoiseProcedure(Procedure):
             self.voltage.voltage_setpoint(0) #set bias voltage to 0
             self.voltage.disabled() #disable channel
             ##Fitting data:
-            try:
-                log.info("Fitting data start")
-                self.fit_parameters = vbiascalibration(vbias_list, vs_list)
-                log.info("Fitting data end")
-                ##Save to file:
-                log.info("Saving data to file start")
-                fit_parameters_to_file(self.fit_parameters)
-                print(self.fit_parameters)
-                log.info("Saving data to file end")
-                for l in vbias_list:
-                    vs_fit.append(func(l, self.fit_parameters[0],self.fit_parameters[1],self.fit_parameters[2]))
-                print(vs_fit)
-            except:
-                log.info("Fitting failed")
+            
+            log.info("Fitting data start")
+            self.fit_parameters = vbiascalibration(vbias_list, vs_list, "linear")
+            log.info("Fitting data end")
+            ##Save to file:
+            log.info("Saving data to file start")
+            fit_parameters_to_file(self.fit_parameters)
+            print(self.fit_parameters)
+            log.info("Saving data to file end")
+            for l in vbias_list:
+                vs_fit.append(linear_func(l, self.fit_parameters[0],self.fit_parameters[1]))
+            print(vs_fit)
+        
+                
 
             #Send results:
             for ele in range(len(vbias_list)):
@@ -476,7 +475,7 @@ class NoiseProcedure(Procedure):
                 if self.should_stop():
                     log.warning("Caught the stop flag in the procedure")
                     break
-                set_vol = calculationbias(i, fit_parameters)
+                set_vol = calculationbias(i, fit_parameters, "linear")
                 self.voltage.voltage_setpoint(set_vol) #set bias voltage
                 vbias_list.append(i)  #list of Vbias
                 sleep(0.1)

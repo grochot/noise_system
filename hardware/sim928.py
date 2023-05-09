@@ -26,8 +26,8 @@ class SIM928(Instrument):
 
     def voltage_setpoint(self, vol = 0): 
         sleep(0.5)
-        print("VOLT:{}".format(vol))
-        self.write("VOLT {}".format(round(vol,3)))
+        print("VOLT:{}".format(vol/1000))
+        self.write("VOLT {}".format(round(vol/1000,3)))
         sleep(0.5)
     
 
