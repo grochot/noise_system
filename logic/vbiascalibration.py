@@ -8,6 +8,8 @@ def vbiascalibration(vbias_list, vs_list):
     popt, pcov = curve_fit(func, vbias_list, vs_list)
     return popt
 
-def calculationbias(vin, parameters):
-    return (1/(parameters[0]*(vin-parameters[2])))-(parameters[1]/parameters[0])
+def calculationbias(vin, a,b,c):
+    return (1-float(vin)*b+c*b)/(float(vin)*a-c*a)
 
+# wynik = calculationbias(0.1, -1439.5638741955333, 235.0248602114991, 246.80517253562815)
+# print(wynik)

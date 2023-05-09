@@ -123,7 +123,12 @@ class NoiseProcedure(Procedure):
             log.info("read calibration parameters from file")
             try:
                 fit_parameters = fit_parameters_from_file()
-                set_vol = calculationbias(self.bias_voltage, fit_parameters)
+                a = fit_parameters[0]
+                b = fit_parameters[1]
+                c = fit_parameters[2]
+                print(a,b,c)
+                set_vol = calculationbias(0.1, a,b,c)
+                print(set_vol)
                 self.voltage.voltage_setpoint(set_vol) #set bias voltage  
                 log.info("read parameters succesfull")
                 sleep(0.5)
