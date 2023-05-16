@@ -132,6 +132,7 @@ class NoiseProcedure(Procedure):
                 log.info("read parameters succesfull")
                 sleep(0.5)
                 self.voltage.enabled() #enable channel 
+                sleep(2)
                     
             except Exception:
                 traceback.print_exc()
