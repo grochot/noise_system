@@ -23,7 +23,7 @@ from logic.unique_name import unique_name
 from hardware.hmc8043 import HMC8043
 from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928 
-from hardware.field_sensor_noise import FieldSensor 
+from hardware.field_sensor_noise_new import FieldSensor 
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 from logic.generate_headers import GenerateHeader
 from logic.fft_mean import FFT_mean
@@ -99,6 +99,7 @@ class NoiseProcedure(Procedure):
     ##Field Sensor:
             
             if self.field_sensor_adress == "none":
+                print(self.field.sensor_adress)
                 self.field = DummyFieldSensor()
                 log.warning("Use DummyFieldSensor")
             
@@ -235,7 +236,9 @@ class NoiseProcedure(Procedure):
                     tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
                     tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
                     tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
-                except: 
+               
+                except Exception as e:
+                    print(e)
                     log.error("Field sensor adress wrong!")
                     self.should_stop()
        
