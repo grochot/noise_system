@@ -23,10 +23,12 @@ from logic.unique_name import unique_name
 from hardware.hmc8043 import HMC8043
 from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928 
-from hardware.field_sensor_noise import FieldSensor 
+from hardware.field_sensor_noise_new import FieldSensor 
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 from logic.generate_headers import GenerateHeader
 from logic.fft_mean import FFT_mean
+from logic.vbiascalibration import vbiascalibration, calculationbias, func, linear_func
+from logic.fit_parameters_to_file import fit_parameters_to_file, fit_parameters_from_file
 
 log = logging.getLogger(__name__) 
 log.addHandler(logging.NullHandler()) 
@@ -39,27 +41,34 @@ class NoiseProcedure(Procedure):
     finded_instruments = find_instruments.find_instrument()
     finded_instrumnets = finded_instruments.append("none")
     
-    
-    ################# PARAMETERS ###################
-    period_time = FloatParameter('Period of Time', units='s', default=1, group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot', 'Mean + Raw'])
+################# PARAMETERS###################
+#Noise mode:
+    period_time = FloatParameter('Period of Time', units='s', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
+    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot', 'Mean + Raw', 'Vbias calibration', "Vbias"])
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'One Shot')
-    bias_voltage = FloatParameter('Bias Voltage', units='V', default=0.01,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
+    sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v=='One Shot')
+    bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
+    voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
     field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='AC', choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"],group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='DC', choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v =='Vbias calibration' or v == 'Vbias' )
+    channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"],group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'V bias calibration' or v == 'Vbias')
     sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     treshold = FloatParameter("Treshold", units='mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     divide = FloatParameter("Divide number", units = 'mV',group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     
+#Bias mode:
+    start = FloatParameter("Start",units='mV', group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
+    stop = FloatParameter("Stop", units='mV', group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
+    no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
+    reverse_voltage = BooleanParameter("Reverse voltage", default=False, group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
+    delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
+   
 
 
    
-    DATA_COLUMNS = ['time (s)', 'Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
+    DATA_COLUMNS = ['time (s)','Bias voltage (mV)', 'Sense Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
     path_file = SaveFilePath() 
     
     def prepare_columns(self,columns):
@@ -68,9 +77,9 @@ class NoiseProcedure(Procedure):
         for k in range(1,len(columns)):
             columns_f.append(","+ columns[k])
         return columns_f
-    
+######################################## INIT ########################################
     def startup(self):
-######################################## MEAN SET ###########################
+#Mean mode:
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             if self.mode == 'Mean + Raw':
                 self.header = GenerateHeader()
@@ -87,9 +96,10 @@ class NoiseProcedure(Procedure):
                 self.no_samples = self.no_samples + 1
           
 
-#Field Sensor:
+    ##Field Sensor:
             
             if self.field_sensor_adress == "none":
+                print(self.field.sensor_adress)
                 self.field = DummyFieldSensor()
                 log.warning("Use DummyFieldSensor")
             
@@ -98,7 +108,7 @@ class NoiseProcedure(Procedure):
                 self.field.read_field_init()
                
 
-            ################# BIAS FIELD ###################
+    ##Bias field:
             # try:
             #     self.field = HMC8043("ASRL1::INSTR") #connction to field controller
             #     self.field.set_channel(0) #set channnel 1
@@ -110,17 +120,29 @@ class NoiseProcedure(Procedure):
             #     log.error("Could not connect to field controller")
                 
         
-#Bias voltage:
-            try:   
-                self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
-                sleep(1)
+    ##Bias voltage:
+            log.info("read calibration parameters from file")
+            try:
+                fit_parameters = fit_parameters_from_file()
+                a = fit_parameters[0]
+                b = fit_parameters[1]
+                print(a,b)
+                set_vol = calculationbias(self.bias_voltage, a,b,0, "linear")
+                print(set_vol)
+                self.voltage.voltage_setpoint(set_vol) #set bias voltage  
+                log.info("read parameters succesfull")
+                sleep(0.5)
                 self.voltage.enabled() #enable channel 
-               
+                sleep(2)
+                    
             except Exception:
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
+                
+                 
+
             
-#Picoscope:
+    ##Picoscope:
             
         
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
@@ -131,9 +153,9 @@ class NoiseProcedure(Procedure):
         
             #log.error("Could not connect to oscilloscope")
             
-            sleep(2)
-######################################## ONE SHOT SET###########################
-        if self.mode == 'One Shot':
+            sleep(0.5)
+#One shot mode:
+        elif self.mode == 'One Shot':
             self.oscilloscope = PicoScope()
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
@@ -149,10 +171,35 @@ class NoiseProcedure(Procedure):
             except Exception:
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
-            
+#Bias mode:
+        else: 
+            self.oscilloscope = PicoScope()
+            self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltage 
+            sleep(0.1)
+            self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
+            self.oscilloscope.setTrigger()
+            self.oscilloscope.set_number_samples(1000)
+            self.oscilloscope.set_timebase(int((1/10000)*10000000)-1)
+            log.info("Setup instrument done")
+            try:
+                if self.voltage == True: 
+                    self.vector_to = np.linspace(self.start, self.stop,self.no_points)
+                    self.vector_rev = self.vector_to[::-1]
+                    self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+                else: 
+                    self.vector = np.linspace(self.start, self.stop,self.no_points)
+            except:
+                log.error("Vector set failed")
 
-#procedure:
+           
+
+
+
+
+
+######################################## Procedure ########################################
     def execute(self):
+#Mean mode:
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             log.info("Start measurement")
           
@@ -171,9 +218,7 @@ class NoiseProcedure(Procedure):
             fft_tmp_rms_noise = []
 
 
-#Measure field:
-            
-            
+    #Measure field: 
             for i in range(1):
                 try:
                     tmp_field = self.field.read_field()
@@ -191,16 +236,18 @@ class NoiseProcedure(Procedure):
                     tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
                     tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
                     tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
-                except: 
+               
+                except Exception as e:
+                    print(e)
                     log.error("Field sensor adress wrong!")
                     self.should_stop()
-                
+       
 
-#MAIN LOOP ###
+    #MAIN LOOP 
             for i in range(self.steps):
                 if self.mode == 'Mean + Raw':
                     self.sample_name_raw = unique_name(self.path_file.ReadFile()+ "/", prefix="{}".format(str(self.sample_name) + "_raw{}".format(i)))
-                    self.header.set_parameters(self.sample_name_raw, self.header_columns, self.bias_field, self.bias_voltage, self.channelA_coupling_type, self.channelA_range, self.divide, self.field_adress, self.field_sensor_adress, self.no_time, self.period_time, self.sample_name, self.sampling_interval, self.treshold, self.voltage_adress )
+                    self.header.set_parameters(self.sample_name_raw, self.header_columns, self.bias_field, self.bias_voltage, self.channelA_coupling_type, self.channelA_range, self.divide, self.field_adress, self.field_sensor_adress, self.no_time, self.period_time, self.sample_name, self.sampling_interval, self.treshold, self.voltage_adress, self.delay, self.no_points, self.reverse_voltage, self.start, self.stop)
                 self.oscilloscope.run_block_capture()
                 self.oscilloscope.check_data_collection()
                 self.oscilloscope.create_buffers()
@@ -211,7 +258,7 @@ class NoiseProcedure(Procedure):
 
                 
             
-#FFT Counting:
+    #FFT Counting:
                 smpl_freq = self.sampling_interval
                 ft_tmp = np.fft.fft(tmp_voltage_list) / len(tmp_voltage_list)  # Normalize amplitude and apply the FFT
                 ft_tmp = ft_tmp[range(int(len(tmp_voltage_list)/2))]   # Exclude sampling frequency ---> FFT value
@@ -230,7 +277,7 @@ class NoiseProcedure(Procedure):
 
                 
                
-##### Mean + Raw #####      
+    #Mean + Raw      
                 if  self.mode == 'Mean + Raw':
 
                     
@@ -242,6 +289,7 @@ class NoiseProcedure(Procedure):
                     for tmp_ele in range(len(tmp_time_list)):
                         self.data_tmp = [
                             str(tmp_time_list[tmp_ele]*1e-9),
+                            ','+str(math.nan),
                             ','+str(tmp_voltage_list[tmp_ele]),
                             ','+str(tmp_data_magnetic_field_x_mean),
                             ','+str(tmp_data_magnetic_field_y_mean),
@@ -273,7 +321,7 @@ class NoiseProcedure(Procedure):
             tmp_data_frequency_average = tmp_frequency["average"].to_list()
            
         
-#Send results:
+    #Send results:
             for ele in range(len(tmp_data_time_average)):
                 try:
                     data2 = {
@@ -282,7 +330,8 @@ class NoiseProcedure(Procedure):
                             'log[frequency] (Hz)': math.log10(tmp_data_frequency_average[ele+1]) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'time (s)': tmp_data_time_average[ele]*1e-9,
-                            'Voltage (mV)': tmp_data_voltage_average[ele],
+                            'Sense Voltage (mV)': tmp_data_voltage_average[ele],
+                            'Bias voltage (mV)': self.bias_voltage,
                             'X field (Oe)': tmp_data_magnetic_field_x_mean,
                             'Y field (Oe)': tmp_data_magnetic_field_y_mean,
                             'Z field (Oe)': tmp_data_magnetic_field_z_mean,
@@ -303,8 +352,8 @@ class NoiseProcedure(Procedure):
 
         
        
-###### ONE SHOT MODE #############
-        if self.mode == 'One Shot':
+#One shot mode
+        elif self.mode == 'One Shot':
             self.oscilloscope.set_number_samples(self.no_samples)
             self.oscilloscope.set_timebase(int((1/self.sampling_interval)*10000000)-1)
             self.oscilloscope.run_block_capture()
@@ -323,7 +372,7 @@ class NoiseProcedure(Procedure):
             for ele in range(len(tmp_time_list)):
                 data2 = {
                         'time (s)': tmp_time_list[ele]*1e-9,
-                        'Voltage (mV)': tmp_voltage_list[ele],
+                        'Sense Voltage (mV)': tmp_voltage_list[ele],
                         'frequency (Hz)': math.nan, 
                         'FFT (mV)': math.nan,
                         'log[frequency] (Hz)': math.nan,
@@ -336,7 +385,149 @@ class NoiseProcedure(Procedure):
                         'divide_voltage (mV)': math.nan,
                         }
                 self.emit('results', data2) 
+#Vbias calibration mode:
+        elif self.mode == "Vbias calibration":
+            log.info("Vbias calibration mode start")
+            vbias_list = []
+            vs_list = []
+            vs_fit = []
+            k=0
+            print("main loop")
+            self.voltage.enabled() #enable channel 
+            print("enabled outlput")
+           
+            for i in self.vector:  
+                self.voltage.voltage_setpoint(i) #set bias voltage
+                vbias_list.append(i)
+                sleep(0.1)
+                print(k)
+                self.oscilloscope.run_block_capture()
+                self.oscilloscope.check_data_collection()
+                self.oscilloscope.create_buffers()
+                self.oscilloscope.set_buffer_location()
+                self.oscilloscope.getValuesfromScope()
+                tmp_time_list = self.oscilloscope.create_time()
+                tmp_vs_list = self.oscilloscope.convert_to_mV(self.channelA_range) 
+                vs_list.append(np.average(tmp_vs_list))
+                self.emit('progress', 100 * k / len(self.vector))
+                k = k + 1
             
+            self.voltage.voltage_setpoint(0) #set bias voltage to 0
+            self.voltage.disabled() #disable channel
+            ##Fitting data:
+            
+            log.info("Fitting data start")
+            self.fit_parameters = vbiascalibration(vbias_list, vs_list, "linear")
+            log.info("Fitting data end")
+            ##Save to file:
+            log.info("Saving data to file start")
+            fit_parameters_to_file(self.fit_parameters)
+            print(self.fit_parameters)
+            log.info("Saving data to file end")
+            for l in vbias_list:
+                vs_fit.append(linear_func(l, self.fit_parameters[0],self.fit_parameters[1]))
+            print(vs_fit)
+        
+                
+
+            #Send results:
+            for ele in range(len(vbias_list)):
+                try:
+                    data3 = {
+                            'frequency (Hz)':  math.nan, 
+                            'FFT (mV)': vs_fit[ele], 
+                            'log[frequency] (Hz)': math.nan,
+                            'log[FFT] (mV)':   math.nan,
+                            'time (s)': math.nan,
+                            'Sense Voltage (mV)': vs_list[ele],
+                            'Bias voltage (mV)': vbias_list[ele],
+                            'X field (Oe)': math.nan,
+                            'Y field (Oe)': math.nan,
+                            'Z field (Oe)': math.nan,
+                            'treshold_time (s)': math.nan,
+                            'treshold_voltage (mV)': math.nan,
+                            'divide_voltage (mV)': math.nan
+                            }
+                    
+                
+
+                    self.emit('results', data3) 
+                except:
+                    self.should_stop()
+                if self.should_stop():
+                    log.warning("Caught the stop flag in the procedure")
+                    break
+
+
+
+#Vbias mode: 
+        elif self.mode == "Vbias":
+            log.info("Vbias mode start")
+            vbias_list = []
+            vs_list = []
+            k = 0
+            log.info("read calibration parameters from file")
+            try:
+                fit_parameters = fit_parameters_from_file()
+            except:
+                self.should_stop()
+                
+
+            log.info("read calibration parameters from file end")
+            self.voltage.enabled() #enable channel 
+            for i in self.vector:  
+                if self.should_stop():
+                    log.warning("Caught the stop flag in the procedure")
+                    break
+                set_vol = calculationbias(i, fit_parameters, "linear")
+                self.voltage.voltage_setpoint(set_vol) #set bias voltage
+                vbias_list.append(i)  #list of Vbias
+                sleep(0.1)
+                self.oscilloscope.run_block_capture()
+                self.oscilloscope.check_data_collection()
+                self.oscilloscope.create_buffers()
+                self.oscilloscope.set_buffer_location()
+                self.oscilloscope.getValuesfromScope()
+                tmp_time_list = self.oscilloscope.create_time()
+                tmp_vs_list = self.oscilloscope.convert_to_mV(self.channelA_range)
+
+                vs_list.append(np.average(tmp_vs_list))   #list of Vs 
+                self.emit('progress', 100 * k / len(self.vector))
+                k = k + 1
+            self.voltage.voltage_setpoint(0) #set bias voltage to 0
+            self.voltage.disabled() #disable channel
+        #Send results:
+            for ele in range(len(vbias_list)):
+                try:
+                    data3 = {
+                            'frequency (Hz)':  math.nan, 
+                            'FFT (mV)': math.nan, 
+                            'log[frequency] (Hz)': math.nan,
+                            'log[FFT] (mV)':   math.nan,
+                            'time (s)': math.nan,
+                            'Sense Voltage (mV)': vs_list[ele],
+                            'Bias voltage (mV)': vbias_list[ele],
+                            'X field (Oe)': math.nan,
+                            'Y field (Oe)': math.nan,
+                            'Z field (Oe)': math.nan,
+                            'treshold_time (s)': math.nan,
+                            'treshold_voltage (mV)': math.nan,
+                            'divide_voltage (mV)': math.nan
+                            }
+                    
+                
+
+                    self.emit('results', data3) 
+                except:
+                    self.should_stop()
+                if self.should_stop():
+                    log.warning("Caught the stop flag in the procedure")
+                    break
+
+
+
+
+######################################## End ########################################
 
     def stop_scope(self):
         
@@ -364,7 +555,7 @@ class NoiseProcedure(Procedure):
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
                 self.voltage.voltage_setpoint(0)
-                sleep(1)
+                sleep(0.5)
                 self.voltage.disabled()
                 NoiseProcedure.licznik = 0
             NoiseProcedure.licznik += 1
@@ -380,17 +571,17 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide'],
-            displays=['period_time', 'no_time','sampling_interval', 'bias_voltage', 'bias_field', 'sample_name'],
+            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
+            displays=['bias_voltage', 'period_time', 'no_time','sampling_interval', 'sample_name'],
             x_axis='time (s)',
-            y_axis='Voltage (mV)',
+            y_axis='Sense Voltage (mV)',
             directory_input=True,  
             sequencer=True,                                      
             sequencer_inputs=['bias_voltage','bias_field'],    
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.10 beta')
+        self.setWindowTitle('Noise Measurement System v.1.21 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
