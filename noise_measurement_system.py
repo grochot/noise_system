@@ -68,7 +68,7 @@ class NoiseProcedure(Procedure):
 
 
    
-    DATA_COLUMNS = ['time (s)','Bias voltage (mV)', 'Sense Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
+    DATA_COLUMNS = ['time (s)','Bias voltage (mV)', 'Sense Voltage (mV)', 'X field (uT)', 'Y field (uT)', 'Z field (uT)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
     path_file = SaveFilePath() 
     
     def prepare_columns(self,columns):
@@ -233,9 +233,9 @@ class NoiseProcedure(Procedure):
                     sleep(0.1)
 
         
-                    tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
-                    tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
-                    tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
+                    tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))
+                    tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))
+                    tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))
                
                 except Exception as e:
                     print(e)
@@ -332,9 +332,9 @@ class NoiseProcedure(Procedure):
                             'time (s)': tmp_data_time_average[ele]*1e-9,
                             'Sense Voltage (mV)': tmp_data_voltage_average[ele],
                             'Bias voltage (mV)': self.bias_voltage,
-                            'X field (Oe)': tmp_data_magnetic_field_x_mean,
-                            'Y field (Oe)': tmp_data_magnetic_field_y_mean,
-                            'Z field (Oe)': tmp_data_magnetic_field_z_mean,
+                            'X field (uT)': tmp_data_magnetic_field_x_mean,
+                            'Y field (uT)': tmp_data_magnetic_field_y_mean,
+                            'Z field (uT)': tmp_data_magnetic_field_z_mean,
                             'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
                             'treshold_voltage (mV)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
                             'divide_voltage (mV)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
@@ -377,9 +377,9 @@ class NoiseProcedure(Procedure):
                         'FFT (mV)': math.nan,
                         'log[frequency] (Hz)': math.nan,
                         'log[FFT] (mV)': math.nan,
-                        'X field (Oe)': math.nan,
-                        'Y field (Oe)':math.nan,
-                        'Z field (Oe)': math.nan,
+                        'X field (uT)': math.nan,
+                        'Y field (uT)':math.nan,
+                        'Z field (uT)': math.nan,
                         'treshold_time (s)':math.nan,
                         'treshold_voltage (mV)': math.nan,
                         'divide_voltage (mV)': math.nan,
@@ -441,9 +441,9 @@ class NoiseProcedure(Procedure):
                             'time (s)': math.nan,
                             'Sense Voltage (mV)': vs_list[ele],
                             'Bias voltage (mV)': vbias_list[ele],
-                            'X field (Oe)': math.nan,
-                            'Y field (Oe)': math.nan,
-                            'Z field (Oe)': math.nan,
+                            'X field (uT)': math.nan,
+                            'Y field (uT)': math.nan,
+                            'Z field (uT)': math.nan,
                             'treshold_time (s)': math.nan,
                             'treshold_voltage (mV)': math.nan,
                             'divide_voltage (mV)': math.nan
@@ -507,9 +507,9 @@ class NoiseProcedure(Procedure):
                             'time (s)': math.nan,
                             'Sense Voltage (mV)': vs_list[ele],
                             'Bias voltage (mV)': vbias_list[ele],
-                            'X field (Oe)': math.nan,
-                            'Y field (Oe)': math.nan,
-                            'Z field (Oe)': math.nan,
+                            'X field (uT)': math.nan,
+                            'Y field (uT)': math.nan,
+                            'Z field (uT)': math.nan,
                             'treshold_time (s)': math.nan,
                             'treshold_voltage (mV)': math.nan,
                             'divide_voltage (mV)': math.nan
