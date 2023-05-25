@@ -8,7 +8,6 @@ from picosdk.ps4000 import ps4000 as ps
 from picosdk.functions import adc2mV, assert_pico_ok
 import time
 
-
 class PicoScope(): 
 
     def __init__(self):
