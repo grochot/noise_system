@@ -22,7 +22,7 @@ from logic.unique_name import unique_name
 
 from hardware.keithley2400 import Keithley2400
 from hardware.daq import DAQ
-from hardware.field_sensor_iv import FieldSensor
+from hardware.field_sensor_noise_new import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 
 log = logging.getLogger(__name__) 
