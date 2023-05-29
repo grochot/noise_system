@@ -13,7 +13,7 @@ class LockinFrequency():
     def __init__(self, field_sensor, field, vbias):
         self.vbias = SIM928(vbias,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
         self.lockin = Zurich()
-        self.field = DAQ("6124/ao0")
+        #self.field = DAQ("6124/ao0")
         self.field_sensor = FieldSensor(field_sensor)
 
     def init(self):
@@ -21,6 +21,7 @@ class LockinFrequency():
         self.lockin.daq.sync()
         self.vbias.voltage_setpoint(0)
         self.vbias.disabled()
+        self.lockin.auxout()
         sleep(0.3)
         self.lockin.setadc(0,0)
         self.lockin.currinfloat(0,1)
@@ -30,11 +31,12 @@ class LockinFrequency():
         self.lockin.setorder(0, 2)
         self.lockin.setosc(0,0)
         self.lockin.setharmonic(0, 1)
+        
         self.lockin.daq.sync()
 
    
     def set_constant_field(self, value=0):
-        self.field.set_field(value)
+        self.lockin.auxout(value)
         
 
     def set_constant_vbias(self, value=0):
@@ -55,7 +57,7 @@ class LockinFrequency():
 
     def shutdown(self):
         self.vbias.run_to_zero()
-        self.field.shutdown()  
+        self.lockin.auxout(0)
 
 
         

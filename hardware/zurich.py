@@ -74,6 +74,9 @@ class Zurich(Instrument):
 
     def outputoffset(self, output, offset):
         self.daq.setDouble(f"/{self.device}/sigouts/{output}/offset", offset)
+    
+    def auxout(self, offset = 0): 
+        self.daq.setDouble(f"/{self.device}/auxouts/0/offset",  offset)
 
 #????????????????????????
     def enableoutput(self, demod, enable):

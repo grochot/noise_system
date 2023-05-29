@@ -14,14 +14,14 @@ class LockinField():
     def __init__(self, field_sensor, field, vbias):
         self.vbias = SIM928(vbias,timeout = 25000, baud_rate = 9600) 
         self.lockin = Zurich()
-        self.field = DAQ("6124/ao0")
+        #self.field = DAQ("6124/ao0")
         self.field_sensor = FieldSensor(field_sensor)
 
     def init(self):                     
         self.lockin.initalsett()
         self.lockin.daq.sync()
-        self.field.set_voltage(0)
-        self.field.disable_channel() 
+        #self.field.set_voltage(0)
+        #self.field.disable_channel() 
         self.vbias.voltage_setpoint(0)
         self.vbias.disabled()
         sleep(0.3)
@@ -33,11 +33,22 @@ class LockinField():
         self.lockin.setosc(0,0)
         self.lockin.setharmonic(0, 1)
         self.lockin.setextrefs(0,0)
+        self.lockin.outputrange(0,10)
+        self.lockin.outputamplitude(0,0)
+        self.lockin.outputon(0,1)
+        self.lockin.enableoutput(0,1)
+
         self.lockin.daq.sync() 
 
    
     def set_ac_field(self, value=0, freq=1, fs = 200000): # TO DO
-        self.field.set_ac_field(value, freq, fs)
+        self.lockin.oscillatorfreq(0,freq)
+        self.lockin.outputamplitude(0,value)
+        self.lockin.daq.sync()
+    
+    def set_dc_field(self, value=0):
+        self.lockin.outputoffset(0,value)
+        self.lockin.daq.sync()
       
     
     def set_constant_vbias(self, value=0):
@@ -56,8 +67,9 @@ class LockinField():
 
     def shutdown(self):
         self.vbias.run_to_zero()
-        self.field.set_voltage(0)
-        self.field.disable_channel()    
+        self.lockin.outputamplitude(0,0)    
+        self.lockin.outputon(0,0)
+        
 
 
         
