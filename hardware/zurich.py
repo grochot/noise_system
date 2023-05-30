@@ -6,7 +6,7 @@ class Zurich(Instrument):
 
     def __init__(self):
         
-        self.daq = zhinst.core.ziDAQServer('169.254.130.18', 8004, 6)
+        self.daq = zhinst.core.ziDAQServer('192.168.66.202', 8004, 6)
         # self.API_LEVEL = 6
         self.device = 'dev4274'
         # self.ERR_MSG = 'ERR'
@@ -24,10 +24,10 @@ class Zurich(Instrument):
         self.daq.setInt(f"/{self.device}/sigins/{signal}/autorange",auto)
 
     def siginrange(self, signal, range=1):
-        self.daq.setDouble(f"/{self.device}/sigins/{signal}/autorange",range)
+        self.daq.setDouble(f"/{self.device}/sigins/{signal}/range",range)
 
     def siginscaling(self, signal, scaling=1):
-        self.daq.setDouble(f"/{self.device}/sigins/{signal}/autorange",scaling)
+        self.daq.setDouble(f"/{self.device}/sigins/{signal}/scaling",scaling)
 
     def siginac(self, signal, ac=0):
         self.daq.setInt(f"/{self.device}/sigins/{signal}/ac", ac)
@@ -35,7 +35,7 @@ class Zurich(Instrument):
     def sigindiff(self, diff=0):
         self.daq.setInt(f"/{self.device}/sigins/0/diff", diff)
 
-    def siginfloat(self, signal, float=0):
+    def siginfloat(self, signal, float=1):
         self.daq.setInt(f"/{self.device}/sigins/{signal}/float", float)
 
     def siginimp50(self, signal, imp50=0):
@@ -123,15 +123,12 @@ class Zurich(Instrument):
         self.daq.setInt(f"/{self.device}/demods/{demod_id}/enable", enable)  # enable demodulator
 
     def rate(self, demod_id, rate):
-        self.daq.setInt(f"/{self.device}/demods/{demod_id}/rate", rate)  # sampling rate
+        self.daq.setInt(f"/{self.device}/demods/{demod_id}/rate", rate)  # sampling rate 
 
     def sinc(self, demod_id, sinc):
-        self.daq.setInt(f'/{self.device}/demods/{demod_id}/sinc', sinc) #filter on
+        self.daq.setInt(f'/{self.device}/demods/{demod_id}/sinc', sinc) #sinc filter on
 
 
-    ##### SET GENERATOR #############
-    def setoscfreq(self, freq, oscilator):
-        self.daq.setDouble(f"/{self.device}/oscs/{oscilator}/freq", freq)
 
     ##### GET SAMPLE ########
 
