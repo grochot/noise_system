@@ -1,4 +1,5 @@
-
+import sys
+sys.path.append('.')
 from hardware.hmc8043 import HMC8043
 # from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928
@@ -11,14 +12,13 @@ from logic.vbiascalibration import vbiascalibration, calculationbias, func, line
 from time import sleep
 import numpy as np
 class LockinField():
-    def __init__(self, field_sensor, field, vbias):
+    def __init__(self, field_sensor, vbias):
         self.vbias = SIM928(vbias,timeout = 25000, baud_rate = 9600) 
         self.lockin = Zurich()
         #self.field = DAQ("6124/ao0")
         self.field_sensor = FieldSensor(field_sensor)
 
     def init(self):                     
-        self.lockin.initalsett()
         self.lockin.daq.sync()
         #self.field.set_voltage(0)
         #self.field.disable_channel() 
@@ -72,4 +72,3 @@ class LockinField():
         
 
 
-        
