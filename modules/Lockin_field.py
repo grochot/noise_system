@@ -2,7 +2,6 @@ import sys
 sys.path.append('.')
 from hardware.hmc8043 import HMC8043
 # from hardware.picoscope4626 import PicoScope
-from hardware.sim928 import SIM928
 from hardware.field_sensor_noise_new import FieldSensor 
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 from hardware.zurich import Zurich
@@ -12,19 +11,13 @@ from time import sleep
 import numpy as np
 class LockinField():
     def __init__(self, field_sensor=0, vbias=0):
-        self.vbias = SIM928(vbias,timeout = 25000, baud_rate = 9600) 
         self.lockin = Zurich()
-        #self.field = DAQ("6124/ao0")
         self.field_sensor = FieldSensor(field_sensor)
 
     def init(self):                     
-      
-  
-        self.vbias.voltage_setpoint(0)
-        self.vbias.disabled()
-        sleep(0.3)
         self.lockin.oscillatorfreq(0,0) 
         self.lockin.oscillatorfreq(1,0)
+        self.lockin.siginscaling(0,1)
         self.lockin.siginfloat(0,1)
         self.lockin.setosc(0,0)
         self.lockin.setosc(1,1)
@@ -40,6 +33,8 @@ class LockinField():
         self.lockin.siginrange(0,10)
         self.lockin.outputrange(0,10)
         self.lockin.enabledemod(0,1)
+        self.lockin.aux_set_manual(1)
+        self.lockin.auxout(1,0)
         self.lockin.daq.sync() 
 
    
@@ -54,8 +49,7 @@ class LockinField():
       
     
     def set_constant_vbias(self, value=0):
-        self.vbias.voltage_setpoint(value)
-        self.vbias.enabled()
+         self.lockin.auxout(1,value)
 
     
     def lockin_measure_point(self,demod, averaging_rate):
@@ -68,17 +62,40 @@ class LockinField():
         return results
 
     def shutdown(self):
-        self.vbias.run_to_zero()
+        self.lockin.auxout(1,0)
         self.lockin.outputamplitude(0,0)
         self.lockin.outputoffset(0,0)    
         self.lockin.outputon(0,0)
         
-
-
+# ########################### Test ###########
+# import matplotlib.pyplot as plt
+# import matplotlib.animation as animation
+# from matplotlib import style
+# style.use('fivethirtyeight')
+# fig = plt.figure()
+# ax1 = fig.add_subplot(1,1,1)
 # loc = LockinField()
 # loc.init()
-# loc.set_ac_field(0.3,100)
-# loc.set_dc_field(0.6)
-# for i in range(0,10):
-#     print(loc.lockin_measure_point(0,10))
+# list_x = []
+# list_y = []
+# def animate(k):
+  
 #     sleep(1)
+#     loc.set_ac_field(0.03,100*k)
+#     sleep(1)
+#     loc.set_dc_field(0.02*k)
+#     sleep(1)
+#     loc.set_constant_vbias(0.02*k)
+#     sleep(1)
+#     y = loc.lockin_measure_point(0,10)
+#     list_x.append(100*k)
+#     list_y.append(y)
+#     ax1.clear()
+#     ax1.plot(list_x, list_y, "rx")
+
+# ani = animation.FuncAnimation(fig, animate, frames=10, repeat=False)
+# plt.show()
+
+
+
+    

@@ -78,11 +78,11 @@ class Zurich(Instrument):
     def outputoffset(self, output, offset):
         self.daq.setDouble(f"/{self.device}/sigouts/{output}/offset", offset)
     
-    def aux_set_manual(self):
-        self.daq.setInt('/dev4274/auxouts/0/outputselect', -1)
+    def aux_set_manual(self, out):
+        self.daq.setInt(f'/dev4274/auxouts/{out}/outputselect', -1)
     
-    def auxout(self, offset = 0): 
-        self.daq.setDouble(f"/{self.device}/auxouts/0/offset",  offset)
+    def auxout(self, out, offset = 0): 
+        self.daq.setDouble(f"/{self.device}/auxouts/{out}/offset",  offset)
 
 #????????????????????????
     def enableoutput(self, demod, enable):

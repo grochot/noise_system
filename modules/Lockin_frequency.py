@@ -2,7 +2,6 @@ import sys
 sys.path.append('.')
 from hardware.hmc8043 import HMC8043
 # from hardware.picoscope4626 import PicoScope
-from hardware.sim928 import SIM928
 from hardware.field_sensor_noise_new import FieldSensor 
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 from hardware.zurich import Zurich
@@ -12,14 +11,10 @@ from time import sleep
 import numpy as np
 class LockinFrequency():
     def __init__(self, field_sensor=0, vbias=0):
-        self.vbias = SIM928(vbias,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
         self.lockin = Zurich()
         self.field_sensor = FieldSensor(field_sensor)
 
     def init(self):
-        
-        self.vbias.voltage_setpoint(0)
-        self.vbias.disabled()
         self.lockin.setadc(0,0) # 0 - voltage, 1 - current
         self.lockin.siginfloat(0,1)
         self.lockin.oscillatorfreq(0,0)
@@ -28,18 +23,20 @@ class LockinFrequency():
         self.lockin.setharmonic(0, 1)
         self.lockin.outputon(0,0)
         self.lockin.siginrange(0,10)
-        self.lockin.aux_set_manual()
+        self.lockin.aux_set_manual(0)
+        self.lockin.aux_set_manual(1)
         self.lockin.enabledemod(0,1)
+        self.lockin.auxout(0,0)
+        self.lockin.auxout(1,0)
         self.lockin.daq.sync() 
 
    
     def set_constant_field(self, value=0):
-        self.lockin.auxout(value)
+        self.lockin.auxout(0,value)
         
 
     def set_constant_vbias(self, value=0):
-        self.vbias.voltage_setpoint(value)
-        self.vbias.enabled()
+        self.lockin.auxout(1,value)
         
 
     def set_lockin_freq(self,freq):
@@ -55,11 +52,12 @@ class LockinFrequency():
         return results
 
     def shutdown(self):
-        self.vbias.run_to_zero()
-        self.lockin.auxout(0)
+        self.lockin.auxout(1,0)
+        self.lockin.auxout(0,0)
 
 
 # loc = LockinFrequency()
 # loc.init()
 # loc.set_constant_field(5)
+# loc.set_constant_vbias(1)
 # loc.set_lockin_freq(1000)
