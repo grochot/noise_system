@@ -68,16 +68,36 @@ class LockinField():
         self.lockin.outputon(0,0)
         
 # ########################### Test ###########
-# import matplotlib.pyplot as plt
-# import matplotlib.animation as animation
-# from matplotlib import style
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib import style
 # style.use('fivethirtyeight')
-# fig = plt.figure()
-# ax1 = fig.add_subplot(1,1,1)
-# loc = LockinField()
-# loc.init()
-# list_x = []
-# list_y = []
+fig = plt.figure()
+ax1 = fig.add_subplot(1,1,1)
+loc = LockinField()
+loc.init()
+
+start = 0 
+stop = 100 
+no_points = 10
+
+vector_to = np.linspace(start, stop, no_points)
+
+for k in vector_to: 
+    loc.set_ac_field(0.03,100)
+    sleep(1)
+    loc.set_dc_field(0.02)
+    sleep(1)
+    loc.set_constant_vbias(0.02)
+    sleep(1)
+    y = loc.lockin_measure_point(0,10)
+    x = k
+    plt.scatter(x, y, color = 'red', marker = 'x')
+    plt.title("Real Time plot")
+    plt.xlabel("x")
+    plt.ylabel("sinx")
+    plt.pause(0.05)
+    
 # def animate(k):
   
 #     sleep(1)
@@ -94,7 +114,7 @@ class LockinField():
 #     ax1.plot(list_x, list_y, "rx")
 
 # ani = animation.FuncAnimation(fig, animate, frames=10, repeat=False)
-# plt.show()
+plt.show()
 
 
 
