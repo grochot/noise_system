@@ -61,3 +61,35 @@ class LockinFrequency():
 # loc.set_constant_field(5)
 # loc.set_constant_vbias(1)
 # loc.set_lockin_freq(1000)
+# ########################### Test ###########
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib import style
+# style.use('fivethirtyeight')
+# fig = plt.figure()
+# ax1 = fig.add_subplot(1,1,1)
+loc = LockinFrequency()
+
+loc.init()
+
+start = 2 
+stop = 60
+no_points = 20
+
+vector_to = np.linspace(start, stop, no_points)
+
+for k in vector_to: 
+
+    loc.set_constant_field(1)
+    sleep(1)
+    loc.set_constant_vbias(4)
+    sleep(1)
+    loc.set_lockin_freq(k)
+    sleep(1)
+    y = loc.lockin_measure_point(0,10)
+    x = k
+    plt.scatter(x, y, color = 'red', marker = 'x')
+    plt.title("Real Time plot")
+    plt.xlabel("x")
+    plt.pause(0.05)
+plt.show()
