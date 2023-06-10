@@ -10,9 +10,17 @@ from logic.vbiascalibration import vbiascalibration, calculationbias, func, line
 from time import sleep
 import numpy as np
 class LockinField():
-    def __init__(self, field_sensor=0, vbias=0):
+    def __init__(self, field_sensor=0):
         self.lockin = Zurich()
-        self.field_sensor = FieldSensor(field_sensor)
+
+        if self.field_sensor_adress == "none":
+                print(self.field.sensor_adress)
+                self.field = DummyFieldSensor()
+            
+        else:
+                self.field = FieldSensor(self.field_sensor_adress)
+                self.field.read_field_init()
+
 
     def init(self):                     
         self.lockin.oscillatorfreq(0,0) 
@@ -68,53 +76,37 @@ class LockinField():
         self.lockin.outputon(0,0)
         
 # ########################### Test ###########
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib import style
-# style.use('fivethirtyeight')
-# fig = plt.figure()
-# ax1 = fig.add_subplot(1,1,1)
-loc = LockinField()
+# import matplotlib.pyplot as plt
+# import matplotlib.animation as animation
+# from matplotlib import style
+# # style.use('fivethirtyeight')
+# # fig = plt.figure()
+# # ax1 = fig.add_subplot(1,1,1)
+# loc = LockinField()
 
-loc.init()
+# loc.init()
 
-start = 0.5
-stop =  1
-no_points = 10
+# start = 0.5
+# stop =  1
+# no_points = 10
 
-vector_to = np.linspace(start, stop, no_points)
+# vector_to = np.linspace(start, stop, no_points)
 
-for k in vector_to: 
-    loc.set_ac_field(k,4)
-    sleep(1)
-    loc.set_dc_field(1)
-    sleep(1)
-    loc.set_constant_vbias(2)
-    sleep(3) ### uzaleznic od czestotliwosci 
-    y = loc.lockin_measure_point(0,10)
-    x = k
-    plt.scatter(x, y, color = 'red', marker = 'x')
-    plt.title("Real Time plot")
-    plt.xlabel("x")
-    plt.pause(0.05)
-    
-# def animate(k):
-  
+# for k in vector_to: 
+#     loc.set_ac_field(k,4)
 #     sleep(1)
-#     loc.set_ac_field(0.03,100*k)
+#     loc.set_dc_field(1)
 #     sleep(1)
-#     loc.set_dc_field(0.02*k)
-#     sleep(1)
-#     loc.set_constant_vbias(0.02*k)
-#     sleep(1)
+#     loc.set_constant_vbias(2)
+#     sleep(3) ### uzaleznic od czestotliwosci 
 #     y = loc.lockin_measure_point(0,10)
-#     list_x.append(100*k)
-#     list_y.append(y)
-#     ax1.clear()
-#     ax1.plot(list_x, list_y, "rx")
-
-# ani = animation.FuncAnimation(fig, animate, frames=10, repeat=False)
-plt.show()
+#     x = k
+#     plt.scatter(x, y, color = 'red', marker = 'x')
+#     plt.title("Real Time plot")
+#     plt.xlabel("x")
+#     plt.pause(0.05)
+    
+# plt.show()
 
 
 

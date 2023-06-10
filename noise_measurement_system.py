@@ -29,6 +29,8 @@ from logic.generate_headers import GenerateHeader
 from logic.fft_mean import FFT_mean
 from logic.vbiascalibration import vbiascalibration, calculationbias, func, linear_func
 from logic.fit_parameters_to_file import fit_parameters_to_file, fit_parameters_from_file
+from modules.Lockin_field import LockinField 
+from modules.Lockin_frequency import LockinFrequency
 
 log = logging.getLogger(__name__) 
 log.addHandler(logging.NullHandler()) 
@@ -41,17 +43,17 @@ class NoiseProcedure(Procedure):
     finded_instruments = find_instruments.find_instrument()
     finded_instrumnets = finded_instruments.append("none")
     
-################# PARAMETERS###################
+#################################### PARAMETERS ###########################################
 #Noise mode:
     period_time = FloatParameter('Period of Time', units='s', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot', 'Mean + Raw', 'Vbias calibration', "Vbias"])
+    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot', 'Mean + Raw', 'Vbias calibration', "Vbias", "Lockin field", "Lockin frequency", "Lockin calibration"])
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v=='One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
     bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
     field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == "Lockin field" or v == "Lockin frequency")
     channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='DC', choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v =='Vbias calibration' or v == 'Vbias' )
     channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"],group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'V bias calibration' or v == 'Vbias')
     sample_name = Parameter("Sample Name", default="Noise Measurement",group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
@@ -64,11 +66,35 @@ class NoiseProcedure(Procedure):
     no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
     reverse_voltage = BooleanParameter("Reverse voltage", default=False, group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
     delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='Vbias calibration' or v == 'Vbias')
-   
+
+#Lockin mode: 
+    lockin_adress = Parameter("Lockin adress", default="127.0.0.1", group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
+    bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
+    dc_field = FloatParameter('DC Field', units='V', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
+    ac_field_amplitude = FloatParameter('AC Field Amplitude', units='V', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')   
+    ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
+    lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
+    avergaging_rate = FloatParameter("Avergaging rate", default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency' )
+    start_f = FloatParameter("Start",units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
+    stop_f = FloatParameter("Stop", units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
+    no_points_f = IntegerParameter("No Points", group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
+    amplitude_vec = BooleanParameter("Sweep voltage", default=False, group_by='mode', group_condition=lambda v: v =='Lockin field')
+    start_v = FloatParameter("Start",units='mV', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    stop_v = FloatParameter("Stop", units='mV', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    no_points_v = IntegerParameter("No Points",group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    
+
+#################################################################################################################################################################################
+
+
+
+
+
+
 
 
    
-    DATA_COLUMNS = ['time (s)','Bias voltage (mV)', 'Sense Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
+    DATA_COLUMNS = ['time (s)','Bias voltage (mV)', 'AC field amplitude (V)', 'Sense Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
     path_file = SaveFilePath() 
     
     def prepare_columns(self,columns):
@@ -77,7 +103,8 @@ class NoiseProcedure(Procedure):
         for k in range(1,len(columns)):
             columns_f.append(","+ columns[k])
         return columns_f
-######################################## INIT ########################################
+############################################ INIT ########################################
+    
     def startup(self):
 #Mean mode:
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
@@ -172,7 +199,7 @@ class NoiseProcedure(Procedure):
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
 #Bias mode:
-        else: 
+        elif self.mode == "Bias":    
             self.oscilloscope = PicoScope()
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltage 
             sleep(0.1)
@@ -191,13 +218,31 @@ class NoiseProcedure(Procedure):
             except:
                 log.error("Vector set failed")
 
-           
+#Lockin mode: 
+
+        elif self.mode == "Lockin field":
+            self.lockin = LockinField(self.field_sensor_adress)
+            self.lockin.init()
+            if self.amplitude_vec == True:
+                self.vector = np.linspace(self.start_v, self.stop_v,self.no_points_v)
+            else: 
+                self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
+            
+            self.lockin.set_constant_vbias(self.bias_voltage)
+            sleep(1)
+               
+
+        elif self.mode == "Lockin frequency": 
+            self.lockin = LockinFrequency(self.field_sensor_adress)
+            self.lockin.init()
+            self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
+            self.lockin.set_constant_field(self.dc_field)
+            sleep(1)
+            self.lockin.set_constant_vbias(self.bias_voltage)
+            sleep(1)
 
 
-
-
-
-######################################## Procedure ########################################
+############################################### Procedure #################################################
     def execute(self):
 #Mean mode:
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
@@ -327,6 +372,7 @@ class NoiseProcedure(Procedure):
                     data2 = {
                             'frequency (Hz)': tmp_data_frequency_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
                             'FFT (mV)': tmp_data_fft_average[ele] if ele < len(tmp_data_frequency_average) else math.nan, 
+                            'AC field amplitude (V)': math.nan,
                             'log[frequency] (Hz)': math.log10(tmp_data_frequency_average[ele+1]) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'time (s)': tmp_data_time_average[ele]*1e-9,
@@ -373,6 +419,7 @@ class NoiseProcedure(Procedure):
                 data2 = {
                         'time (s)': tmp_time_list[ele]*1e-9,
                         'Sense Voltage (mV)': tmp_voltage_list[ele],
+                        'AC field amplitude (V)': math.nan,
                         'frequency (Hz)': math.nan, 
                         'FFT (mV)': math.nan,
                         'log[frequency] (Hz)': math.nan,
@@ -386,6 +433,7 @@ class NoiseProcedure(Procedure):
                         }
                 self.emit('results', data2) 
 #Vbias calibration mode:
+        
         elif self.mode == "Vbias calibration":
             log.info("Vbias calibration mode start")
             vbias_list = []
@@ -436,6 +484,7 @@ class NoiseProcedure(Procedure):
                     data3 = {
                             'frequency (Hz)':  math.nan, 
                             'FFT (mV)': vs_fit[ele], 
+                            'AC field amplitude (V)': math.nan,
                             'log[frequency] (Hz)': math.nan,
                             'log[FFT] (mV)':   math.nan,
                             'time (s)': math.nan,
@@ -503,6 +552,7 @@ class NoiseProcedure(Procedure):
                             'frequency (Hz)':  math.nan, 
                             'FFT (mV)': math.nan, 
                             'log[frequency] (Hz)': math.nan,
+                            'AC field amplitude (V)': math.nan,
                             'log[FFT] (mV)':   math.nan,
                             'time (s)': math.nan,
                             'Sense Voltage (mV)': vs_list[ele],
@@ -523,6 +573,114 @@ class NoiseProcedure(Procedure):
                 if self.should_stop():
                     log.warning("Caught the stop flag in the procedure")
                     break
+        
+        ################# Lockin mode ################
+        elif self.mode == "Lockin field":
+            self.lockin.set_dc_field(self.dc_field)
+            sleep(1)
+            for i in self.vector:
+                if self.amplitude_vec == True:
+                    self.lockin.set_ac_field(i,self.ac_field_frequency)
+                else:
+                    self.lockin.set_ac_field(self.ac_field_amplitude,i)
+                sleep(3)
+                y = self.lockin.lockin_measure_point(0,self.avergaging_rate)
+                    
+                self.emit('progress', 100 * i / len(self.vector))
+                try:
+                    if self.amplitude_vec == True:
+                        data_lockin = {
+                                'frequency (Hz)': self.ac_field_frequency, 
+                                'FFT (mV)': math.nan, 
+                                'AC field amplitude (V)': i,
+                                'log[frequency] (Hz)':  math.nan,
+                                'log[FFT] (mV)':   math.nan,
+                                'time (s)': math.nan,
+                                'Sense Voltage (mV)': y,
+                                'Bias voltage (mV)': self.bias_voltage,
+                                'X field (Oe)': math.nan,
+                                'Y field (Oe)': math.nan,
+                                'Z field (Oe)': math.nan,
+                                'treshold_time (s)': math.nan,
+                                'treshold_voltage (mV)': math.nan,
+                                'divide_voltage (mV)': math.nan
+                                }
+                    else:
+                         data_lockin = {
+                                'frequency (Hz)': i, 
+                                'FFT (mV)': math.nan, 
+                                'AC field amplitude (V)': self.ac_field_amplitude,
+                                'log[frequency] (Hz)':  math.nan,
+                                'log[FFT] (mV)':   math.nan,
+                                'time (s)': math.nan,
+                                'Sense Voltage (mV)': y,
+                                'Bias voltage (mV)': self.bias_voltage,
+                                'X field (Oe)': math.nan,
+                                'Y field (Oe)': math.nan,
+                                'Z field (Oe)': math.nan,
+                                'treshold_time (s)': math.nan,
+                                'treshold_voltage (mV)': math.nan,
+                                'divide_voltage (mV)': math.nan
+                                }
+                    
+
+                    self.emit('results', data_lockin) 
+                except:
+                    self.should_stop()
+                if self.should_stop():
+                    log.warning("Caught the stop flag in the procedure")
+                    break
+
+
+
+
+
+
+
+
+        elif self.mode == "Lockin frequency":
+            for i in self.vector:
+                self.lockin.set_lockin_freq(i)
+                sleep(1)
+                y = self.lockin.lockin_measure_point(0,self.avergaging_rate)
+                self.emit('progress', 100 * i / len(self.vector))
+                try:
+                    data_lockin = {
+                        'frequency (Hz)': i, 
+                        'FFT (mV)': math.nan, 
+                        'AC field amplitude (V)': math.nan,
+                        'log[frequency] (Hz)':  math.nan,
+                        'log[FFT] (mV)':   math.nan,
+                        'time (s)': math.nan,
+                        'Sense Voltage (mV)': y,
+                        'Bias voltage (mV)': self.bias_voltage,
+                        'X field (Oe)': math.nan,
+                        'Y field (Oe)': math.nan,
+                        'Z field (Oe)': math.nan,
+                        'treshold_time (s)': math.nan,
+                        'treshold_voltage (mV)': math.nan,
+                        'divide_voltage (mV)': math.nan
+                        }
+                    
+
+                    self.emit('results', data_lockin) 
+                except:
+                    self.should_stop()
+                if self.should_stop():
+                    log.warning("Caught the stop flag in the procedure")
+                    break
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -550,16 +708,18 @@ class NoiseProcedure(Procedure):
  
     def shutdown(self):
   
-        self.oscilloscope.stop_scope()
-        self.oscilloscope.disconnect_scope()
+        
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
+            self.oscilloscope.stop_scope()
+            self.oscilloscope.disconnect_scope()
             if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
                 self.voltage.voltage_setpoint(0)
                 sleep(0.5)
                 self.voltage.disabled()
                 NoiseProcedure.licznik = 0
             NoiseProcedure.licznik += 1
-         
+        elif self.mode == 'Lockin field' or self.mode == 'Lockin frequency':
+            self.lockin.shutdown()
         
 
         
@@ -571,7 +731,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
+            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay', 'lockin_adress', 'dc_field', 'ac_field_amplitude', 'ac_field_frequency', 'ac_field_phase', 'ac_field_offset', 'ac_field_harmonic', 'ac_field_amplitude_units', 'ac_field_frequency_units', 'ac_field_phase_units', 'ac_field_offset_units', 'ac_field_harmonic_units', 'ac_field_amplitude_units', 'ac_field_frequency_units', 'ac_field_phase_units', 'ac_field_offset_units', 'ac_field_harmonic_units', 'ac_field_amplitude_units', 'ac_field_frequency_units', 'ac_field_phase_units', 'ac_field_offset_units', 'ac_field_harmonic_units', 'ac_field_amplitude_units', 'ac_field_frequency_units', 'ac_field_phase_units', 'ac_field_offset_units', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate', 'start_f', 'stop_f', 'no_points_f', 'amplitude_vec', 'start_v', 'stop_v', 'no_points_v' ],
             displays=['bias_voltage', 'period_time', 'no_time','sampling_interval', 'sample_name'],
             x_axis='time (s)',
             y_axis='Sense Voltage (mV)',
@@ -581,7 +741,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.21 beta')
+        self.setWindowTitle('Noise Measurement System v.1.30 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 

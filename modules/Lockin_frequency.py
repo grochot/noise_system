@@ -10,9 +10,16 @@ from logic.vbiascalibration import vbiascalibration, calculationbias, func, line
 from time import sleep
 import numpy as np
 class LockinFrequency():
-    def __init__(self, field_sensor=0, vbias=0):
+    def __init__(self, field_sensor_adress=0):
         self.lockin = Zurich()
-        self.field_sensor = FieldSensor(field_sensor)
+
+        if self.field_sensor_adress == "none":
+                print(self.field.sensor_adress)
+                self.field = DummyFieldSensor()
+            
+        else:
+                self.field = FieldSensor(self.field_sensor_adress)
+                self.field.read_field_init()
 
     def init(self):
         self.lockin.setadc(0,0) # 0 - voltage, 1 - current
@@ -56,40 +63,35 @@ class LockinFrequency():
         self.lockin.auxout(0,0)
 
 
+# # ########################### Test ###########
+# import matplotlib.pyplot as plt
+# import matplotlib.animation as animation
+# from matplotlib import style
+# # style.use('fivethirtyeight')
+# # fig = plt.figure()
+# # ax1 = fig.add_subplot(1,1,1)
 # loc = LockinFrequency()
+
 # loc.init()
-# loc.set_constant_field(5)
-# loc.set_constant_vbias(1)
-# loc.set_lockin_freq(1000)
-# ########################### Test ###########
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib import style
-# style.use('fivethirtyeight')
-# fig = plt.figure()
-# ax1 = fig.add_subplot(1,1,1)
-loc = LockinFrequency()
 
-loc.init()
+# start = 2 
+# stop = 60
+# no_points = 20
 
-start = 2 
-stop = 60
-no_points = 20
+# vector_to = np.linspace(start, stop, no_points)
 
-vector_to = np.linspace(start, stop, no_points)
+# for k in vector_to: 
 
-for k in vector_to: 
-
-    loc.set_constant_field(1)
-    sleep(1)
-    loc.set_constant_vbias(4)
-    sleep(1)
-    loc.set_lockin_freq(k)
-    sleep(1)
-    y = loc.lockin_measure_point(0,10)
-    x = k
-    plt.scatter(x, y, color = 'red', marker = 'x')
-    plt.title("Real Time plot")
-    plt.xlabel("x")
-    plt.pause(0.05)
-plt.show()
+#     loc.set_constant_field(1)
+#     sleep(1)
+#     loc.set_constant_vbias(4)
+#     sleep(1)
+#     loc.set_lockin_freq(k)
+#     sleep(1)
+#     y = loc.lockin_measure_point(0,10)
+#     x = k
+#     plt.scatter(x, y, color = 'red', marker = 'x')
+#     plt.title("Real Time plot")
+#     plt.xlabel("x")
+#     plt.pause(0.05)
+# plt.show()
