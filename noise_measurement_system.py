@@ -223,18 +223,19 @@ class NoiseProcedure(Procedure):
 
         elif self.mode == "Lockin field":
 
-            def field_sensor_init(self):
-                if self.field_sensor_adress == "none":
-                    print(self.field.sensor_adress)
+            def field_sensor_init(self, field_sensor_adress):
+                if  field_sensor_adress == "none":
+                    print(field_sensor_adress)
                     field = DummyFieldSensor()
                     log.warning("Use DummyFieldSensor")
                 
                 else:
-                    field = FieldSensor(self.field_sensor_adress)
+                    field = FieldSensor(field_sensor_adress)
                     field.read_field_init()
                 
                 return field
-            self.field = field_sensor_init()
+            
+            self.field = field_sensor_init(self, self.field_sensor_adress)
         
             self.lockin = LockinField(self.field_sensor_adress)
             self.lockin.init()
@@ -248,18 +249,19 @@ class NoiseProcedure(Procedure):
 
             
         elif self.mode == "Lockin frequency": 
-            def field_sensor_init(self):
-                if self.field_sensor_adress == "none":
-                    print(self.field.sensor_adress)
+            def field_sensor_init(self, field_sensor_adress):
+                if  field_sensor_adress == "none":
+                    print(field_sensor_adress)
                     field = DummyFieldSensor()
                     log.warning("Use DummyFieldSensor")
                 
                 else:
-                    field = FieldSensor(self.field_sensor_adress)
+                    field = FieldSensor(field_sensor_adress)
                     field.read_field_init()
                 
                 return field
-            self.field = field_sensor_init()
+            
+            self.field = field_sensor_init(self, self.field_sensor_adress)
         
             self.lockin = LockinFrequency(self.field_sensor_adress)
             self.lockin.init()
@@ -751,8 +753,8 @@ class NoiseProcedure(Procedure):
                 self.voltage.disabled()
                 NoiseProcedure.licznik = 0
             NoiseProcedure.licznik += 1
-        elif self.mode == 'Lockin field' or self.mode == 'Lockin frequency':
-            self.lockin.shutdown()
+        # if self.mode == 'Lockin field' or self.mode == 'Lockin frequency':
+        #     self.lockin.shutdown()
         
 
         
