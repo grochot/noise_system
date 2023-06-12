@@ -4,9 +4,9 @@ from time import sleep
 
 class Zurich(Instrument):
 
-    def __init__(self):
+    def __init__(self, server):
         
-        self.daq = zhinst.core.ziDAQServer('192.168.1.10', 8004, 6)
+        self.daq = zhinst.core.ziDAQServer(server, 8004, 6)
         # self.API_LEVEL = 6
         self.device = 'dev4274'
         # self.ERR_MSG = 'ERR'

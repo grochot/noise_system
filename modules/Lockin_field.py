@@ -10,16 +10,8 @@ from logic.vbiascalibration import vbiascalibration, calculationbias, func, line
 from time import sleep
 import numpy as np
 class LockinField():
-    def __init__(self, field_sensor=0):
-        self.lockin = Zurich()
-
-        if self.field_sensor_adress == "none":
-                print(self.field.sensor_adress)
-                self.field = DummyFieldSensor()
-            
-        else:
-                self.field = FieldSensor(self.field_sensor_adress)
-                self.field.read_field_init()
+    def __init__(self, server=""):
+        self.lockin = Zurich(server)
 
 
     def init(self):                     
@@ -67,7 +59,7 @@ class LockinField():
            sample = self.lockin.getsample(demod)
            avg += np.abs(sample['x'][0] + 1j * sample['y'][0])/np.sqrt(2)
         results = avg/averaging_rate
-        return results
+        return results*1000
 
     def shutdown(self):
         self.lockin.auxout(1,0)
