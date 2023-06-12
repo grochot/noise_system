@@ -70,18 +70,18 @@ class NoiseProcedure(Procedure):
 
 #Lockin mode: 
     lockin_adress = Parameter("Lockin adress", default="192.168.66.202", group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
-    dc_field = FloatParameter('DC Field', units='V', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
-    ac_field_amplitude = FloatParameter('AC Field Amplitude', units='V', default=0,group_by=['mode', "amplitude_vec"], group_condition=[lambda v: v =='Lockin field', False])   
+    dc_field = FloatParameter('DC Field', units='mV', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
+    ac_field_amplitude = FloatParameter('AC Field Amplitude', units='mV', default=0,group_by=['mode', "amplitude_vec"], group_condition=[lambda v: v =='Lockin field', False])   
     ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode', "amplitude_vec"], group_condition=[lambda v: v =='Lockin field', True])
-    lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by='mode', group_condition=lambda v: v =='Lockin frequency')
+    lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field')
     avergaging_rate = IntegerParameter("Avergaging rate", default=1,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency' )
-    start_f = FloatParameter("Start",units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
-    stop_f = FloatParameter("Stop", units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
-    no_points_f = IntegerParameter("No Points",default = 1, group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
+    start_f = FloatParameter("Start Freq",units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
+    stop_f = FloatParameter("Stop FREQ", units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
+    no_points_f = IntegerParameter("No Points Freq",default = 1, group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
     amplitude_vec = BooleanParameter("Sweep voltage", default=False, group_by='mode', group_condition=lambda v: v =='Lockin field')
-    start_v = FloatParameter("Start",units='mV', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
-    stop_v = FloatParameter("Stop", units='mV', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
-    no_points_v = IntegerParameter("No Points",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    start_v = FloatParameter("Start V",units='mV', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    stop_v = FloatParameter("Stop V", units='mV', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    no_points_v = IntegerParameter("No Points V",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
     
 
 #################################################################################################################################################################################
@@ -626,7 +626,7 @@ class NoiseProcedure(Procedure):
                 if i != 0:
                     sleep(2/i)
                 else: 
-                    sleep(0.1)
+                    sleep(1)
                 
                 y = self.lockin.lockin_measure_point(0,self.avergaging_rate)
                 self.counter = self.counter + 1
@@ -637,7 +637,7 @@ class NoiseProcedure(Procedure):
                         data_lockin = {
                                 'frequency (Hz)': self.ac_field_frequency, 
                                 'FFT (mV)': math.nan, 
-                                'AC field amplitude (V)': i,
+                                'AC field amplitude (mV)': i,
                                 'log[frequency] (Hz)':  math.nan,
                                 'log[FFT] (mV)':   math.nan,
                                 'time (s)': math.nan,
@@ -654,13 +654,13 @@ class NoiseProcedure(Procedure):
                          data_lockin = {
                                 'frequency (Hz)': i if self.amplitude_vec == False else self.ac_field_frequency, 
                                 'FFT (mV)': math.nan, 
-                                'AC field amplitude (V)': i if self.amplitude_vec == True else self.ac_field_amplitude,
+                                'AC field amplitude (mV)': i if self.amplitude_vec == True else self.ac_field_amplitude,
                                 'log[frequency] (Hz)':  math.nan,
                                 'log[FFT] (mV)':   math.nan,
                                 'time (s)': math.nan,
                                 'Sense Voltage (mV)': y,
                                 'Bias voltage (mV)': self.bias_voltage,
-                               'X field (Oe)':self.field_value[0],
+                                'X field (Oe)':self.field_value[0],
                                 'Y field (Oe)':self.field_value[1],
                                 'Z field (Oe)': self.field_value[2],
                                 'treshold_time (s)': math.nan,
@@ -699,7 +699,7 @@ class NoiseProcedure(Procedure):
                     data_lockin = {
                         'frequency (Hz)': i, 
                         'FFT (mV)': math.nan, 
-                        'AC field amplitude (V)': math.nan,
+                        'AC field amplitude (mV)': math.nan,
                         'log[frequency] (Hz)':  math.nan,
                         'log[FFT] (mV)':   math.nan,
                         'time (s)': math.nan,

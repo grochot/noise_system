@@ -31,11 +31,11 @@ class LockinFrequency():
 
    
     def set_constant_field(self, value=0):
-        self.lockin.auxout(0,value)
+        self.lockin.auxout(0,value/1000)
         
 
     def set_constant_vbias(self, value=0):
-        self.lockin.auxout(1,value)
+        self.lockin.auxout(1,value/1000)
         
 
     def set_lockin_freq(self,freq):

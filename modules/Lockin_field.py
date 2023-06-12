@@ -40,16 +40,16 @@ class LockinField():
    
     def set_ac_field(self, value=0, freq=1): # TO DO
         self.lockin.oscillatorfreq(1,freq)
-        self.lockin.outputamplitude(1,value)
+        self.lockin.outputamplitude(1,value/1000)
         self.lockin.daq.sync()
     
     def set_dc_field(self, value=0):
-        self.lockin.outputoffset(0,value)
+        self.lockin.outputoffset(0,value/1000)
         self.lockin.daq.sync()
       
     
     def set_constant_vbias(self, value=0):
-         self.lockin.auxout(1,value)
+         self.lockin.auxout(1,value/1000)
 
     
     def lockin_measure_point(self,demod, averaging_rate):
