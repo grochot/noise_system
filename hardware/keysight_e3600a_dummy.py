@@ -1,7 +1,7 @@
 from pymeasure.instruments import Instrument 
 import pyvisa 
 
-class E3600a(Instrument):
+class E3600aDummy(Instrument):
     def __init__(self, adapter, read_termination="\n", **kwargs):
         super().__init__(
             adapter,
@@ -11,13 +11,13 @@ class E3600a(Instrument):
         )
 
     def enabled(self):
-        self.write(':OUTPut:STATe 1')
+        pass
     
     def disabled(self):
-        self.write(':OUTPut:STATe 0')
+        pass
     
     def voltage(self, vol = 0): 
-        self.write(':SOURce:VOLTage:LEVel:IMMediate:AMPLitude %G' % vol)
+        pass
     
     
     

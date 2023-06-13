@@ -20,7 +20,8 @@ from pymeasure.experiment import (
     Procedure, FloatParameter, BooleanParameter, IntegerParameter, Parameter,ListParameter, Results
 )
 from logic.unique_name import unique_name
-from hardware.hmc8043 import HMC8043
+from hardware.keysight_e3600a import E3600a
+from hardware.keysight_e3600a_dummy import E3600aDummy
 from hardware.picoscope4626 import PicoScope
 from hardware.sim928 import SIM928 
 from hardware.field_sensor_noise_new import FieldSensor 
@@ -48,9 +49,9 @@ class NoiseProcedure(Procedure):
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v=='One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    bias_field = FloatParameter('Bias Field Voltage', units='V', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    bias_field = FloatParameter('Bias Field Voltage', units='mV', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
-    field_adress = ListParameter("HMC8043 adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    field_adress = ListParameter("E3600a adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     channelA_coupling_type = ListParameter("Channel A Coupling Type",  default='DC', choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v =='Vbias calibration' or v == 'Vbias' )
     channelA_range = ListParameter("Channel A Range",  default="200mV", choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"],group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'V bias calibration' or v == 'Vbias')
@@ -109,15 +110,14 @@ class NoiseProcedure(Procedure):
                
 
     ##Bias field:
-            # try:
-            #     self.field = HMC8043("ASRL1::INSTR") #connction to field controller
-            #     self.field.set_channel(0) #set channnel 1
-            #     self.field.enable_channel(1) #enable channel
-            #     self.field.set_voltage(self.bias_field) #set field 
-            #     sleep(1)
-            #     log.info("Set bias field to %g V" %self.bias_field)
-            # except:
-            #     log.error("Could not connect to field controller")
+            try:
+                self.field = E3600a(self.field_adress) #connction to field controller
+                self.field.voltage(self.bias_field) #set field 
+                self.field.enabled()
+                sleep(1)
+                log.info("Set bias field to %g V" %self.bias_field)
+            except:
+                log.error("Could not connect to field controller")
                 
         
     ##Bias voltage:
