@@ -66,6 +66,13 @@ class LockinField():
         self.lockin.outputamplitude(0,0)
         self.lockin.outputoffset(0,0)    
         self.lockin.outputon(0,0)
+    
+    def set_field(self, value_dc=0, value_ac=0, freq=1, calib_dc=1, calib_ac = 1):
+        self.dc_value = (value_dc*50)/calib_dc
+        self.set_dc_field(self.dc_value)
+        self.ac_value = (value_ac*50)/calib_ac
+        self.set_ac_field(self.ac_value, freq)
+        
         
 # ########################### Test ###########
 # import matplotlib.pyplot as plt

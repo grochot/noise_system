@@ -22,6 +22,7 @@ from pymeasure.experiment import (
 )
 from logic.unique_name import unique_name
 from hardware.hmc8043 import HMC8043
+from modules.Lockin_calibration import LockinCalibration
 from hardware.sim928 import SIM928 
 from hardware.field_sensor_noise_new import FieldSensor 
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
@@ -135,18 +136,6 @@ class NoiseProcedure(Procedure):
                 self.field = FieldSensor(self.field_sensor_adress)
                 self.field.read_field_init()
             
-                
-            
-
-            # try:
-            #     self.field = HMC8043("ASRL1::INSTR") #connction to field controller
-            #     self.field.set_channel(0) #set channnel 1
-            #     self.field.enable_channel(1) #enable channel
-            #     self.field.set_voltage(self.bias_field) #set field 
-            #     sleep(1)
-            #     log.info("Set bias field to %g V" %self.bias_field)
-            # except:
-            #     log.error("Could not connect to field controller")
                 
             log.info("read calibration parameters from file")
             try:
@@ -614,9 +603,9 @@ class NoiseProcedure(Procedure):
         
 #Lockin mode:
         elif self.mode == "Lockin field":
-            self.field_value = measure_field(1,self.field, self.should_stop )
-            self.lockin.set_dc_field(self.dc_field)
-            sleep(1)
+            self.calibration_field = LockinCalibration(self.lockin,self.field,3,0.1,0.2,self.ac_field_frequency,30)
+            sleep(1)	
+    
             self.counter = 0
             for i in self.vector:
                 if self.amplitude_vec == True:
@@ -633,40 +622,23 @@ class NoiseProcedure(Procedure):
                     
                 self.emit('progress', 100 * self.counter / len(self.vector))
                 try:
-                    if self.amplitude_vec == True:
-                        data_lockin = {
-                                'frequency (Hz)': self.ac_field_frequency, 
-                                'FFT (mV)': math.nan, 
-                                'AC field amplitude (mV)': i,
-                                'log[frequency] (Hz)':  math.nan,
-                                'log[FFT] (mV)':   math.nan,
-                                'time (s)': math.nan,
-                                'Sense Voltage (mV)': y,
-                                'Bias voltage (mV)': self.bias_voltage,
-                                'X field (Oe)':self.field_value[0],
-                                'Y field (Oe)':self.field_value[1],
-                                'Z field (Oe)': self.field_value[2],
-                                'treshold_time (s)': math.nan,
-                                'treshold_voltage (mV)': math.nan,
-                                'divide_voltage (mV)': math.nan
-                                }
-                    else:
-                         data_lockin = {
-                                'frequency (Hz)': i if self.amplitude_vec == False else self.ac_field_frequency, 
-                                'FFT (mV)': math.nan, 
-                                'AC field amplitude (mV)': i if self.amplitude_vec == True else self.ac_field_amplitude,
-                                'log[frequency] (Hz)':  math.nan,
-                                'log[FFT] (mV)':   math.nan,
-                                'time (s)': math.nan,
-                                'Sense Voltage (mV)': y,
-                                'Bias voltage (mV)': self.bias_voltage,
-                                'X field (Oe)':self.field_value[0],
-                                'Y field (Oe)':self.field_value[1],
-                                'Z field (Oe)': self.field_value[2],
-                                'treshold_time (s)': math.nan,
-                                'treshold_voltage (mV)': math.nan,
-                                'divide_voltage (mV)': math.nan
-                                }
+          
+                    data_lockin = {
+                        'frequency (Hz)': i if self.amplitude_vec == False else self.ac_field_frequency, 
+                        'FFT (mV)': math.nan, 
+                        'AC field amplitude (mV)': i if self.amplitude_vec == True else self.ac_field_amplitude,
+                        'log[frequency] (Hz)':  math.nan,
+                        'log[FFT] (mV)':   math.nan,
+                        'time (s)': math.nan,
+                        'Sense Voltage (mV)': y,
+                        'Bias voltage (mV)': self.bias_voltage,
+                        'X field (Oe)':self.field_value[0],
+                        'Y field (Oe)':self.field_value[1],
+                        'Z field (Oe)': self.field_value[2],
+                        'treshold_time (s)': math.nan,
+                        'treshold_voltage (mV)': math.nan,
+                        'divide_voltage (mV)': math.nan
+                        }
                     
 
                     self.emit('results', data_lockin) 
