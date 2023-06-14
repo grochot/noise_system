@@ -1,0 +1,10 @@
+[Desktop Entry]
+Comment=NOISE SYSTEM
+Exec=sh -c '/home/pw/git/noise_system/script_noise.sh; $SHELL'
+GenericName=
+Icon=system-run
+Name=NOISE SYSTEM
+StartupNotify=false
+Terminal=true
+TerminalOptions=
+Type=Application
