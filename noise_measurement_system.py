@@ -71,7 +71,7 @@ class NoiseProcedure(Procedure):
 
 #Lockin mode: 
     lockin_adress = Parameter("Lockin adress", default="192.168.66.202", group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
-    dc_field = FloatParameter('DC Field', units='mV', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
+    dc_field = FloatParameter('DC Field', units='Oe', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency')
     ac_field_amplitude = FloatParameter('AC Field Amplitude', units='mV', default=0,group_by=['mode', "amplitude_vec"], group_condition=[lambda v: v =='Lockin field', False])   
     ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode', "amplitude_vec"], group_condition=[lambda v: v =='Lockin field', True])
     lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field')
@@ -260,7 +260,7 @@ class NoiseProcedure(Procedure):
             self.lockin = LockinFrequency(self.lockin_adress)
             self.lockin.init()
             self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
-            self.lockin.set_constant_field(self.dc_field)
+            self.lockin.set_constant_field(self.dc_field/0.6)
             sleep(1)
             self.lockin.set_constant_vbias(self.bias_voltage)
             sleep(1)
@@ -603,15 +603,14 @@ class NoiseProcedure(Procedure):
         
 #Lockin mode:
         elif self.mode == "Lockin field":
-            self.calibration_field = LockinCalibration(self.lockin,self.field,3,0.1,0.2,self.ac_field_frequency,30)
-            sleep(1)	
-    
+            self.calibration_field = LockinCalibration(self.lockin, self.field, self.ac_field_frequency,self.dc_field)
+            self.lockin.set_dc_field(self.dc_field/0.6)
             self.counter = 0
             for i in self.vector:
                 if self.amplitude_vec == True:
-                    self.lockin.set_ac_field(i,self.ac_field_frequency)
+                    self.lockin.set_ac_field(i/self.calibration_field,self.ac_field_frequency)
                 else:
-                    self.lockin.set_ac_field(self.ac_field_amplitude,i)
+                    self.lockin.set_ac_field(self.ac_field_amplitude/self.calibration_field,i)
                 if i != 0:
                     sleep(2/i)
                 else: 
@@ -626,15 +625,15 @@ class NoiseProcedure(Procedure):
                     data_lockin = {
                         'frequency (Hz)': i if self.amplitude_vec == False else self.ac_field_frequency, 
                         'FFT (mV)': math.nan, 
-                        'AC field amplitude (mV)': i if self.amplitude_vec == True else self.ac_field_amplitude,
+                        'AC field amplitude (Oe)': i if self.amplitude_vec == True else self.ac_field_amplitude,
                         'log[frequency] (Hz)':  math.nan,
                         'log[FFT] (mV)':   math.nan,
                         'time (s)': math.nan,
                         'Sense Voltage (mV)': y,
                         'Bias voltage (mV)': self.bias_voltage,
-                        'X field (Oe)':self.field_value[0],
-                        'Y field (Oe)':self.field_value[1],
-                        'Z field (Oe)': self.field_value[2],
+                        'X field (Oe)': i+self.dc_field if self.amplitude_vec == False else self.ac_field_frequency+self.dc_field,
+                        'Y field (Oe)':0,
+                        'Z field (Oe)': 0,
                         'treshold_time (s)': math.nan,
                         'treshold_voltage (mV)': math.nan,
                         'divide_voltage (mV)': math.nan
