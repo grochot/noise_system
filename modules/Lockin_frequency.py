@@ -17,6 +17,7 @@ class LockinFrequency():
         self.lockin.setadc(0,0) # 0 - voltage, 1 - current
         self.lockin.siginfloat(0,1)
         self.lockin.oscillatorfreq(0,0)
+        self.lockin.siginimp50(0,0)
         self.lockin.settimeconst(0, 0.3)
         self.lockin.setorder(0, 2)
         self.lockin.setharmonic(0, 1)
@@ -46,7 +47,7 @@ class LockinFrequency():
         avg = 0
         for samp in range(averaging_rate):
            sample = self.lockin.getsample(demod)
-           avg += np.abs(sample['x'][0] + 1j * sample['y'][0])/np.sqrt(2)
+           avg += np.abs(sample['x'][0] + 1j * sample['y'][0])
         results = avg/averaging_rate
         return results
 

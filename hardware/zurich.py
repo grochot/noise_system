@@ -38,8 +38,8 @@ class Zurich(Instrument):
     def siginfloat(self, signal, float=1):
         self.daq.setInt(f"/{self.device}/sigins/{signal}/float", float)
 
-    def siginimp50(self, signal, imp50=0):
-        self.daq.setInt(f"/{self.device}/sigins/{signal}/ac", imp50)
+    def siginimp50(self, signal, imp50=1):
+        self.daq.setInt(f"/{self.device}/sigins/{signal}/imp50", imp50)
 
     ##### SET INPUT CURRENT #####
 

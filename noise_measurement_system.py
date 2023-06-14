@@ -76,13 +76,15 @@ class NoiseProcedure(Procedure):
     ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode', "amplitude_vec"], group_condition=[lambda v: v =='Lockin field', True])
     lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by='mode', group_condition=lambda v: v =='Lockin field')
     avergaging_rate = IntegerParameter("Avergaging rate", default=1,group_by='mode', group_condition=lambda v: v =='Lockin field' or v=='Lockin frequency' )
+    kepco = BooleanParameter("Kepco?", default=False, group_by='mode', group_condition=lambda v: v =='Lockin field' or v == "Lockin frequency")
+    coil = FloatParameter("Coil constant",units='Oe/A', group_by='mode', default = 30, group_condition=lambda v: v =='Lockin field' or v == 'Lockin frequency')
     start_f = FloatParameter("Start Freq",units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
     stop_f = FloatParameter("Stop Freq", units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
     no_points_f = IntegerParameter("No Points Freq",default = 1, group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
     amplitude_vec = BooleanParameter("Sweep voltage", default=False, group_by='mode', group_condition=lambda v: v =='Lockin field')
     start_v = FloatParameter("Start H",units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
     stop_v = FloatParameter("Stop H", units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
-    no_points_v = IntegerParameter("No Points V",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    no_points_v = IntegerParameter("No Points H",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
     
 
 #################################################################################################################################################################################
@@ -606,10 +608,15 @@ class NoiseProcedure(Procedure):
         
 #Lockin mode:
         elif self.mode == "Lockin field":
-            self.calibration_field = LockinCalibration(self.lockin, self.field, self.ac_field_frequency,self.dc_field)
-            self.cal_field_const = self.calibration_field.calibrate()
-            print(self.cal_field_const)
-            self.lockin.set_dc_field(self.dc_field/0.6)
+            if self.kepco == False:
+                self.calibration_field = LockinCalibration(self.lockin, self.ac_field_frequency,self.dc_field, self.coil)
+                self.cal_field_const = self.calibration_field.calibrate()
+                self.lockin.set_dc_field(self.dc_field/0.6)
+            else: 
+                self.cal_field_const = 15
+                self.lockin.set_dc_field(self.dc_field/15)
+            
+            self.lockin.set_lockin_freq(self.lockin_frequency)
             self.counter = 0
             for i in self.vector:
                 if self.amplitude_vec == True:
@@ -663,7 +670,7 @@ class NoiseProcedure(Procedure):
             self.field_value = measure_field(1,self.field, self.should_stop )
             self.counter = 0
             for i in self.vector:
-                self.lockin.set_lockin_freq(i)
+                self.lockin.set_lockin_freq(i) 
                 if i != 0:
                     sleep(2/i)
                 else: 
@@ -758,7 +765,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay', 'lockin_adress', 'dc_field', 'ac_field_amplitude', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v' ],
+            inputs=['mode','sample_name','voltage_adress','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay', 'lockin_adress', 'kepco', 'coil', 'dc_field', 'ac_field_amplitude', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v' ],
             displays=['bias_voltage', 'period_time', 'no_time','sampling_interval', 'sample_name'],
             x_axis='time (s)',
             y_axis='Sense Voltage (V)',
@@ -768,7 +775,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.30 beta')
+        self.setWindowTitle('Noise Measurement System v.1.35 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
