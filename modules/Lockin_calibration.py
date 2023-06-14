@@ -13,8 +13,8 @@ class LockinCalibration:
         sleep(0.1)
         self.lockin.set_ac_field(1,self.ac_frequency)
         sleep(1)
-        self.v_ac =self.lockin.measure_point(0,3)
-        self.field_value = measure_field(self.field, False)
+        self.v_ac =self.lockin.lockin_measure_point(0,3)
+        self.field_value = measure_field(2,self.field, False)
         self.hac = self.field_value[0] - self.dc_field
         self.calib_ac = self.hac/(self.v_ac)
         return self.calib_ac

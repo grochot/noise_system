@@ -18,9 +18,9 @@ class DummyFieldSensor(Instrument):
      
     
     def read_field(self):
-        x = 0
-        y = 0
-        z = 0
+        x = 1
+        y = 1
+        z = 1
         #field = np.sqrt(x**2+y**2+z**2)
        
         return x,y,z

@@ -40,11 +40,11 @@ class LockinField():
    
     def set_ac_field(self, value=0, freq=1): # TO DO
         self.lockin.oscillatorfreq(1,freq)
-        self.lockin.outputamplitude(1,value/1000)
+        self.lockin.outputamplitude(1,value)
         self.lockin.daq.sync()
     
     def set_dc_field(self, value=0):
-        self.lockin.outputoffset(0,value/1000)
+        self.lockin.outputoffset(0,value)
         self.lockin.daq.sync()
       
     
@@ -59,7 +59,7 @@ class LockinField():
            sample = self.lockin.getsample(demod)
            avg += np.abs(sample['x'][0] + 1j * sample['y'][0])/np.sqrt(2)
         results = avg/averaging_rate
-        return results*1000
+        return results
 
     def shutdown(self):
         self.lockin.auxout(1,0)

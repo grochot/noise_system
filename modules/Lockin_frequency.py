@@ -31,7 +31,7 @@ class LockinFrequency():
 
    
     def set_constant_field(self, value=0):
-        self.lockin.auxout(0,value/1000)
+        self.lockin.auxout(0,value)
         
 
     def set_constant_vbias(self, value=0):
@@ -48,7 +48,7 @@ class LockinFrequency():
            sample = self.lockin.getsample(demod)
            avg += np.abs(sample['x'][0] + 1j * sample['y'][0])/np.sqrt(2)
         results = avg/averaging_rate
-        return results*1000
+        return results
 
     def shutdown(self):
         self.lockin.auxout(1,0)
