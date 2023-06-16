@@ -81,10 +81,10 @@ class NoiseProcedure(Procedure):
     start_f = FloatParameter("Start Freq",units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
     stop_f = FloatParameter("Stop Freq", units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
     no_points_f = IntegerParameter("No Points Freq",default = 1, group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', False])
-    amplitude_vec = BooleanParameter("Sweep voltage", default=False, group_by='mode', group_condition=lambda v: v =='Lockin field')
-    start_v = FloatParameter("Start H",units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
-    stop_v = FloatParameter("Stop H", units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
-    no_points_v = IntegerParameter("No Points H",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    amplitude_vec = BooleanParameter("Sweep field", default=False, group_by='mode', group_condition=lambda v: v =='Lockin field')
+    start_v = FloatParameter("Start H AC",units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    stop_v = FloatParameter("Stop H AC", units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
+    no_points_v = IntegerParameter("No Points H AC",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='Lockin field' or v == 'Lockin frequency', True])
     
 
 #################################################################################################################################################################################
