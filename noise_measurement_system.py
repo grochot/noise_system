@@ -48,7 +48,7 @@ class NoiseProcedure(Procedure):
 #################################### PARAMETERS ##############################################################################################################################
 #Noise mode:
     period_time = FloatParameter('Period of Time', units='s', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    mode = ListParameter("Mode",  default='Mean', choices=['Mean', 'One Shot', 'Mean + Raw', 'Vbias calibration', "Vbias", "Lockin field", "Lockin frequency", "Lockin calibration"])
+    mode = ListParameter("Mode",  default='Lockin field', choices=['Mean', 'One Shot', 'Mean + Raw', 'Vbias calibration', "Vbias", "Lockin field", "Lockin frequency", "Lockin calibration"])
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v=='One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v =='Lockin field' or v=='Lockin frequency')
