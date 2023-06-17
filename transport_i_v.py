@@ -45,6 +45,7 @@ class IVTransfer(Procedure):
     keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hmb) |set Ib' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
     keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hmb) |set Ib', 'mode':lambda v: v =='Standard'})
     keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hmb) | set Vb', 'mode':lambda v: v =='Standard' or v == 'Fast Resistance'})
+    agilent_adress = ListParameter("Agilent E3648A adress", choices=["GPIB1::24::INSTR"])
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
     coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='Standard')
     start = FloatParameter("Start", group_by='mode', group_condition=lambda v: v =='Standard')
@@ -290,7 +291,7 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['mode','sample_name','coil','acquire_type','keithley_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'delay', 'start', 'stop', 'no_points', 'reverse_field'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'agilent_adress', 'delay', 'start', 'stop', 'no_points', 'reverse_field'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
             y_axis='Voltage (V)',
@@ -300,7 +301,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.80')
+        self.setWindowTitle('IV Measurement System v.0.90')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 

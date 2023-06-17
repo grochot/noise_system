@@ -35,8 +35,6 @@ from string import Formatter
 import pandas as pd
 import pint
 
-from pymeasure.units import ureg
-
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
