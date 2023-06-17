@@ -21,6 +21,8 @@ from pymeasure.experiment import (
 from logic.unique_name import unique_name
 
 from hardware.keithley2400 import Keithley2400
+from modules.compute_diff import ComputeDiff
+from modules.computer_resisrance import ComputerResistance
 from hardware.daq import DAQ
 from hardware.field_sensor_iv import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
@@ -55,7 +57,7 @@ class IVTransfer(Procedure):
     delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='Standard')
     sample_name = Parameter("Sample Name", default="sample name", group_by='mode', group_condition=lambda v: v =='Standard')
  
-    DATA_COLUMNS = ['Voltage (V)', 'Current (A)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
+    DATA_COLUMNS = ['Voltage (V)',  'Current (A)', 'Resistance (Ohm)', 'dX/dH', 'dR/dH', 'diff_I', 'diff_V', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
 
     path_file = SaveFilePath() 
    
@@ -160,30 +162,64 @@ class IVTransfer(Procedure):
 
     ##### PROCEDURE ######
     def execute(self):
+        diff = ComputeDiff()
+        res = ComputerResistance()
+        tmp_voltage = []
+        tmp_current = []
+        tmp_field_x = []
+        tmp_field_y = []
+        tmp_field_z = []
+        tmp_resistance = []
+        tmp_field_set = []
+        tmp_diff_x = []
+        tmp_diff_R = []
+        tmp_diff_I = []
+        tmp_diff_V = []
+
         if self.mode == "Standard":
             if self.acquire_type == 'I(Hmb) | set Vb':
                 log.info("Starting to sweep through field")
+                if self.coil == "Large":
+                    self.field_const = 5
+                else:
+                    self.field_const = 10 
+                
                 for i in self.vector:
-                    if self.coil == "Large":
-                        self.field_const = 5
-                    else:
-                        self.field_const = 10 
                     self.set_field = self.field.set_field(i/self.field_const)
+                    tmp_field_set.append(self.set_field*self.field_const)
                     sleep(self.delay*0.001)
                     self.tmp_field = self.field_sensor.read_field()
-                    self.tmp_x = self.tmp_field[0]
-                    self.tmp_y = self.tmp_field[1]
-                    self.tmp_z = self.tmp_field[2]
+                    tmp_field_x.append(self.tmp_field[0])
+                    tmp_field_y.append(self.tmp_field[1])
+                    tmp_field_z.append(self.tmp_field[2])
                     sleep(self.delay*0.001)
                     self.tmp_current = self.keithley.current
+                    tmp_current.append(self.tmp_current)
+                    tmp_voltage.append(self.keithley_voltage_bias)
+                    tmp_resistance.append(res.resistance(self.keithley_voltage_bias, self.tmp_current))
+                
+                tmp_diff_x.append(diff.diff(tmp_voltage, tmp_field_set))
+                tmp_diff_R.append(diff.diff(tmp_resistance, tmp_field_set))
+                tmp_diff_I.append(diff.diffIV(tmp_current))
+                tmp_diff_V.append(diff.diffIV(tmp_voltage))
+
+                
+                for k in range(len(tmp_field_set)):
                     data = {
-                        'Voltage (V)':  self.keithley_voltage_bias,
-                        'Current (A)':  self.tmp_current,
-                        'X field (Oe)': self.tmp_x,
-                        'Y field (Oe)': self.tmp_y,
-                        'Z field (Oe)': self.tmp_z,
-                        'Field set (Oe)': self.set_field*self.field_const,
+                        'Voltage (V)':  tmp_voltage[k],
+                        'Current (A)':  tmp_current[k],
+                        'Resistance (Ohm)': tmp_resistance[k],
+                        'X field (Oe)': tmp_field_x[k],
+                        'Y field (Oe)': tmp_field_y[k],
+                        'Z field (Oe)': tmp_field_z[k],
+                        'Field set (Oe)': tmp_field_set[k],
+                        'dX/dH': tmp_diff_x[k] if k <= len(tmp_diff_x) else np.nan,
+                        'dR/dH': tmp_diff_R[k] if k <= len(tmp_diff_R) else np.nan,
+                        'diff_I': tmp_diff_I[k] if k <= len(tmp_diff_I) else np.nan,
+                        'diff_V': tmp_diff_V[k] if k <= len(tmp_diff_V) else np.nan
+
                         }
+                        
                     self.emit('results', data) 
 
 
@@ -206,6 +242,7 @@ class IVTransfer(Procedure):
                     data = {
                         'Voltage (V)':  self.tmp_volatege,
                         'Current (A)':  self.keithley_current_bias,
+                        'Resistance (Ohm)': self.tmp_volatege/self.keithley_current_bias,
                         'X field (Oe)': self.tmp_x,
                         'Y field (Oe)': self.tmp_y,
                         'Z field (Oe)': self.tmp_z,
@@ -227,6 +264,7 @@ class IVTransfer(Procedure):
                     data = {
                         'Voltage (V)':  i,
                         'Current (A)':  self.tmp_current,
+                        'Resistance (Ohm)': i/self.tmp_current,
                         'X field (Oe)': self.tmp_x,
                         'Y field (Oe)': self.tmp_y,
                         'Z field (Oe)': self.tmp_z,
@@ -248,6 +286,7 @@ class IVTransfer(Procedure):
                     data = {
                         'Voltage (V)':  self.tmp_volatage,
                         'Current (A)':  i,
+                        'Resistance (Ohm)': self.tmp_volatage/i,
                         'X field (Oe)': self.tmp_x,
                         'Y field (Oe)': self.tmp_y,
                         'Z field (Oe)': self.tmp_z,
@@ -301,7 +340,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('IV Measurement System v.0.90')
+        self.setWindowTitle('IV Measurement System v.0.91')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
