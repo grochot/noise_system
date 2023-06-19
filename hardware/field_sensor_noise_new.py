@@ -39,8 +39,8 @@ class FieldSensor(Instrument):
         ser.write("READ_SINGLE".encode())
         ser.readline()
 
-test = FieldSensor('ASRL/dev/ttyACM0::INSTR')
+# test = FieldSensor('ASRL/dev/ttyACM0::INSTR')
 
-test.read_field_init()
+# test.read_field_init()
 
-test.read_field()
+# test.read_field()

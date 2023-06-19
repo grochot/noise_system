@@ -9,14 +9,16 @@ class E3600aDummy(Instrument):
             read_termination=read_termination,
             **kwargs
         )
-
+    
+    def remote(self):
+        pass
     def enabled(self):
         pass
     
     def disabled(self):
         pass
     
-    def voltage(self, vol = 0): 
+    def current(self, vol = 0): 
         pass
     
     

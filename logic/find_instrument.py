@@ -11,7 +11,7 @@ class FindInstrument():
         for i in self.rm.list_resources(): 
             try:
                 inst = self.rm.open_resource(i)  
-                self.hardware[inst.query('*IDN?')] = i
+                self.hardware[i] = i
                 inst.close()
             except:
                 

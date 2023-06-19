@@ -23,7 +23,7 @@ from logic.unique_name import unique_name
 from hardware.keysight_e3600a import E3600a
 from hardware.keysight_e3600a_dummy import E3600aDummy
 from hardware.picoscope4626 import PicoScope
-from hardware.sim928 import SIM928 
+
 from hardware.field_sensor_noise_new import FieldSensor 
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 from logic.generate_headers import GenerateHeader
@@ -49,7 +49,7 @@ class NoiseProcedure(Procedure):
     no_time = IntegerParameter('Number of times', default=1, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default=100, group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v=='One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    bias_field = FloatParameter('Bias Field Voltage', units='mV', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    bias_field = FloatParameter('Bias Field Current', units='mA', default=0,group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     voltage_adress = ListParameter("SIM928 adress", choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
     field_adress = ListParameter("E3600a adress",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
@@ -86,7 +86,12 @@ class NoiseProcedure(Procedure):
                 self.header = GenerateHeader()
                 self.header_columns = self.prepare_columns(self.DATA_COLUMNS)
             self.oscilloscope = PicoScope()
-            self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
+            if self.voltage_adress == 'none':
+                from hardware.sim928_dummy import SIM928 
+                self.voltage = SIM928()
+            else:
+                from hardware.sim928 import SIM928 
+                self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
     
             sleep(0.1)
             log.info("Finding instrument done")
@@ -111,9 +116,10 @@ class NoiseProcedure(Procedure):
 
     ##Bias field:
             try:
-                self.field = E3600a(self.field_adress) #connction to field controller
-                self.field.voltage(self.bias_field) #set field 
-                self.field.enabled()
+                self.field_coil = E3600a(self.field_adress) #connction to field controller
+                self.field_coil.remote()
+                self.field_coil.current(self.bias_field/1000) #set field 
+                self.field_coil.enabled()
                 sleep(1)
                 log.info("Set bias field to %g V" %self.bias_field)
             except:
