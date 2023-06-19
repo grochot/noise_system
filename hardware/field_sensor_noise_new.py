@@ -38,3 +38,9 @@ class FieldSensor(Instrument):
         ser = serial.Serial(self.address, 115200, timeout=1)
         ser.write("READ_SINGLE".encode())
         ser.readline()
+
+test = FieldSensor('ASRL/dev/ttyACM0::INSTR')
+
+test.read_field_init()
+
+test.read_field()

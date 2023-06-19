@@ -1,5 +1,6 @@
 from pymeasure.instruments import Instrument 
 import pyvisa 
+from time import sleep
 
 class E3600a(Instrument):
     def __init__(self, adapter, read_termination="\n", **kwargs):
@@ -20,4 +21,7 @@ class E3600a(Instrument):
         self.write(':SOURce:VOLTage:LEVel:IMMediate:AMPLitude %G' % vol)
     
     
-    
+# field = E3600a('ASRL/dev/ttyUSB0::INSTR')    
+# field.voltage(1)
+# sleep(1)
+# field.enabled()

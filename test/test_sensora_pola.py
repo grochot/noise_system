@@ -1,29 +1,9 @@
 import time
 import serial
+from ..hardware.field_sensor_noise_new import FieldSensor
 
-ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
+test = FieldSensor('ASRL/dev/ttyUSB0::INSTR')
 
-if ser.isOpen():
-    ser.close()
-ser.open()
+test.read_field_init()
 
-while(True):
-
-    try:
-        print("dd")
-        ser.write(input().encode())
-        out = ''
-
-        while ser.inWaiting() > 0:
-            out += str(ser.readline().decode())
-
-        if out:
-            print(">>" + out)
-
-    
-    except KeyboardInterrupt:
-        ser.close()
-        print("Finished")
-        exit(0)
-        
-ser.close()
+test.read_field()
