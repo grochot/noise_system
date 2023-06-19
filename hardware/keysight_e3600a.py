@@ -1,6 +1,7 @@
 from pymeasure.instruments import Instrument 
 import pyvisa 
 from time import sleep
+import numpy as np
 
 class E3600a(Instrument):
     def __init__(self, adapter, read_termination="\n", **kwargs):
@@ -17,7 +18,11 @@ class E3600a(Instrument):
     def remote(self):
         self.write(':SYSTem:REMote')    
     
-    def disabled(self):
+    def disabled(self, vol):
+        self.vec = np.linspace(vol,0,5)
+        for i in self.vec:  
+            self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % i)
+            sleep(0.4)
         self.write(':OUTPut:STATe 0')
     
     def current(self, vol = 0): 

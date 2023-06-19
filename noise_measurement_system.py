@@ -563,6 +563,7 @@ class NoiseProcedure(Procedure):
                 self.voltage.voltage_setpoint(0)
                 sleep(0.5)
                 self.voltage.disabled()
+                self.field_coil.disabled(self.bias_field/1000)
                 NoiseProcedure.licznik = 0
             NoiseProcedure.licznik += 1
          
