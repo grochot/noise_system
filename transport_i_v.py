@@ -41,13 +41,14 @@ class IVTransfer(Procedure):
     mode = ListParameter("Mode",  default='Standard', choices=['Standard', 'Fast Resistance'])
     acquire_type = ListParameter("Acquire type", choices = ['I(Hmb) | set Vb', 'V(Hmb) |set Ib', 'I(Vb) | set Hmb', 'V(Ib) | set Hmb'],group_by='mode', group_condition=lambda v: v =='Standard')
     keithley_adress = ListParameter("Keithley2400 adress", choices=["GPIB1::24::INSTR"])
-    field_sensor_adress = ListParameter("Field_sensor",  choices=["COM6"],group_by='mode', group_condition=lambda v: v =='Standard' )
+    field_sensor_adress = Parameter("Field_sensor",  default="COM8",group_by='mode', group_condition=lambda v: v =='Standard' )
     #keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
     keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by={'acquire_type':lambda v: v =='I(Hmb) | set Vb' or v == 'I(Vb) | set Hmb', 'mode':lambda v: v =='Standard'})
     keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hmb) |set Ib' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
     keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hmb) |set Ib', 'mode':lambda v: v =='Standard'})
     keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hmb) | set Vb', 'mode':lambda v: v =='Standard' or v == 'Fast Resistance'})
-    agilent_adress = ListParameter("Agilent E3648A adress", choices=["GPIB1::24::INSTR"])
+    agilent_adress = ListParameter("Agilent E3648A adress", choices=["GPIB1::24::INSTR"],group_by={'field_device':lambda v: v =='Agilent E3648A'} )
+    field_device = ListParameter("Field device", choises = ["DAQ", "Agilent E3648A"])
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
     coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='Standard')
     start = FloatParameter("Start", group_by='mode', group_condition=lambda v: v =='Standard')
@@ -68,7 +69,10 @@ class IVTransfer(Procedure):
             log.info("Finding instruments...")
             sleep(0.1)
             log.info("Finded: {}".format(self.finded_instruments))
-            ####### Config DAQ ############
+            
+            
+        ### Init field device 
+        if self.field_device == "DAQ":
             log.info('Start config DAQ') 
             try:
                 self.field = DAQ("6124/ao0")
@@ -84,6 +88,13 @@ class IVTransfer(Procedure):
                     self.vector = np.linspace(self.start, self.stop,self.no_points)
             except:
                 log.error("Vector set failed")
+        else: 
+            log.info('Start config Agilent E3648A')
+            
+
+
+            
+            
             ############## KEITHLEY CONFIG ###############
             log.info("Start config Keithley")
             try:
@@ -403,7 +414,7 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['mode','sample_name','coil','acquire_type','keithley_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_bias', 'agilent_adress', 'delay', 'start', 'stop', 'no_points', 'reverse_field'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'start', 'stop', 'no_points', 'reverse_field'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
             y_axis='Voltage (V)',
