@@ -93,8 +93,9 @@ class IVTransfer(Procedure):
                 log.info('Start config Agilent E3648A')
                 ##Bias field:
                 try:
-                    self.field_coil = E3600a(self.field_adress) #connction to field controller
-                    self.field_coil.remote()
+                    from hardware.keisight_e3600a import E3600a
+                    self.field = E3600a(self.field_adress) #connction to field controller
+                    self.field.remote()
                     sleep(1)
                 except:
                     log.error("Could not connect to field controller")
@@ -132,6 +133,8 @@ class IVTransfer(Procedure):
                         self.field_const = 5
                     else:
                         self.field_const = 10
+
+                    
                     self.set_field = self.field.set_field(self.field_bias/self.field_const)
                 elif self.acquire_type == 'V(Ib) | set Hmb': 
                     self.keithley.apply_current()
@@ -401,7 +404,10 @@ class IVTransfer(Procedure):
 
         if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
             if self.mode != "Fast Resistance":
-                self.field.shutdown()
+                if self.field_device == "DAQ":
+                    self.field.shutdown()
+                else: 
+                    self.field.shutdown(self.field_bias/self.field_const)
             sleep(0.2)
             self.keithley.shutdown()
             print("keithley shutdown done")
