@@ -14,6 +14,8 @@ class E3600aDummy(Instrument):
         pass
     def enabled(self):
         pass
+    def outputselect(self,channel=0):
+        pass
     
     def disabled(self):
         pass

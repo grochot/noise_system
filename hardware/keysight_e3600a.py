@@ -18,6 +18,9 @@ class E3600a(Instrument):
     def remote(self):
         self.write(':SYSTem:REMote')    
     
+    def outputselect(self,channel=1):
+        self.write(':INSTrument:NSELect %G' % channel)
+    
     def disabled(self, vol):
         self.vec = np.linspace(vol,0,5)
         for i in self.vec:  
@@ -27,6 +30,9 @@ class E3600a(Instrument):
     
     def current(self, vol = 0): 
         self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % vol)
+    
+    def disable_now(self):
+        self.write(':OUTPut:STATe 0')
     
     
 # field = E3600a('ASRL/dev/ttyUSB0::INSTR')    
