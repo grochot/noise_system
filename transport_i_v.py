@@ -23,7 +23,7 @@ from logic.unique_name import unique_name
 from hardware.keithley2400 import Keithley2400
 from modules.compute_diff import ComputeDiff
 from modules.computer_resisrance import ComputerResistance
-from hardware.daq import DAQ
+
 from hardware.field_sensor_iv import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 
@@ -72,24 +72,32 @@ class IVTransfer(Procedure):
             
             
         ### Init field device 
-        if self.field_device == "DAQ":
-            log.info('Start config DAQ') 
-            try:
-                self.field = DAQ("6124/ao0")
-                log.info("Config DAQ done")
-            except:
-                log.error("Config DAQ failed")
-            try:
-                if self.reverse_field == True: 
-                    self.vector_to = np.linspace(self.start, self.stop,self.no_points)
-                    self.vector_rev = self.vector_to[::-1]
-                    self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
-                else: 
-                    self.vector = np.linspace(self.start, self.stop,self.no_points)
-            except:
-                log.error("Vector set failed")
-        else: 
-            log.info('Start config Agilent E3648A')
+            if self.field_device == "DAQ":
+                log.info('Start config DAQ') 
+                try:
+                    from hardware.daq import DAQ
+                    self.field = DAQ("6124/ao0")
+                    log.info("Config DAQ done")
+                except:
+                    log.error("Config DAQ failed")
+                try:
+                    if self.reverse_field == True: 
+                        self.vector_to = np.linspace(self.start, self.stop,self.no_points)
+                        self.vector_rev = self.vector_to[::-1]
+                        self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+                    else: 
+                        self.vector = np.linspace(self.start, self.stop,self.no_points)
+                except:
+                    log.error("Vector set failed")
+            else: 
+                log.info('Start config Agilent E3648A')
+                ##Bias field:
+                try:
+                    self.field_coil = E3600a(self.field_adress) #connction to field controller
+                    self.field_coil.remote()
+                    sleep(1)
+                except:
+                    log.error("Could not connect to field controller")
             
 
 
