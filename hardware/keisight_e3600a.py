@@ -20,7 +20,7 @@ class E3600a(Instrument):
     
     def outputselect(self,channel=1):
         self.write(':INSTrument:NSELect %G' % channel)
-    crrt
+        
     def shutdown(self, vol=1):
         self.vec = np.linspace(vol,0,5)
         for i in self.vec:  
