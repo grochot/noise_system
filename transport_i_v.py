@@ -47,7 +47,7 @@ class IVTransfer(Procedure):
     keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hmb) |set Ib' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
     keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hmb) |set Ib', 'mode':lambda v: v =='Standard'})
     keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hmb) | set Vb', 'mode':lambda v: v =='Standard' or v == 'Fast Resistance'})
-    agilent_adress = ListParameter("Agilent E3648A adress", choices=["GPIB1::24::INSTR"],group_by={'field_device':lambda v: v =='Agilent E3648A'} )
+    agilent_adress = Parameter("Agilent E3648A adress", default="COM2",group_by={'field_device':lambda v: v =='Agilent E3648A'} )
     field_device = ListParameter("Field device", choises = ["DAQ", "Agilent E3648A"])
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
     coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='Standard')
