@@ -145,7 +145,7 @@ class NoiseProcedure(Procedure):
                     sleep(0.3)
                     self.field_coil.enabled()
                 sleep(1)
-                log.info("Set bias field to %g mA" %self.bias_field)
+                log.info("Set bias field to %g mA" %self.bias_field/1000)
             except:
                 log.error("Could not connect to field controller")
                 
