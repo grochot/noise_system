@@ -34,9 +34,22 @@ class E3600a(Instrument):
     def disable_now(self):
         self.write(':OUTPut:STATe 0')
     
+    def reset(self):
+        self.write('*CLS')
     
-# field = E3600a('ASRL/dev/ttyUSB0::INSTR')    
+    def get_current(self):
+        self.write("*IDN?")
+        sleep(0.3)
+        answer = self.read()
+        return answer 
+
+    
+#    
+#field = E3600a('ASRL/dev/ttyUSB0::INSTR')    
+#field.reset()
 # field.remote()
-# field.current(0.4)
+# field.outputselect(1)
+# field.current(0.02)
 # sleep(1)
 # field.enabled()
+#field.get_current()

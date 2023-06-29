@@ -19,7 +19,6 @@ class FieldSensor(Instrument):
     
     def read_field(self): 
         self.address = self.resource[4:16]
-        print(self.address)
         serial_port = serial.Serial(self.address, 115200, timeout=1)
         serial_port.write(b"READ_SINGLE")
         sleep(0.5)

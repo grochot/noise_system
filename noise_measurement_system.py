@@ -119,21 +119,30 @@ class NoiseProcedure(Procedure):
             try:
                 self.field_coil = E3600a(self.field_adress) #connction to field controller
                 self.field_coil.remote()
+                
                 if self.bias_field < 0:
                     self.field_coil.outputselect(1)
+                    sleep(0.3)
                     self.field_coil.current(0)
+                    sleep(0.3)
                     self.field_coil.disable_now()
                     sleep(0.2)
                     self.field_coil.outputselect(2)
-                    self.field_coil.current(self.bias_field/1000) #set field 
+                    sleep(0.3)
+                    self.field_coil.current(-1*self.bias_field/1000) #set field 
+                    sleep(0.3)
                     self.field_coil.enabled()
                 else: 
                     self.field_coil.outputselect(2)
+                    sleep(0.3)
                     self.field_coil.current(0)
+                    sleep(0.3)
                     self.field_coil.disable_now()
                     sleep(0.2)
                     self.field_coil.outputselect(1)
+                    sleep(0.3)
                     self.field_coil.current(self.bias_field/1000) #set field 
+                    sleep(0.3)
                     self.field_coil.enabled()
                 sleep(1)
                 log.info("Set bias field to %g mA" %self.bias_field)
