@@ -3,6 +3,7 @@ sudo umount /media/Data2
 sudo umount /media/Data1
 suco chmod 777 /dev/ttyS0
 sudo chmod 777 /dev/ttyUSB*
+sudo chmod 777 /dev/ttyACM*
 sudo mkdir /media/Data1 
 sudo mkdir /media/Data2
 sudo mount /dev/sda6 /media/Data2 

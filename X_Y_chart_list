@@ -1,0 +1,15 @@
+x/y:
+
+1. time (s)
+2. Bias voltage (mV)
+3. Sense voltage (mV)
+4. X field (Oe)
+5. Y field (Oe)
+6. Z field (Oe)
+7. frequecy (Hz)
+8. FFT (mV)
+9. log[frequecy] (Hz)
+10. log[FFT] (mV)
+11. treshold_time (s)
+12. treshold_voltage (mV)
+13. divide_voltage (mV)
