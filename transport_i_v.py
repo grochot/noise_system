@@ -47,8 +47,8 @@ class IVTransfer(Procedure):
     keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hmb) |set Ib' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
     keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hmb) |set Ib', 'mode':lambda v: v =='Standard'})
     keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hmb) | set Vb', 'mode':lambda v: v =='Standard' or v == 'Fast Resistance'})
-    agilent_adress = Parameter("Agilent E3648A adress", default="COM2",group_by={'field_device':lambda v: v =='Agilent E3648A'} )
-    field_device = ListParameter("Field device", choises = ["DAQ", "Agilent E3648A"])
+    agilent_adress = Parameter("Agilent E3648A adress", default="COM9",group_by={'field_device':lambda v: v =='Agilent E3648A'} )
+    field_device = ListParameter("Field device", choices = ["DAQ", "Agilent E3648A"])
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
     coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='Standard')
     start = FloatParameter("Start", group_by='mode', group_condition=lambda v: v =='Standard')
@@ -98,7 +98,16 @@ class IVTransfer(Procedure):
                     self.field.remote()
                     sleep(1)
                 except:
-                    log.error("Could not connect to field controller")
+                    log.error("Config Agilent E3648A failed")
+                try:
+                    if self.reverse_field == True: 
+                        self.vector_to = np.linspace(self.start, self.stop,self.no_points)
+                        self.vector_rev = self.vector_to[::-1]
+                        self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+                    else: 
+                        self.vector = np.linspace(self.start, self.stop,self.no_points)
+                except:
+                    log.error("Vector set failed")
             
 
 
@@ -407,7 +416,7 @@ class IVTransfer(Procedure):
                 if self.field_device == "DAQ":
                     self.field.shutdown()
                 else: 
-                    self.field.shutdown(self.field_bias/self.field_const)
+                    pass #self.field.shutdown(self.field_bias/self.field_const)
             sleep(0.2)
             self.keithley.shutdown()
             print("keithley shutdown done")

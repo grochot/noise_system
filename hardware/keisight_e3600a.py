@@ -30,30 +30,30 @@ class E3600a(Instrument):
     
     def set_field(self, vol = 0): 
         if vol < 0:
-            self.write(':INSTrument:NSELect 1')
-            self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude 0')
-            self.write(':OUTPut:STATe 0')
-            sleep(0.2)
+            print(vol)
             self.write(':INSTrument:NSELect 2')
-            self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % -1*vol)
+            self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % abs(vol))
             self.write(':OUTPut:STATe 1')
         else: 
-            self.write(':INSTrument:NSELect 2')
-            self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude 0')
-            self.write(':OUTPut:STATe 0')
-            sleep(0.2)
             self.write(':INSTrument:NSELect 1')
             self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % vol)
             self.write(':OUTPut:STATe 1')
     
     def disable_now(self):
         self.write(':OUTPut:STATe 0')
+
+    def reset(self):
+        self.write("*CLS")
     
     
-# field = E3600a('ASRL/dev/ttyUSB0::INSTR')    
+# field = E3600a('COM9')    
 # field.remote()
-# field.current(0.4)
+# field.reset()
+# sleep(0.2)
+# field.set_field(0.01)
 # sleep(1)
 # field.enabled()
+
+# field.disable_now()
 
 
