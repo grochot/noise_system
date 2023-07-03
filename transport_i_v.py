@@ -24,7 +24,7 @@ from hardware.keithley2400 import Keithley2400
 from modules.compute_diff import ComputeDiff
 from modules.computer_resisrance import ComputerResistance
 
-from hardware.field_sensor_iv import FieldSensor
+from hardware.field_sensor_noise_new import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 
 log = logging.getLogger(__name__) 
@@ -94,7 +94,7 @@ class IVTransfer(Procedure):
                 ##Bias field:
                 try:
                     from hardware.keisight_e3600a import E3600a
-                    self.field = E3600a(self.field_adress) #connction to field controller
+                    self.field = E3600a(self.agilent_adress) #connction to field controller
                     self.field.remote()
                     sleep(1)
                 except:
@@ -416,7 +416,7 @@ class IVTransfer(Procedure):
                 if self.field_device == "DAQ":
                     self.field.shutdown()
                 else: 
-                    pass #self.field.shutdown(self.field_bias/self.field_const)
+                    self.field.shutdown(self.field_bias/self.field_const)
             sleep(0.2)
             self.keithley.shutdown()
             print("keithley shutdown done")

@@ -31,10 +31,16 @@ class E3600a(Instrument):
     def set_field(self, vol = 0): 
         if vol < 0:
             print(vol)
+            self.write(':INSTrument:NSELect 1')
+            self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude 0')
+            self.write(':OUTPut:STATe 0')
             self.write(':INSTrument:NSELect 2')
             self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % abs(vol))
             self.write(':OUTPut:STATe 1')
         else: 
+            self.write(':INSTrument:NSELect 2')
+            self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude 0')
+            self.write(':OUTPut:STATe 0')
             self.write(':INSTrument:NSELect 1')
             self.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % vol)
             self.write(':OUTPut:STATe 1')
@@ -48,12 +54,13 @@ class E3600a(Instrument):
     
 # field = E3600a('COM9')    
 # field.remote()
-# field.reset()
+# # field.reset()
 # sleep(0.2)
-# field.set_field(0.01)
+# field.set_field(0.004)
 # sleep(1)
-# field.enabled()
+# #field.enabled()
 
-# field.disable_now()
+
+#field.disable_now()
 
 
