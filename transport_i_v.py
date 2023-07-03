@@ -216,6 +216,7 @@ class IVTransfer(Procedure):
                     self.field_const = 10 
                 w = 0
                 for i in self.vector:
+                    self.last_value = i
                     self.field.set_field(i/self.field_const)
                     tmp_field_set.append(i)
                     sleep(self.delay*0.001)
@@ -265,6 +266,7 @@ class IVTransfer(Procedure):
                 w = 0
                 log.info("Starting to sweep through field")
                 for i in self.vector:
+                    self.last_value = i
                     self.set_field = self.field.set_field(i/self.field_const)
                     tmp_field_set.append(i)
                     sleep(self.delay*0.001)
@@ -416,7 +418,10 @@ class IVTransfer(Procedure):
                 if self.field_device == "DAQ":
                     self.field.shutdown()
                 else: 
-                    self.field.shutdown(self.field_bias/self.field_const)
+                    if self.acquire_type == 'I(Hmb) | set Vb' or self.acquire_type == 'V(Hmb) |set Ib':         
+                        self.field.shutdown(self.last_value/self.field_const)
+                    else:
+                        self.field.shutdown(self.field_bias/self.field_const)
             sleep(0.2)
             self.keithley.shutdown()
             print("keithley shutdown done")
