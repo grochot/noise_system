@@ -21,6 +21,7 @@ from pymeasure.experiment import (
 from logic.unique_name import unique_name
 
 from hardware.keithley2400 import Keithley2400
+from hardware.agilent_34410a import Agilent34410A
 from modules.compute_diff import ComputeDiff
 from modules.computer_resisrance import ComputerResistance
 
@@ -39,6 +40,8 @@ class IVTransfer(Procedure):
     print(finded_instruments)
     ################# PARAMETERS ###################
     mode = ListParameter("Mode",  default='Standard', choices=['Standard', 'Fast Resistance'])
+    agilent = BooleanParameter("Agilent", default=False, group_by='mode', group_condition=lambda v: v =='Standard')
+    agilent34401a_adress = Parameter("Agilent34401a adress", default="GPIB1::22::INSTR", group_by='agilent', group_condition=lambda v: v ==True)
     acquire_type = ListParameter("Acquire type", choices = ['I(Hmb) | set Vb', 'V(Hmb) |set Ib', 'I(Vb) | set Hmb', 'V(Ib) | set Hmb'],group_by='mode', group_condition=lambda v: v =='Standard')
     keithley_adress = ListParameter("Keithley2400 adress", choices=["GPIB1::24::INSTR"])
     field_sensor_adress = Parameter("Field_sensor",  default="COM8",group_by='mode', group_condition=lambda v: v =='Standard' )
@@ -90,7 +93,7 @@ class IVTransfer(Procedure):
                 except:
                     log.error("Vector set failed")
             else: 
-                log.info('Start config Agilent E3648A')
+                log.info('Start config Keisight E3648A')
                 ##Bias field:
                 try:
                     from hardware.keisight_e3600a import E3600a
@@ -98,7 +101,7 @@ class IVTransfer(Procedure):
                     self.field.remote()
                     sleep(1)
                 except:
-                    log.error("Config Agilent E3648A failed")
+                    log.error("Config Keisight E3648A failed")
                 try:
                     if self.reverse_field == True: 
                         self.vector_to = np.linspace(self.start, self.stop,self.no_points)
@@ -175,6 +178,21 @@ class IVTransfer(Procedure):
                 self.field_sensor = DummyFieldSensor()
                 log.info("Use DummyFieldSensor")
 
+            ####### Config Agilent 34410A ########
+            if self.agilent == True: 
+                log.info("Config Agilent 34410A")
+                try:
+                    self.agilent_34410 = Agilent34410A(self.agilent34401a_adress)
+                    log.info("Config Agilent 34410A done")
+                except:
+                    log.error("Config Agilent 34410A failed")
+                   
+                   
+
+        
+################FAST RESISTANCE######################
+        
+        
         elif self.mode == "Fast Resistance": 
             
             ############## KEITHLEY CONFIG ###############
@@ -191,7 +209,7 @@ class IVTransfer(Procedure):
             except:
                 log.error("Config Keithley failed")
 
-    ##### PROCEDURE ######
+#################################### PROCEDURE##############################################
     def execute(self):
         diff = ComputeDiff()
         res = ComputerResistance()
@@ -225,7 +243,10 @@ class IVTransfer(Procedure):
                     tmp_field_y.append(self.tmp_field[1])
                     tmp_field_z.append(self.tmp_field[2])
                     sleep(self.delay*0.001)
-                    self.tmp_current = self.keithley.current
+                    if self.agilent == True:
+                        tmp_current.append(self.agilent_34410.current_dc)
+                    else:
+                        self.tmp_current = self.keithley.current
                     tmp_current.append(self.tmp_current)
                     tmp_voltage.append(self.keithley_voltage_bias)
                     tmp_resistance.append(res.resistance(self.keithley_voltage_bias, self.tmp_current))
@@ -275,7 +296,10 @@ class IVTransfer(Procedure):
                     tmp_field_y.append(self.tmp_field[1])
                     tmp_field_z.append(self.tmp_field[2])
                     sleep(self.delay*0.001)
-                    self.tmp_volatege = self.keithley.voltage
+                    if self.agilent == True:
+                        self.tmp_volatage = self.agilent_34410.voltage_dc
+                    else:
+                        self.tmp_volatege = self.keithley.voltage
                     tmp_current.append(self.keithley_current_bias)
                     tmp_voltage.append(self.tmp_volatege)
                     tmp_resistance.append(res.resistance(self.tmp_volatege, self.keithley_current_bias))
@@ -316,7 +340,10 @@ class IVTransfer(Procedure):
                     tmp_field_set.append(self.field_bias)
                     self.keithley.source_voltage =  i
                     sleep(self.delay*0.001)
-                    self.tmp_current = self.keithley.current
+                    if self.agilent == True:
+                        self.tmp_current = self.agilent_34410.current_dc
+                    else:
+                        self.tmp_current = self.keithley.current
                     sleep(self.delay*0.001)
                     self.tmp_field = self.field_sensor.read_field()
                     tmp_field_x.append(self.tmp_field[0])
@@ -361,7 +388,10 @@ class IVTransfer(Procedure):
                     tmp_field_set.append(self.field_bias)
                     self.keithley.source_current =  i
                     sleep(self.delay*0.001)
-                    self.tmp_volatage = self.keithley.voltage
+                    if self.agilent == True:
+                        self.tmp_volatage = self.agilent_34410.voltage_dc
+                    else:
+                        self.tmp_volatage = self.keithley.voltage
                     sleep(self.delay*0.001)
                     self.tmp_field = self.field_sensor.read_field()
                     tmp_field_x.append(self.tmp_field[0])
@@ -441,7 +471,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= IVTransfer,
-            inputs=['mode','sample_name','coil','acquire_type','keithley_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
+            inputs=['mode','sample_name','coil','acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
             'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'start', 'stop', 'no_points', 'reverse_field'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
