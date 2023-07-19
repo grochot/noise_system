@@ -2,5 +2,5 @@
 
 git stash
 git pull
-python transport_i_v.py
+python3 transport_i_v.py
 
