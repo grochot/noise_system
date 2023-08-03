@@ -39,27 +39,27 @@ class IVTransfer(Procedure):
     finded_instruments = find_instruments.show_instrument() 
     print(finded_instruments)
     ################# PARAMETERS ###################
-    mode = ListParameter("Mode",  default='Standard', choices=['Standard', 'Fast Resistance'])
-    agilent = BooleanParameter("Agilent", default=False, group_by='mode', group_condition=lambda v: v =='Standard')
+    mode = ListParameter("Mode",  default='HDCMode', choices=['HDCMode', 'Fast Resistance'])
+    agilent = BooleanParameter("Agilent", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
     agilent34401a_adress = Parameter("Agilent34401a adress", default="GPIB1::22::INSTR", group_by='agilent', group_condition=lambda v: v ==True)
-    acquire_type = ListParameter("Acquire type", choices = ['I(Hmb) | set Vb', 'V(Hmb) |set Ib', 'I(Vb) | set Hmb', 'V(Ib) | set Hmb'],group_by='mode', group_condition=lambda v: v =='Standard')
+    acquire_type = ListParameter("Acquire type", choices = ['I(Hmb) | set Vb', 'V(Hmb) |set Ib', 'I(Vb) | set Hmb', 'V(Ib) | set Hmb'],group_by='mode', group_condition=lambda v: v =='HDCMode')
     keithley_adress = ListParameter("Keithley2400 adress", choices=["GPIB1::24::INSTR"])
-    field_sensor_adress = Parameter("Field_sensor",  default="COM8",group_by='mode', group_condition=lambda v: v =='Standard' )
+    field_sensor_adress = Parameter("Field_sensor",  default="COM8",group_by='mode', group_condition=lambda v: v =='HDCMode' )
     #keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
-    keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by={'acquire_type':lambda v: v =='I(Hmb) | set Vb' or v == 'I(Vb) | set Hmb', 'mode':lambda v: v =='Standard'})
-    keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hmb) |set Ib' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
-    keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hmb) |set Ib', 'mode':lambda v: v =='Standard'})
-    keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hmb) | set Vb', 'mode':lambda v: v =='Standard' or v == 'Fast Resistance'})
+    keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by={'acquire_type':lambda v: v =='I(Hmb) | set Vb' or v == 'I(Vb) | set Hmb', 'mode':lambda v: v =='HDCMode'})
+    keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hmb) |set Ib' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='HDCMode'})
+    keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hmb) |set Ib', 'mode':lambda v: v =='HDCMode'})
+    keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hmb) | set Vb', 'mode':lambda v: v =='HDCMode' or v == 'Fast Resistance'})
     agilent_adress = Parameter("Agilent E3648A adress", default="COM9",group_by={'field_device':lambda v: v =='Agilent E3648A'} )
     field_device = ListParameter("Field device", choices = ["DAQ", "Agilent E3648A"])
-    field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='Standard'})
-    coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='Standard')
-    start = FloatParameter("Start", group_by='mode', group_condition=lambda v: v =='Standard')
-    stop = FloatParameter("Stop", group_by='mode', group_condition=lambda v: v =='Standard')
-    no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='Standard')
-    reverse_field = BooleanParameter("Reverse field", default=False, group_by='mode', group_condition=lambda v: v =='Standard')
-    delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='Standard')
-    sample_name = Parameter("Sample Name", default="sample name", group_by='mode', group_condition=lambda v: v =='Standard')
+    field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='HDCMode'})
+    coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='HDCMode')
+    start = FloatParameter("Start", group_by='mode', group_condition=lambda v: v =='HDCMode')
+    stop = FloatParameter("Stop", group_by='mode', group_condition=lambda v: v =='HDCMode')
+    no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='HDCMode')
+    reverse_field = BooleanParameter("Reverse field", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
+    delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='HDCMode')
+    sample_name = Parameter("Sample Name", default="sample name", group_by='mode', group_condition=lambda v: v =='HDCMode')
  
     DATA_COLUMNS = ['Voltage (V)',  'Current (A)', 'Resistance (Ohm)', 'dX/dH', 'dR/dH', 'diff_I', 'diff_V', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
 
@@ -68,7 +68,7 @@ class IVTransfer(Procedure):
     
     ################ STARTUP ##################3
     def startup(self):
-        if self.mode == 'Standard':
+        if self.mode == 'HDCMode':
             log.info("Finding instruments...")
             sleep(0.1)
             log.info("Finded: {}".format(self.finded_instruments))
@@ -225,7 +225,7 @@ class IVTransfer(Procedure):
         tmp_diff_I = []
         tmp_diff_V = []
 
-        if self.mode == "Standard":
+        if self.mode == "HDCMode":
             if self.acquire_type == 'I(Hmb) | set Vb':
                 log.info("Starting to sweep through field")
                 if self.coil == "Large":
