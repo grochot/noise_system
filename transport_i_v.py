@@ -21,6 +21,7 @@ from pymeasure.experiment import (
 from logic.unique_name import unique_name
 
 from hardware.keithley2400 import Keithley2400
+from logic.vector import Vector
 from hardware.agilent_34410a import Agilent34410A
 from modules.compute_diff import ComputeDiff
 from modules.computer_resisrance import ComputerResistance
@@ -54,9 +55,9 @@ class IVTransfer(Procedure):
     field_device = ListParameter("Field device", choices = ["DAQ", "Agilent E3648A"])
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='HDCMode'})
     coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='HDCMode')
-    start = FloatParameter("Start", group_by='mode', group_condition=lambda v: v =='HDCMode')
-    stop = FloatParameter("Stop", group_by='mode', group_condition=lambda v: v =='HDCMode')
-    no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='HDCMode')
+    vector_param = Parameter("Vector", group_by='mode', group_condition=lambda v: v =='HDCMode')
+    # stop = FloatParameter("Stop", group_by='mode', group_condition=lambda v: v =='HDCMode')
+    # no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='HDCMode')
     reverse_field = BooleanParameter("Reverse field", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
     delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='HDCMode')
     sample_name = Parameter("Sample Name", default="sample name", group_by='mode', group_condition=lambda v: v =='HDCMode')
@@ -73,7 +74,7 @@ class IVTransfer(Procedure):
             sleep(0.1)
             log.info("Finded: {}".format(self.finded_instruments))
             
-            
+        vector_obj = Vector()
         ### Init field device 
             if self.field_device == "DAQ":
                 log.info('Start config DAQ') 
@@ -85,11 +86,11 @@ class IVTransfer(Procedure):
                     log.error("Config DAQ failed")
                 try:
                     if self.reverse_field == True: 
-                        self.vector_to = np.linspace(self.start, self.stop,self.no_points)
+                        self.vector_to = vector_obj.generate_vector(self.vector_param)
                         self.vector_rev = self.vector_to[::-1]
                         self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
                     else: 
-                        self.vector = np.linspace(self.start, self.stop,self.no_points)
+                        self.vector = vector_obj.generate_vector(self.vector_param)
                 except:
                     log.error("Vector set failed")
             else: 
@@ -103,12 +104,12 @@ class IVTransfer(Procedure):
                 except:
                     log.error("Config Keisight E3648A failed")
                 try:
-                    if self.reverse_field == True: 
-                        self.vector_to = np.linspace(self.start, self.stop,self.no_points)
+                   if self.reverse_field == True: 
+                        self.vector_to = vector_obj.generate_vector(self.vector_param)
                         self.vector_rev = self.vector_to[::-1]
                         self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
                     else: 
-                        self.vector = np.linspace(self.start, self.stop,self.no_points)
+                        self.vector = vector_obj.generate_vector(self.vector_param)
                 except:
                     log.error("Vector set failed")
             
@@ -251,31 +252,37 @@ class IVTransfer(Procedure):
                     tmp_voltage.append(self.keithley_voltage_bias)
                     tmp_resistance.append(res.resistance(self.keithley_voltage_bias, self.tmp_current))
                     self.emit('progress', 100 * w / len(self.vector))
-                    w = w + 1
-                
-                tmp_diff_x = diff.diff(tmp_current, tmp_field_set)
-                tmp_diff_R = diff.diff(tmp_resistance, tmp_field_set)
-                tmp_diff_I = diff.diffIV(tmp_current)
-                tmp_diff_V = diff.diffIV(tmp_voltage)
+                    
+                    if i == 0:
+                        tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
+                        tmp_diff_R = np.nan # diff.diff(tmp_resistance, tmp_field_set)
+                        tmp_diff_I = np.nan #diff.diffIV(tmp_current)
+                        tmp_diff_V = np.nan #diff.diffIV(tmp_voltage)
+                    else: 
+                        tmp_diff_x = diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_R = diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_I = diff.diffIV(tmp_current[w-1],tmp_current[w])
+                        tmp_diff_V = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
+                    
 
-                
-                for k in range(len(tmp_field_set)):
                     data = {
-                        'Voltage (V)':  tmp_voltage[k],
-                        'Current (A)':  tmp_current[k],
-                        'Resistance (Ohm)': tmp_resistance[k],
-                        'X field (Oe)': tmp_field_x[k],
-                        'Y field (Oe)': tmp_field_y[k],
-                        'Z field (Oe)': tmp_field_z[k],
-                        'Field set (Oe)': tmp_field_set[k],
-                        'dX/dH': tmp_diff_x[k] if k < len(tmp_diff_x) else np.nan,
-                        'dR/dH': tmp_diff_R[k] if k < len(tmp_diff_R) else np.nan,
-                        'diff_I': tmp_diff_I[k] if k < len(tmp_diff_I) else np.nan,
-                        'diff_V': tmp_diff_V[k] if k < len(tmp_diff_V) else np.nan
+                        'Voltage (V)':  tmp_voltage[w],
+                        'Current (A)':  tmp_current[w],
+                        'Resistance (Ohm)': tmp_resistance[w],
+                        'X field (Oe)': tmp_field_x[w],
+                        'Y field (Oe)': tmp_field_y[w],
+                        'Z field (Oe)': tmp_field_z[w],
+                        'Field set (Oe)': tmp_field_set[w],
+                        'dX/dH': tmp_diff_x
+                        'dR/dH': tmp_diff_R
+                        'diff_I': tmp_diff_I
+                        'diff_V': tmp_diff_V
 
                         }
-                        
+                    w = w + 1
                     self.emit('results', data) 
+               
+                   
 
 
 
@@ -304,32 +311,35 @@ class IVTransfer(Procedure):
                     tmp_voltage.append(self.tmp_volatege)
                     tmp_resistance.append(res.resistance(self.tmp_volatege, self.keithley_current_bias))
                     self.emit('progress', 100 * w / len(self.vector))
-                    w = w + 1
-                
-                tmp_diff_x = diff.diff(tmp_voltage, tmp_field_set)
-                tmp_diff_R = diff.diff(tmp_resistance, tmp_field_set)
-                tmp_diff_I = diff.diffIV(tmp_current)
-                tmp_diff_V = diff.diffIV(tmp_voltage)
+                    if i == 0:
+                        tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
+                        tmp_diff_R = np.nan # diff.diff(tmp_resistance, tmp_field_set)
+                        tmp_diff_I = np.nan #diff.diffIV(tmp_current)
+                        tmp_diff_V = np.nan #diff.diffIV(tmp_voltage)
+                    else: 
+                        tmp_diff_x = diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_R = diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_I = diff.diffIV(tmp_current[w-1],tmp_current[w])
+                        tmp_diff_V = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
+                    
 
-
-
-                for k in range(len(tmp_field_set)):
                     data = {
-                        'Voltage (V)':  tmp_voltage[k],
-                        'Current (A)':  tmp_current[k],
-                        'Resistance (Ohm)': tmp_resistance[k],
-                        'X field (Oe)': tmp_field_x[k],
-                        'Y field (Oe)': tmp_field_y[k],
-                        'Z field (Oe)': tmp_field_z[k],
-                        'Field set (Oe)': tmp_field_set[k],
-                        'dX/dH': tmp_diff_x[k] if k < len(tmp_diff_x) else np.nan,
-                        'dR/dH': tmp_diff_R[k] if k < len(tmp_diff_R) else np.nan,
-                        'diff_I': tmp_diff_I[k] if k < len(tmp_diff_I) else np.nan,
-                        'diff_V': tmp_diff_V[k] if k < len(tmp_diff_V) else np.nan
+                        'Voltage (V)':  tmp_voltage[w],
+                        'Current (A)':  tmp_current[w],
+                        'Resistance (Ohm)': tmp_resistance[w],
+                        'X field (Oe)': tmp_field_x[w],
+                        'Y field (Oe)': tmp_field_y[w],
+                        'Z field (Oe)': tmp_field_z[w],
+                        'Field set (Oe)': tmp_field_set[w],
+                        'dX/dH': tmp_diff_x
+                        'dR/dH': tmp_diff_R
+                        'diff_I': tmp_diff_I
+                        'diff_V': tmp_diff_V
 
                         }
-                        
+                    w = w + 1
                     self.emit('results', data) 
+               
                     
             elif self.acquire_type == 'I(Vb) | set Hmb':
                 log.info("Starting to sweep through voltage")
@@ -353,33 +363,35 @@ class IVTransfer(Procedure):
                     tmp_voltage.append(i)
                     tmp_resistance.append(res.resistance(i, self.tmp_current))
                     self.emit('progress', 100 * w / len(self.vector))
-                    w = w + 1
-                
-                tmp_diff_x = diff.diff(tmp_current, tmp_field_set)
-                tmp_diff_R = diff.diff(tmp_resistance, tmp_field_set)
-                tmp_diff_I = diff.diffIV(tmp_current)
-                tmp_diff_V = diff.diffIV(tmp_voltage)
-
-
-
-
-                for k in range(len(tmp_field_set)):
-                    data = {
-                            'Voltage (V)':  tmp_voltage[k],
-                            'Current (A)':  tmp_current[k],
-                            'Resistance (Ohm)': tmp_resistance[k],
-                            'X field (Oe)': tmp_field_x[k],
-                            'Y field (Oe)': tmp_field_y[k],
-                            'Z field (Oe)': tmp_field_z[k],
-                            'Field set (Oe)': tmp_field_set[k],
-                            'dX/dH': tmp_diff_x[k] if k < len(tmp_diff_x) else np.nan,
-                            'dR/dH': tmp_diff_R[k] if k < len(tmp_diff_R) else np.nan,
-                            'diff_I': tmp_diff_I[k] if k < len(tmp_diff_I) else np.nan,
-                            'diff_V': tmp_diff_V[k] if k < len(tmp_diff_V) else np.nan
-
-                            }
+                     if i == 0:
+                        tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
+                        tmp_diff_R = np.nan # diff.diff(tmp_resistance, tmp_field_set)
+                        tmp_diff_I = np.nan #diff.diffIV(tmp_current)
+                        tmp_diff_V = np.nan #diff.diffIV(tmp_voltage)
+                    else: 
+                        tmp_diff_x = diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_R = diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_I = diff.diffIV(tmp_current[w-1],tmp_current[w])
+                        tmp_diff_V = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
                     
+
+                    data = {
+                        'Voltage (V)':  tmp_voltage[w],
+                        'Current (A)':  tmp_current[w],
+                        'Resistance (Ohm)': tmp_resistance[w],
+                        'X field (Oe)': tmp_field_x[w],
+                        'Y field (Oe)': tmp_field_y[w],
+                        'Z field (Oe)': tmp_field_z[w],
+                        'Field set (Oe)': tmp_field_set[w],
+                        'dX/dH': tmp_diff_x
+                        'dR/dH': tmp_diff_R
+                        'diff_I': tmp_diff_I
+                        'diff_V': tmp_diff_V
+
+                        }
+                    w = w + 1
                     self.emit('results', data) 
+               
                 
             elif self.acquire_type == 'V(Ib) | set Hmb':
                 log.info("Starting to sweep through current")
@@ -401,34 +413,35 @@ class IVTransfer(Procedure):
                     tmp_voltage.append(self.tmp_volatage)
                     tmp_resistance.append(res.resistance(tmp_voltage, tmp_current))
                     self.emit('progress', 100 * w / len(self.vector))
-                    w = w + 1
-                
-                tmp_diff_x = diff.diff(tmp_voltage, tmp_field_set)
-                tmp_diff_R = diff.diff(tmp_resistance, tmp_field_set)
-                tmp_diff_I = diff.diffIV(tmp_current)
-                tmp_diff_V = diff.diffIV(tmp_voltage)
-
-
-
-
-
-                for k in range(len(tmp_field_set)):
-                    data = {
-                            'Voltage (V)':  tmp_voltage[k],
-                            'Current (A)':  tmp_current[k],
-                            'Resistance (Ohm)': tmp_resistance[k],
-                            'X field (Oe)': tmp_field_x[k],
-                            'Y field (Oe)': tmp_field_y[k],
-                            'Z field (Oe)': tmp_field_z[k],
-                            'Field set (Oe)': tmp_field_set[k],
-                            'dX/dH': tmp_diff_x[k] if k < len(tmp_diff_x) else np.nan,
-                            'dR/dH': tmp_diff_R[k] if k < len(tmp_diff_R) else np.nan,
-                            'diff_I': tmp_diff_I[k] if k < len(tmp_diff_I) else np.nan,
-                            'diff_V': tmp_diff_V[k] if k < len(tmp_diff_V) else np.nan
-
-                            }
+                   if i == 0:
+                        tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
+                        tmp_diff_R = np.nan # diff.diff(tmp_resistance, tmp_field_set)
+                        tmp_diff_I = np.nan #diff.diffIV(tmp_current)
+                        tmp_diff_V = np.nan #diff.diffIV(tmp_voltage)
+                    else: 
+                        tmp_diff_x = diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_R = diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_I = diff.diffIV(tmp_current[w-1],tmp_current[w])
+                        tmp_diff_V = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
                     
+
+                    data = {
+                        'Voltage (V)':  tmp_voltage[w],
+                        'Current (A)':  tmp_current[w],
+                        'Resistance (Ohm)': tmp_resistance[w],
+                        'X field (Oe)': tmp_field_x[w],
+                        'Y field (Oe)': tmp_field_y[w],
+                        'Z field (Oe)': tmp_field_z[w],
+                        'Field set (Oe)': tmp_field_set[w],
+                        'dX/dH': tmp_diff_x
+                        'dR/dH': tmp_diff_R
+                        'diff_I': tmp_diff_I
+                        'diff_V': tmp_diff_V
+
+                        }
+                    w = w + 1
                     self.emit('results', data) 
+               
         elif self.mode == "Fast Resistance":
             self.tmp_resistance = self.keithley.resistance
             log.info(self.tmp_resistance)
@@ -471,8 +484,8 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= IVTransfer,
-            inputs=['mode','sample_name','coil','acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'start', 'stop', 'no_points', 'reverse_field'],
+            inputs=['mode','sample_name','vector_param','coil','acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
             y_axis='Voltage (V)',
