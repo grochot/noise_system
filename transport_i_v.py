@@ -34,7 +34,7 @@ log.addHandler(logging.NullHandler())
 
 
 class IVTransfer(Procedure):
-    licznik = 1
+    licznik = 1 # licznik
     find_instruments = FindInstrument()
     finded_instruments = find_instruments.show_instrument() 
     print(finded_instruments)
