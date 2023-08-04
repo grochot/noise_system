@@ -52,7 +52,7 @@ class IVTransfer(Procedure):
     keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hmb) |set Ib', 'mode':lambda v: v =='HDCMode'})
     keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hmb) | set Vb', 'mode':lambda v: v =='HDCMode' or v == 'Fast Resistance'})
     agilent_adress = Parameter("Agilent E3648A adress", default="COM9",group_by={'field_device':lambda v: v =='Agilent E3648A'} )
-    field_device = ListParameter("Field device", choices = ["DAQ", "Agilent E3648A"])
+    field_device = ListParameter("Field device", choices = ["DAQ", "Agilent E3648A"], default = "DAQ")
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hmb' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='HDCMode'})
     coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='HDCMode')
     vector_param = Parameter("Vector", group_by='mode', group_condition=lambda v: v =='HDCMode')
@@ -62,19 +62,20 @@ class IVTransfer(Procedure):
     delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='HDCMode')
     sample_name = Parameter("Sample Name", default="sample name", group_by='mode', group_condition=lambda v: v =='HDCMode')
  
-    DATA_COLUMNS = ['Voltage (V)',  'Current (A)', 'Resistance (Ohm)', 'dX/dH', 'dR/dH', 'diff_I', 'diff_V', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
+    DATA_COLUMNS = ['Voltage (V)',  'Current (A)', 'Resistance', 'dX/dH', 'dR/dH', 'diff_I', 'diff_V', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
 
     path_file = SaveFilePath() 
    
     
     ################ STARTUP ##################3
     def startup(self):
+        self.vector_obj = Vector()
         if self.mode == 'HDCMode':
             log.info("Finding instruments...")
             sleep(0.1)
             log.info("Finded: {}".format(self.finded_instruments))
             
-        vector_obj = Vector()
+        
         ### Init field device 
             if self.field_device == "DAQ":
                 log.info('Start config DAQ') 
@@ -82,16 +83,18 @@ class IVTransfer(Procedure):
                     from hardware.daq import DAQ
                     self.field = DAQ("6124/ao0")
                     log.info("Config DAQ done")
-                except:
+                except Exception as e:
+                    print(e)
                     log.error("Config DAQ failed")
                 try:
                     if self.reverse_field == True: 
-                        self.vector_to = vector_obj.generate_vector(self.vector_param)
+                        self.vector_to = self.vector_obj.generate_vector(self.vector_param)
                         self.vector_rev = self.vector_to[::-1]
-                        self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+                        vector = np.append(self.vector_to[0:-1], self.vector_rev)
                     else: 
-                        self.vector = vector_obj.generate_vector(self.vector_param)
-                except:
+                        self.vector = self.vector_obj.generate_vector(self.vector_param)
+                except Exception as e:
+                    print(e)
                     log.error("Vector set failed")
             else: 
                 log.info('Start config Keisight E3648A')
@@ -101,16 +104,18 @@ class IVTransfer(Procedure):
                     self.field = E3600a(self.agilent_adress) #connction to field controller
                     self.field.remote()
                     sleep(1)
-                except:
+                except Exception as e:
+                    print(e)
                     log.error("Config Keisight E3648A failed")
                 try:
-                   if self.reverse_field == True: 
-                        self.vector_to = vector_obj.generate_vector(self.vector_param)
+                    if self.reverse_field == True: 
+                        self.vector_to = self.vector_obj.generate_vector(self.vector_param)
                         self.vector_rev = self.vector_to[::-1]
                         self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
                     else: 
-                        self.vector = vector_obj.generate_vector(self.vector_param)
-                except:
+                        self.vector = self.vector_obj.generate_vector(self.vector_param)
+                except Exception as e:
+                    print(e)
                     log.error("Vector set failed")
             
 
@@ -165,6 +170,7 @@ class IVTransfer(Procedure):
 
             except:
                 log.error("Config Keithley failed")
+                
 
         
             
@@ -273,10 +279,10 @@ class IVTransfer(Procedure):
                         'Y field (Oe)': tmp_field_y[w],
                         'Z field (Oe)': tmp_field_z[w],
                         'Field set (Oe)': tmp_field_set[w],
-                        'dX/dH': tmp_diff_x
-                        'dR/dH': tmp_diff_R
-                        'diff_I': tmp_diff_I
-                        'diff_V': tmp_diff_V
+                        'dX/dH': tmp_diff_x,
+                        'dR/dH': tmp_diff_R,
+                        'diff_I': tmp_diff_I,
+                        'diff_V': tmp_diff_V,
 
                         }
                     w = w + 1
@@ -293,7 +299,7 @@ class IVTransfer(Procedure):
                         self.field_const = 10 
                 w = 0
                 log.info("Starting to sweep through field")
-                for i in self.vector:
+                for i in vector:
                     self.last_value = i
                     self.set_field = self.field.set_field(i/self.field_const)
                     tmp_field_set.append(i)
@@ -331,10 +337,10 @@ class IVTransfer(Procedure):
                         'Y field (Oe)': tmp_field_y[w],
                         'Z field (Oe)': tmp_field_z[w],
                         'Field set (Oe)': tmp_field_set[w],
-                        'dX/dH': tmp_diff_x
-                        'dR/dH': tmp_diff_R
-                        'diff_I': tmp_diff_I
-                        'diff_V': tmp_diff_V
+                        'dX/dH': tmp_diff_x,
+                        'dR/dH': tmp_diff_R,
+                        'diff_I': tmp_diff_I,
+                        'diff_V': tmp_diff_V,
 
                         }
                     w = w + 1
@@ -346,7 +352,7 @@ class IVTransfer(Procedure):
                 w = 0
 
 
-                for i in self.vector:
+                for i in vector:
                     tmp_field_set.append(self.field_bias)
                     self.keithley.source_voltage =  i
                     sleep(self.delay*0.001)
@@ -363,7 +369,7 @@ class IVTransfer(Procedure):
                     tmp_voltage.append(i)
                     tmp_resistance.append(res.resistance(i, self.tmp_current))
                     self.emit('progress', 100 * w / len(self.vector))
-                     if i == 0:
+                    if i == 0:
                         tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
                         tmp_diff_R = np.nan # diff.diff(tmp_resistance, tmp_field_set)
                         tmp_diff_I = np.nan #diff.diffIV(tmp_current)
@@ -383,10 +389,10 @@ class IVTransfer(Procedure):
                         'Y field (Oe)': tmp_field_y[w],
                         'Z field (Oe)': tmp_field_z[w],
                         'Field set (Oe)': tmp_field_set[w],
-                        'dX/dH': tmp_diff_x
-                        'dR/dH': tmp_diff_R
-                        'diff_I': tmp_diff_I
-                        'diff_V': tmp_diff_V
+                        'dX/dH': tmp_diff_x,
+                        'dR/dH': tmp_diff_R,
+                        'diff_I': tmp_diff_I,
+                        'diff_V': tmp_diff_V,
 
                         }
                     w = w + 1
@@ -396,7 +402,7 @@ class IVTransfer(Procedure):
             elif self.acquire_type == 'V(Ib) | set Hmb':
                 log.info("Starting to sweep through current")
                 w = 0
-                for i in self.vector:
+                for i in vector:
                     tmp_field_set.append(self.field_bias)
                     self.keithley.source_current =  i
                     sleep(self.delay*0.001)
@@ -413,7 +419,7 @@ class IVTransfer(Procedure):
                     tmp_voltage.append(self.tmp_volatage)
                     tmp_resistance.append(res.resistance(tmp_voltage, tmp_current))
                     self.emit('progress', 100 * w / len(self.vector))
-                   if i == 0:
+                    if i == 0:
                         tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
                         tmp_diff_R = np.nan # diff.diff(tmp_resistance, tmp_field_set)
                         tmp_diff_I = np.nan #diff.diffIV(tmp_current)
@@ -433,10 +439,10 @@ class IVTransfer(Procedure):
                         'Y field (Oe)': tmp_field_y[w],
                         'Z field (Oe)': tmp_field_z[w],
                         'Field set (Oe)': tmp_field_set[w],
-                        'dX/dH': tmp_diff_x
-                        'dR/dH': tmp_diff_R
-                        'diff_I': tmp_diff_I
-                        'diff_V': tmp_diff_V
+                        'dX/dH': tmp_diff_x,
+                        'dR/dH': tmp_diff_R,
+                        'diff_I': tmp_diff_I,
+                        'diff_V': tmp_diff_V,
 
                         }
                     w = w + 1
@@ -459,14 +465,15 @@ class IVTransfer(Procedure):
         if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
             if self.mode != "Fast Resistance":
                 if self.field_device == "DAQ":
-                    self.field.shutdown()
+                    #self.field.shutdown()
+                    pass
                 else: 
                     if self.acquire_type == 'I(Hmb) | set Vb' or self.acquire_type == 'V(Hmb) |set Ib':         
                         self.field.shutdown(self.last_value/self.field_const)
                     else:
                         self.field.shutdown(self.field_bias/self.field_const)
             sleep(0.2)
-            self.keithley.shutdown()
+            #self.keithley.shutdown()
             print("keithley shutdown done")
             IVTransfer.licznik = 0
         else:
