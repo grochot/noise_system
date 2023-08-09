@@ -300,7 +300,7 @@ class IVTransfer(Procedure):
                         self.field_const = 10 
                 w = 0
                 log.info("Starting to sweep through field")
-                for i in vector:
+                for i in self.vector:
                     self.last_value = i
                     self.set_field = self.field.set_field(i/self.field_const)
                     tmp_field_set.append(i)
@@ -316,7 +316,7 @@ class IVTransfer(Procedure):
                         self.tmp_volatege = self.keithley.voltage
                     tmp_current.append(self.keithley_current_bias)
                     tmp_voltage.append(self.tmp_volatege)
-                    tmp_resistance.append(res.resistance(self.tmp_volatege, self.keithley_current_bias))
+                    tmp_resistance.append(float(self.tmp_voltage)/float(self.tmp_current))
                     self.emit('progress', 100 * w / len(self.vector))
                     if i == 0:
                         tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
@@ -353,7 +353,7 @@ class IVTransfer(Procedure):
                 w = 0
 
 
-                for i in vector:
+                for i in self.vector:
                     tmp_field_set.append(self.field_bias)
                     self.keithley.source_voltage =  i
                     sleep(self.delay*0.001)
@@ -368,7 +368,7 @@ class IVTransfer(Procedure):
                     tmp_field_z.append(self.tmp_field[2])
                     tmp_current.append(self.tmp_current)
                     tmp_voltage.append(i)
-                    tmp_resistance.append(res.resistance(i, self.tmp_current))
+                    tmp_resistance.append(float(self.keithley.source_voltage)/float(self.tmp_current))
                     self.emit('progress', 100 * w / len(self.vector))
                     if i == 0:
                         tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
@@ -376,8 +376,8 @@ class IVTransfer(Procedure):
                         tmp_diff_I = np.nan #diff.diffIV(tmp_current)
                         tmp_diff_V = np.nan #diff.diffIV(tmp_voltage)
                     else: 
-                        tmp_diff_x = diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
-                        tmp_diff_R = diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_x = np.nan#diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_R = np.nan #diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
                         tmp_diff_I = diff.diffIV(tmp_current[w-1],tmp_current[w])
                         tmp_diff_V = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
                     
@@ -403,7 +403,7 @@ class IVTransfer(Procedure):
             elif self.acquire_type == 'V(Ib) | set Hmb':
                 log.info("Starting to sweep through current")
                 w = 0
-                for i in vector:
+                for i in self.vector:
                     tmp_field_set.append(self.field_bias)
                     self.keithley.source_current =  i
                     sleep(self.delay*0.001)
@@ -418,7 +418,7 @@ class IVTransfer(Procedure):
                     tmp_field_z.append(self.tmp_field[2])
                     tmp_current.append(i)
                     tmp_voltage.append(self.tmp_volatage)
-                    tmp_resistance.append(res.resistance(tmp_voltage, tmp_current))
+                    tmp_resistance.append(float(self.tmp_volatage)/(i if i != 0 else 1e-9))
                     self.emit('progress', 100 * w / len(self.vector))
                     if i == 0:
                         tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
@@ -426,8 +426,8 @@ class IVTransfer(Procedure):
                         tmp_diff_I = np.nan #diff.diffIV(tmp_current)
                         tmp_diff_V = np.nan #diff.diffIV(tmp_voltage)
                     else: 
-                        tmp_diff_x = diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
-                        tmp_diff_R = diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_x = np.nan #diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
+                        tmp_diff_R = np.nan #diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
                         tmp_diff_I = diff.diffIV(tmp_current[w-1],tmp_current[w])
                         tmp_diff_V = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
                     
