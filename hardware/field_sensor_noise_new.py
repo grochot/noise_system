@@ -15,7 +15,7 @@ class FieldSensor(Instrument):
 
     def __init__(self, resourceName):
         self.resource = resourceName
-     
+        
     
     def read_field(self): 
         self.address = self.resource
@@ -44,11 +44,11 @@ class FieldSensor(Instrument):
         text = text.replace("'", "")
         pattern = "X: (?P<x>[0-9,.,-]+) Y: (?P<y>[0-9,.,-]+) Z: (?P<z>[0-9,.,-]+)"
         result = re.match(pattern, text)
-        #print(np.sqrt(float(result["x"])**2+float(result["y"])**2+float(result["z"])**2))
+        print(np.sqrt(float(result["x"])**2+float(result["y"])**2+float(result["z"])**2))
         return float(result["x"]) ,float(result["y"]) ,float(result["z"])
 
 
-# test = FieldSensor('COM1')
+# test = FieldSensor('COM3')
 
 # test.read_field_init()
 
