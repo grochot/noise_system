@@ -45,7 +45,7 @@ class IVTransfer(Procedure):
     agilent34401a_adress = Parameter("Agilent34401a adress", default="GPIB1::22::INSTR", group_by='agilent', group_condition=lambda v: v ==True)
     acquire_type = ListParameter("Acquire type", choices = ['I(Hmb) | set Vb', 'V(Hmb) |set Ib', 'I(Vb) | set Hmb', 'V(Ib) | set Hmb'],group_by='mode', group_condition=lambda v: v =='HDCMode')
     keithley_adress = ListParameter("Keithley2400 adress", choices=["GPIB1::24::INSTR"])
-    field_sensor_adress = Parameter("Field_sensor",  default="COM8",group_by='mode', group_condition=lambda v: v =='HDCMode' )
+    field_sensor_adress = Parameter("Field_sensor",  default="COM1",group_by='mode', group_condition=lambda v: v =='HDCMode' )
     #keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
     keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by={'acquire_type':lambda v: v =='I(Hmb) | set Vb' or v == 'I(Vb) | set Hmb', 'mode':lambda v: v =='HDCMode'})
     keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hmb) |set Ib' or v == 'V(Ib) | set Hmb', 'mode':lambda v: v =='HDCMode'})
@@ -126,6 +126,7 @@ class IVTransfer(Procedure):
             ############## KEITHLEY CONFIG ###############
             log.info("Start config Keithley")
             try:
+                
                 self.keithley = Keithley2400(self.keithley_adress)
                 if self.acquire_type == 'I(Hmb) | set Vb': 
                     self.keithley.apply_voltage()
@@ -152,8 +153,6 @@ class IVTransfer(Procedure):
                         self.field_const = 5
                     else:
                         self.field_const = 10
-
-                    
                     self.set_field = self.field.set_field(self.field_bias/self.field_const)
                 elif self.acquire_type == 'V(Ib) | set Hmb': 
                     self.keithley.apply_current()
@@ -191,6 +190,14 @@ class IVTransfer(Procedure):
                 log.info("Config Agilent 34410A")
                 try:
                     self.agilent_34410 = Agilent34410A(self.agilent34401a_adress)
+                    if self.coil == "Large":
+                        self.field_const = 5
+                    else:
+                        self.field_const = 10
+                    if self.acquire_type == 'I(Vb) | set Hmb': 
+                        self.set_field = self.field.set_field(self.field_bias/self.field_const)
+                    elif self.acquire_type == 'V(Ib) | set Hmb':
+                        self.set_field = self.field.set_field(self.field_bias/self.field_const)
                     log.info("Config Agilent 34410A done")
                 except:
                     log.error("Config Agilent 34410A failed")
@@ -252,9 +259,9 @@ class IVTransfer(Procedure):
                     tmp_field_z.append(self.tmp_field[2])
                     sleep(self.delay*0.001)
                     if self.agilent == True:
-                        tmp_current.append(self.agilent_34410.current_dc)
+                        self.tmp_current = self.agilent_34410.current_dc
                     else:
-                        self.tmp_current = self.keithley.current
+                        self.tmp_current= self.keithley.current
                     tmp_current.append(self.tmp_current)
                     tmp_voltage.append(self.keithley_voltage_bias)
                     tmp_resistance.append(float(self.keithley_voltage_bias)/float(self.tmp_current))
@@ -313,10 +320,10 @@ class IVTransfer(Procedure):
                     if self.agilent == True:
                         self.tmp_volatage = self.agilent_34410.voltage_dc
                     else:
-                        self.tmp_volatege = self.keithley.voltage
+                        self.tmp_volatage = self.keithley.voltage
                     tmp_current.append(self.keithley_current_bias)
-                    tmp_voltage.append(self.tmp_volatege)
-                    tmp_resistance.append(float(self.tmp_voltage)/float(self.tmp_current))
+                    tmp_voltage.append(self.tmp_volatage)
+                    tmp_resistance.append(float(self.tmp_volatage)/float(self.keithley_current_bias) if self.keithley_current_bias != 0 else np.nan )
                     self.emit('progress', 100 * w / len(self.vector))
                     if i == 0:
                         tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
@@ -355,6 +362,7 @@ class IVTransfer(Procedure):
 
                 for i in self.vector:
                     tmp_field_set.append(self.field_bias)
+                   
                     self.keithley.source_voltage =  i
                     sleep(self.delay*0.001)
                     if self.agilent == True:
@@ -368,7 +376,7 @@ class IVTransfer(Procedure):
                     tmp_field_z.append(self.tmp_field[2])
                     tmp_current.append(self.tmp_current)
                     tmp_voltage.append(i)
-                    tmp_resistance.append(float(self.keithley.source_voltage)/float(self.tmp_current))
+                    tmp_resistance.append(float(i)/float(self.tmp_current))
                     self.emit('progress', 100 * w / len(self.vector))
                     if i == 0:
                         tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
@@ -474,6 +482,7 @@ class IVTransfer(Procedure):
                     else:
                         self.field.shutdown(self.field_bias/self.field_const)
             sleep(0.2)
+            
             self.keithley.shutdown()
             print("keithley shutdown done")
             IVTransfer.licznik = 0
