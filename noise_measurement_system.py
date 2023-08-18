@@ -96,7 +96,7 @@ class NoiseProcedure(Procedure):
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
     
             sleep(0.1)
-            log.info("Finding instrument done")
+       
         
         
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
@@ -106,8 +106,7 @@ class NoiseProcedure(Procedure):
 
     ##Field Sensor:
             
-            if self.field_sensor_adress == "none":
-                print(self.field.sensor_adress)
+            if self.field_sensor_adress == 'none':
                 self.field = DummyFieldSensor()
                 log.warning("Use FieldSensor Dummy")
             
@@ -117,21 +116,21 @@ class NoiseProcedure(Procedure):
                
 
     ##Bias field:
-            if self.field_adress == "none":
+            if self.field_adress == 'none':
                 self.field_coil = E3600aDummy()
                 log.warning("Use E3600 Dummy")
             else:
                 self.field_coil = E3600a(self.field_adress) #connction to field controller
                 self.field_coil.remote()
                 
-                if self.bias_field < 0:
+                if float(self.bias_field) < 0:
                     self.field_coil.outputselect(1)
                     sleep(0.3)
                     self.field_coil.disable_now()
                     sleep(0.3)
                     self.field_coil.outputselect(2)
                     sleep(0.3)
-                    self.field_coil.current(abs(self.bias_field/1000)) #set field 
+                    self.field_coil.current(abs(float(self.bias_field)/1000)) #set field 
                     sleep(0.3)
                     self.field_coil.enabled()
                 else: 
@@ -141,11 +140,11 @@ class NoiseProcedure(Procedure):
                     sleep(0.2)
                     self.field_coil.outputselect(1)
                     sleep(0.3)
-                    self.field_coil.current(self.bias_field/1000) #set field 
+                    self.field_coil.current(float(self.bias_field)/1000) #set field 
                     sleep(0.3)
                     self.field_coil.enabled()
                 sleep(1)
-                log.info("Set bias field to %g mA" %self.bias_field/1000)
+                log.info("Set bias field to {} mA".format(float(self.bias_field)/1000))
            
                 
         

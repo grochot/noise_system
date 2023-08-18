@@ -14,7 +14,7 @@ class E3600aDummy():
     def outputselect(self,channel=0):
         pass
     
-    def disabled(self):
+    def disabled(self, vol):
         pass
     
     def current(self, vol = 0): 

@@ -7,14 +7,14 @@ rm = pyvisa.ResourceManager()
 print(rm.list_resources()) 
 
 
-inst = rm.open_resource('ASRL/dev/ttyUSB0::INSTR')  
+# inst = rm.open_resource('ASRL/dev/ttyUSB0::INSTR')  
 
-# inst = rm.open_resource('ASRL/dev/ttyS0::INSTR')
-# inst.write_termination = "\n"
-# inst.read_termination = "\n"
-inst.write("*IDN?")
-inst.read_bytes(1000, break_on_termchar='\r\n')
-# inst.timeout = 2000
+# # inst = rm.open_resource('ASRL/dev/ttyS0::INSTR')
+# # inst.write_termination = "\n"
+# # inst.read_termination = "\n"
+# inst.write("*IDN?")
+# inst.read_bytes(1000, break_on_termchar='\r\n')
+# # inst.timeout = 2000
 
 # sleep(2)
 # inst.write('*VOLT?')
