@@ -69,7 +69,7 @@ class NoiseProcedure(Procedure):
 
 
    
-    DATA_COLUMNS = ['time (s)','Bias voltage (mV)', 'Sense Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
+    DATA_COLUMNS = ['time (s)','Bias voltage (mV)', 'Sense Voltage (mV)', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)', 'Field (Oe)','frequency (Hz)', 'FFT (mV)', 'log[frequency] (Hz)' ,'log[FFT] (mV)' , 'treshold_time (s)', 'treshold_voltage (mV)', 'divide_voltage (mV)'] #data columns
     path_file = SaveFilePath() 
     
     def prepare_columns(self,columns):
@@ -90,6 +90,7 @@ class NoiseProcedure(Procedure):
             if self.voltage_adress == 'none':
                 from hardware.sim928_dummy import SIM928 
                 self.voltage = SIM928()
+                log.warning("Use SIM928 Dummy")
             else:
                 from hardware.sim928 import SIM928 
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
@@ -108,7 +109,7 @@ class NoiseProcedure(Procedure):
             if self.field_sensor_adress == "none":
                 print(self.field.sensor_adress)
                 self.field = DummyFieldSensor()
-                log.warning("Use DummyFieldSensor")
+                log.warning("Use FieldSensor Dummy")
             
             else:
                 self.field = FieldSensor(self.field_sensor_adress)
@@ -116,7 +117,10 @@ class NoiseProcedure(Procedure):
                
 
     ##Bias field:
-            try:
+            if self.field_adress == "none":
+                self.field_coil = E3600aDummy()
+                log.warning("Use E3600 Dummy")
+            else:
                 self.field_coil = E3600a(self.field_adress) #connction to field controller
                 self.field_coil.remote()
                 
@@ -142,8 +146,7 @@ class NoiseProcedure(Procedure):
                     self.field_coil.enabled()
                 sleep(1)
                 log.info("Set bias field to %g mA" %self.bias_field/1000)
-            except:
-                log.error("Could not connect to field controller")
+           
                 
         
     ##Bias voltage:
@@ -182,7 +185,7 @@ class NoiseProcedure(Procedure):
             sleep(0.5)
 #One shot mode:
         elif self.mode == 'One Shot':
-            self.oscilloscope = PicoScope()
+            self.oscilloscope = PicoScope( )
             self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
@@ -262,6 +265,8 @@ class NoiseProcedure(Procedure):
                     tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
                     tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
                     tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
+
+                    tmp_total_field = np.sqrt(tmp_data_magnetic_field_x_mean**2 +  tmp_data_magnetic_field_y_mean**2 + tmp_data_magnetic_field_z_mean**2)
                
                 except Exception as e:
                     print(e)
@@ -320,6 +325,7 @@ class NoiseProcedure(Procedure):
                             ','+str(tmp_data_magnetic_field_x_mean),
                             ','+str(tmp_data_magnetic_field_y_mean),
                             ','+str(tmp_data_magnetic_field_z_mean),
+                            ','+str(tmp_total_field),
                             ','+ str(freq_tmp[tmp_ele] if tmp_ele < len(freq_tmp) else math.nan), 
                             ','+str(abs(ft_tmp[tmp_ele]) if tmp_ele < len(freq_tmp) else math.nan), 
                             ',' + str(math.log10(freq_tmp[tmp_ele+1]) if tmp_ele < len(freq_tmp)-1 else math.nan),
@@ -361,6 +367,7 @@ class NoiseProcedure(Procedure):
                             'X field (Oe)': tmp_data_magnetic_field_x_mean,
                             'Y field (Oe)': tmp_data_magnetic_field_y_mean,
                             'Z field (Oe)': tmp_data_magnetic_field_z_mean,
+                            'Field (Oe)' : tmp_total_field,
                             'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
                             'treshold_voltage (mV)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
                             'divide_voltage (mV)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
@@ -406,6 +413,7 @@ class NoiseProcedure(Procedure):
                         'X field (Oe)': math.nan,
                         'Y field (Oe)':math.nan,
                         'Z field (Oe)': math.nan,
+                        'Field (Oe)': math.nan,
                         'treshold_time (s)':math.nan,
                         'treshold_voltage (mV)': math.nan,
                         'divide_voltage (mV)': math.nan,
@@ -470,6 +478,7 @@ class NoiseProcedure(Procedure):
                             'X field (Oe)': math.nan,
                             'Y field (Oe)': math.nan,
                             'Z field (Oe)': math.nan,
+                            'Field (Oe)': math.nan,
                             'treshold_time (s)': math.nan,
                             'treshold_voltage (mV)': math.nan,
                             'divide_voltage (mV)': math.nan
@@ -536,6 +545,7 @@ class NoiseProcedure(Procedure):
                             'X field (Oe)': math.nan,
                             'Y field (Oe)': math.nan,
                             'Z field (Oe)': math.nan,
+                            'Field (Oe)': math.nan,
                             'treshold_time (s)': math.nan,
                             'treshold_voltage (mV)': math.nan,
                             'divide_voltage (mV)': math.nan
