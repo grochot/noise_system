@@ -13,8 +13,8 @@ class LockinFrequency():
     def __init__(self, server=""):
         self.lockin = Zurich(server)
 
-    def init(self):
-        self.lockin.setadc(0,0) # 0 - voltage, 1 - current
+    def init(self, input_type=0):
+        self.lockin.setadc(0,input_type) # 0 - voltage, 1 - current
         self.lockin.siginfloat(0,1)
         self.lockin.oscillatorfreq(0,0)
         self.lockin.siginimp50(0,0)
@@ -67,17 +67,14 @@ class LockinFrequency():
 
 # loc.init()
 
-# start = 2 
-# stop = 60
+# start = 0 
+# stop = 0
 # no_points = 20
 
 # vector_to = np.linspace(start, stop, no_points)
 
 # for k in vector_to: 
-
-#     loc.set_constant_field(1)
-#     sleep(1)
-#     loc.set_constant_vbias(4)
+#     onstant_vbias(4)
 #     sleep(1)
 #     loc.set_lockin_freq(k)
 #     sleep(1)

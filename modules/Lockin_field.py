@@ -14,7 +14,7 @@ class LockinField():
         self.lockin = Zurich(server)
 
 
-    def init(self):                     
+    def init(self, input_type = 0):                     
         self.lockin.oscillatorfreq(0,0) 
         self.lockin.oscillatorfreq(1,0)
         self.lockin.siginscaling(0,1)
@@ -22,7 +22,7 @@ class LockinField():
         self.lockin.siginimp50(0,0)
         self.lockin.setosc(0,0)
         self.lockin.setosc(1,1)
-        self.lockin.setadc(0,0) # 0 - voltage, 1 - current
+        self.lockin.setadc(0,input_type) # 0 - voltage, 1 - current
         self.lockin.settimeconst(0, 0.3)
         self.lockin.setorder(0, 2)
         self.lockin.setharmonic(0, 1)

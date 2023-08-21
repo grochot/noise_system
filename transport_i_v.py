@@ -74,6 +74,7 @@ class IVTransfer(Procedure):
 
 #Lockin mode: 
     lockin_adress = Parameter("Lockin adress", default="192.168.66.202", group_by='mode', group_condition=lambda v: v =='HDCACMode')
+    input_type = ListParameter("Input type", choices=["Voltage input", "Current input"], group_by='mode', group_condition=lambda v: v=="HDCACMode")
     dc_field = FloatParameter('DC Field', units='Oe', default=0,group_by='mode', group_condition=lambda v: v =='HDCACMode')
     ac_field_amplitude = FloatParameter('AC Field Amplitude', units='Oe', default=0,group_by=['mode', "mode_lockin", 'amplitude_vec'], group_condition=[lambda v: v =='HDCACMode','Lockin field', False])   
     ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode','mode_lockin', "amplitude_vec"], group_condition=[lambda v: v =='HDCACMode','Lockin field', True])
@@ -270,14 +271,12 @@ class IVTransfer(Procedure):
                     log.error("Config FieldSensor failed")
                     self.field_sensor = DummyFieldSensor()
                     log.info("Use DummyFieldSensor")
-
-                    
-                  
-                
-                
                 try:
                     self.lockin = LockinField(self.lockin_adress)
-                    self.lockin.init()
+                    if self.input_type == "Current input":
+                        self.lockin.init(1) 
+                    else: 
+                        self.lockin.init(0)
                     log.info("Lockin initialized")
                 except: 
                     log.error("Lockin init failed")
@@ -301,12 +300,12 @@ class IVTransfer(Procedure):
                     log.error("Config FieldSensor failed")
                     self.field_sensor = DummyFieldSensor()
                     log.info("Use DummyFieldSensor")
-
                 
-               
-            
                 self.lockin = LockinFrequency(self.lockin_adress)
-                self.lockin.init()
+                if self.input_type == "Current input":
+                        self.lockin.init(1) 
+                else: 
+                        self.lockin.init(0)
                 self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
                 self.lockin.set_constant_field(self.dc_field/0.6)
                 sleep(1)
@@ -612,13 +611,13 @@ class IVTransfer(Procedure):
                         data_lockin = {
                             'frequency (Hz)': i if self.amplitude_vec == False else self.ac_field_frequency, 
                             'AC field amplitude (Oe)': i if self.amplitude_vec == True else self.ac_field_amplitude,
-                            'Sense Voltage (V)': y,
+                            'Sense Voltage (V)': y if self.input_type == "Voltage input" else math.nan,
                             'Bias voltage (V)': self.bias_voltage,
                             'X field (Oe)': i+self.dc_field if self.amplitude_vec == True else self.ac_field_amplitude+self.dc_field,
                             'Y field (Oe)':0,
                             'Z field (Oe)': 0,
                             'Voltage (V)':  math.nan,
-                            'Current (A)':  math.nan,
+                            'Current (A)':  y if self.input_type == "Current input" else math.nan,
                             'Resistance (ohm)': math.nan,
                             'Field set (Oe)': math.nan,
                             'dX/dH':math.nan,
@@ -659,13 +658,13 @@ class IVTransfer(Procedure):
                         data_lockin = {
                             'frequency (Hz)': i,  
                             'AC field amplitude (Oe)': math.nan,
-                            'Sense Voltage (V)': y,
+                            'Sense Voltage (V)':  y if self.input_type == "Voltage input" else math.nan,
                             'Bias voltage (V)': self.bias_voltage,
                             'X field (Oe)':self.field_value[0],
                             'Y field (Oe)':self.field_value[1],
                             'Z field (Oe)': self.field_value[2],
                             'Voltage (V)':  math.nan,
-                            'Current (A)':  math.nan,
+                            'Current (A)':   y if self.input_type == "Current input" else math.nan,
                             'Resistance (ohm)': math.nan,
                             'Field set (Oe)': math.nan,
                             'dX/dH':math.nan,
@@ -718,7 +717,7 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['mode','mode_lockin','sample_name','vector_param','coil','acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
             y_axis='Voltage (V)',
