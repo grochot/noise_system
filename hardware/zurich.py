@@ -1,11 +1,14 @@
 from pymeasure.instruments import Instrument
 import zhinst.core
-from time import sleep
+from time import sleep, time
+from zhinst.toolkit import Session
+import numpy as np
 
 class Zurich(Instrument):
 
     def __init__(self, server):
-        
+        self.session = Session(server)
+        self.device_loc = self.session.connect_device("dev4274")
         self.daq = zhinst.core.ziDAQServer(server, 8004, 6)
         # self.API_LEVEL = 6
         self.device = 'dev4274'
@@ -136,3 +139,93 @@ class Zurich(Instrument):
         sample = self.daq.getSample(f"/{self.device}/demods/{demod}/sample")
         return sample
     
+    ####### LOCKIN SCOPE ###### 
+
+
+    def scope_init(self, av:int, input_sel:int, rate:float, length:float): 
+        with self.device_loc.set_transaction():
+            self.device_loc.scopes[0].length(length)
+            self.device_loc.scopes[0].channel(1)
+            self.device_loc.scopes[0].channels[0].bwlimit(1)
+            self.device_loc.scopes[0].channels[0].inputselect(input_sel)
+            self.device_loc.scopes[0].time(rate)
+            self.device_loc.scopes[0].single(True)
+            self.device_loc.scopes[0].trigenable(False)
+            self.device_loc.scopes[0].trigholdoff(0.050)
+            self.device_loc.scopes[0].segments.enable(False)
+        self.scope_module = self.session.modules.scope
+        self.scope_module.mode(1)
+        self.scope_module.averager.weight(1)
+        self.scope_module.historylength(1)
+        self.scope_module.fft.window(0)
+        self.wave_node = self.device_loc.scopes[0].wave
+        self.scope_module.subscribe(self.wave_node)
+    
+
+    
+
+    def get_wave(self):
+        """Obtain scope records from the device using an instance of the Scope Module."""
+        self.scope_module.execute()
+        self.device_loc.scopes[0].enable(True)
+        self.session.sync()
+
+        start = time()
+        timeout = 30 # [s]
+        records = 0
+        progress = 0
+        # Wait until the Scope Module has received and processed
+        # the desired number of records.
+        while (records < 1):
+            sleep(0.5)
+            records = self.scope_module.records()
+            progress = self.scope_module.progress()
+            print(
+                f"Scope module has acquired {records} records (requested {1}). "
+                f"Progress of current segment {100.0 * progress}%.",
+                end="\r",
+            )
+            if (time() - start) > timeout:
+                # Break out of the loop if for some reason we're no longer receiving
+                # scope data from thedevice
+                print(
+                    f"\nScope Module did not return {1} records after {timeout} s - \
+                        forcing stop."
+                )
+                break
+
+        self.device_loc.scopes[0].enable(False)
+        # Read out the scope data from the module.
+        data = self.scope_module.read()[self.wave_node]
+        # Stop the module; to use it again we need to call execute().
+        self.scope_module.finish()
+        return data#[0][0]['wave'][0]
+    
+    
+    def to_timestamp(self,record):
+        clockbase = self.device_loc.clockbase()
+        totalsamples = record[0][0]["totalsamples"]
+        dt = record[0][0]["dt"]
+        timestamp = record[0][0]["timestamp"]
+        triggertimestamp = record[0][0]["triggertimestamp"]
+        t = np.arange(-totalsamples, 0) * dt + (
+            timestamp - triggertimestamp
+        ) / float(clockbase)
+        return 1e6 * t
+        
+# ########################### Test ###########################3
+
+# zur = Zurich('192.168.66.202')
+
+# zur.scope_init(1,1,0,16348)
+
+# dd = zur.get_wave()
+
+# print(dd)
+
+# ts = zur.to_timestamp(dd)
+
+# import matplotlib.pyplot as plt 
+
+# plt.plot(ts,dd[0][0]['wave'][0])
+# plt.show()
