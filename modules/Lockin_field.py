@@ -61,7 +61,7 @@ class LockinField():
         avg = 0
         for samp in range(averaging_rate):
            sample = self.lockin.getsample(demod)
-           avg += sample['R'][0]
+           avg += np.sqrt(sample['x'][0]**2+sample['y'][0]**2)
         results = avg/averaging_rate
         return results
     
@@ -70,7 +70,7 @@ class LockinField():
         avg = 0
         for samp in range(averaging_rate):
            sample = self.lockin.getsample(demod)
-           avg += sample['Theta'][0]
+           avg += np.arctan(sample['y'][0]/sample['x'][0])
         results = avg/averaging_rate
         return results
 

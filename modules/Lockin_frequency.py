@@ -47,7 +47,8 @@ class LockinFrequency():
         avg = 0
         for samp in range(averaging_rate):
            sample = self.lockin.getsample(demod)
-           avg += sample['R'][0]
+           print(sample)
+           avg += np.sqrt(sample['x'][0]**2+sample['y'][0]**2)
         results = avg/averaging_rate
         return results
     
@@ -56,7 +57,8 @@ class LockinFrequency():
         avg = 0
         for samp in range(averaging_rate):
            sample = self.lockin.getsample(demod)
-           avg += sample['Theta'][0]
+           print(sample)
+           avg += np.arctan(sample['y'][0]/sample['x'][0])
         results = avg/averaging_rate
         return results
 
