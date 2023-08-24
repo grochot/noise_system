@@ -45,24 +45,30 @@ class LockinTime():
         self.lockin.enabledemod(0,1)
         self.lockin.aux_set_manual(1)
         self.lockin.auxout(1,0)
-        self.lockin.daq.sync() 
+         
 
    
     def get_wave(self):
         value = self.lockin.get_wave()
         time = self.lockin.to_timestamp(value)
 
-        return time, value[0][0]['wave'][0]
+        return time, value[0]['wave'][0]
 
     def set_ac_field(self, value=0, freq=1): # TO DO
         self.lockin.oscillatorfreq(1,freq)
         self.lockin.outputamplitude(1,value)
-        self.lockin.daq.sync()
-    
+       
     def set_dc_field(self, value=0):
         self.lockin.outputoffset(0,value)
-        self.lockin.daq.sync()
       
+    def lockin_measure_R(self,demod, averaging_rate):
+        results = []
+        avg = 0
+        for samp in range(averaging_rate):
+           sample = self.lockin.getsample(demod)
+           avg += np.sqrt(sample['x'][0]**2+sample['y'][0]**2)
+        results = avg/averaging_rate
+        return results
     
     def set_constant_vbias(self, value=0):
          self.lockin.auxout(1,value/1000)
@@ -102,37 +108,29 @@ class LockinTime():
 
 
 ########################### Test ###########
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib import style
+# import matplotlib.pyplot as plt
+# import matplotlib.animation as animation
+# from matplotlib import style
 # style.use('fivethirtyeight')
 # fig = plt.figure()
 # ax1 = fig.add_subplot(1,1,1)
-loc = LockinTime()
+# loc = LockinTime("192.168.66.202")
 
-loc.init_lockin()
-loc.init_scope(1,1,0,16348)
+# loc.init_lockin(1)
+# loc.init_scope(1,1,9,1000)
 
-start = 0.5
-stop =  1
-no_points = 10
 
-vector_to = np.linspace(start, stop, no_points)
 
-for k in vector_to: 
-    loc.set_ac_field(k,4)
-    sleep(1)
-    loc.set_dc_field(1)
-    sleep(1)
-    loc.set_constant_vbias(2)
-    sleep(3) ### uzaleznic od czestotliwosci 
-    y = loc.get_wave()
-    plt.scatter(y[0], y[1], color = 'red', marker = 'x')
-    plt.title("Real Time plot")
-    plt.xlabel("x")
-    plt.pause(0.05)
+
+# loc.set_constant_vbias(50)
+
+# y = loc.get_wave()
+# plt.plot(y[0], y[1], "ro-")
+# plt.title("Real Time plot")
+# plt.xlabel("x")
+
     
-plt.show()
+# plt.show()
 
    
   

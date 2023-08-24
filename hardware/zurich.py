@@ -7,9 +7,10 @@ import numpy as np
 class Zurich(Instrument):
 
     def __init__(self, server):
+        #self.daq = zhinst.core.ziDAQServer(server, 8004, 6)
         self.session = Session(server)
         self.device_loc = self.session.connect_device("dev4274")
-        self.daq = zhinst.core.ziDAQServer(server, 8004, 6)
+       
         # self.API_LEVEL = 6
         self.device = 'dev4274'
         # self.ERR_MSG = 'ERR'
@@ -23,120 +24,120 @@ class Zurich(Instrument):
 
     ##### SET INPUT SIGNAL #####
 
-    def siginautorange(self, signal, auto=1):
-        self.daq.setInt(f"/{self.device}/sigins/{signal}/autorange",auto)
+    def siginautorange(self, signal:int, auto=1):
+        self.device_loc.sigins[signal].autorange(auto)
 
     def siginrange(self, signal, range=1):
-        self.daq.setDouble(f"/{self.device}/sigins/{signal}/range",range)
+        self.device_loc.sigins[signal].range(range)
 
     def siginscaling(self, signal, scaling=1):
-        self.daq.setDouble(f"/{self.device}/sigins/{signal}/scaling",scaling)
+        self.device_loc.sigins[signal].scaling(scaling)
 
     def siginac(self, signal, ac=0):
-        self.daq.setInt(f"/{self.device}/sigins/{signal}/ac", ac)
+        self.device_loc.sigins[signal].ac(ac)
 
     def sigindiff(self, diff=0):
-        self.daq.setInt(f"/{self.device}/sigins/0/diff", diff)
+        self.device_loc.sigins[0].diff(diff)
 
     def siginfloat(self, signal, float=1):
-        self.daq.setInt(f"/{self.device}/sigins/{signal}/float", float)
+        self.device_loc.sigins[signal].float(float)
 
     def siginimp50(self, signal, imp50=1):
-        self.daq.setInt(f"/{self.device}/sigins/{signal}/imp50", imp50)
+        self.device_loc.sigins[signal].imp50(imp50)
 
     ##### SET INPUT CURRENT #####
 
     def currinautorange(self, signal, auto=1):
-        self.daq.setInt(f"/{self.device}/currins/{signal}/autorange", auto)
+        self.device_loc.currins[signal].autorange(auto)
 
     def currinrange(self, signal, range=1):
-        self.daq.setDouble(f"/{self.device}/currins/{signal}/range", range)
+        self.device_loc.currins[signal].range(range)
 
     def currinscaling(self, signal, scaling=1):
-        self.daq.setDouble(f"/{self.device}/currins/{signal}/scaling", scaling)
+        self.device_loc.currins[signal].scaling(scaling)
 
     def currinfloat(self, signal, float=0):
-        self.daq.setInt(f"/{self.device}/currins/{signal}/float", float)
+        self.device_loc.currins[signal].float(float)
 
     ##### SET SIGNAL OUTPUT #####
 
     def outputon(self, output, on):
-        self.daq.setDouble(f"/{self.device}/sigouts/{output}/on", on)
+        self.device_loc.sigouts[output].on(on)
 
     def output50ohm(self, output, ohm):
-        self.daq.setInt(f"/{self.device}/sigouts/{output}/imp50", ohm)
+        self.device_loc.sigouts[output].imp50(ohm)
 
     def outputdiff(self,output, diff):
-        self.daq.setInt(f"/{self.device}/sigouts/{output}/diff", diff)
+        self.device_loc.sigouts[output].diff(diff)
 
     def outputadd(self, output, add):
-        self.daq.setInt(f"/{self.device}/sigouts/{output}/add", add)
+        self.device_loc.sigouts[output].add(add)
 
     def outputrange(self, output, range):
-        self.daq.setDouble(f"/{self.device}/sigouts/{output}/range", range)
+        self.device_loc.sigouts[output].range(range)
 
     def outputautorange(self, output, auto):
-        self.daq.setInt(f"/{self.device}/sigouts/{output}/autorange", auto)
+        self.device_loc.sigouts[output].autorange(auto)
 
     def outputoffset(self, output, offset):
-        self.daq.setDouble(f"/{self.device}/sigouts/{output}/offset", offset)
+        self.device_loc.sigouts[output].offset(offset)
     
     def aux_set_manual(self, out):
-        self.daq.setInt(f'/dev4274/auxouts/{out}/outputselect', -1)
+        self.device_loc.auxouts[out].outputselect(-1)
     
     def auxout(self, out, offset = 0): 
-        self.daq.setDouble(f"/{self.device}/auxouts/{out}/offset",  offset)
+        self.device_loc.auxouts[out].offset(offset)
 
 #????????????????????????
     def enableoutput(self, demod, enable):
-        self.daq.setInt(f"/{self.device}/sigouts/0/enables/{demod}", enable)
+        self.device_loc.sigouts[0].enables(enable)
 
     def outputamplitude(self, output, ampli):
-        self.daq.setDouble(f"/{self.device}/sigouts/0/amplitudes/{output}", ampli) # Vpp
+        self.device_loc.sigouts[0].amplitudes(ampli) # Vpp
 #?????????????????????????
 
 
     ##### SET OSCILLATORS #####
     def oscillatorfreq(self, osc_id, freq):
-        self.daq.setDouble(f"/{self.device}/oscs/{osc_id}/freq", freq)
+        self.device_loc.oscs[osc_id].freq(freq)
 
     ##### SET DEMODULATORS #####
     def setosc(self, demod_id, osc_id):
-        self.daq.setInt(f"/{self.device}/demods/{demod_id}/oscselect", osc_id)  # connect to oscilator
+        self.device_loc.demods[demod_id].oscselect(osc_id)  # connect to oscilator
 
     def setextrefs(self, demod_id, extrefs):
-        self.daq.setInt(f"/{self.device}/extrefs/{extrefs}/enable", demod_id)  # input select demod
-        self.daq.setInt(f"/{self.device}/extrefs/{extrefs}/demodselect", demod_id)
+        self.device_loc.extrefs[extrefs].enable(demod_id)  # input select demod
+        self.device_loc.extrefs[extrefs].demodselect(demod_id)
 
     def setharmonic(self, demod_id, harm):
-        self.daq.setDouble(f"/{self.device}/demods/{demod_id}/harmonic", harm)  # select harmonic
+        self.device_loc.demods[demod_id].harmonic(harm)  # select harmonic
 
     def settimeconst(self, demod_id, timeconst):
-        self.daq.setDouble(f"/{self.device}/demods/{demod_id}/timeconstant", timeconst)  # set timeconstant
+        self.device_loc.demods[demod_id].timeconstant(timeconst)  # set timeconstant
 
     def setadc(self, demod_id, adc):
         if(adc == 10):
             adc = 174
-        self.daq.setInt(f"/{self.device}/demods/{demod_id}/adcselect", adc)  # input select demod
+        self.device_loc.demods[demod_id].adcselect(adc)  # input select demod
 
     def setorder(self, demod_id, order):
-        self.daq.setInt(f"/{self.device}/demods/{demod_id}/order", order)  # select the filter roll off between 6 and 48 dB/oct
+        self.device_loc.demods[demod_id].order(order)  # select the filter roll off between 6 and 48 dB/oct
 
     def enabledemod(self, demod_id, enable):
-        self.daq.setInt(f"/{self.device}/demods/{demod_id}/enable", enable)  # enable demodulator
+        self.device_loc.demods[demod_id].enable(enable)  # enable demodulator
 
     def rate(self, demod_id, rate):
-        self.daq.setInt(f"/{self.device}/demods/{demod_id}/rate", rate)  # sampling rate 
+        self.device_loc.demods[demod_id].rate(rate)  # sampling rate 
 
     def sinc(self, demod_id, sinc):
-        self.daq.setInt(f'/{self.device}/demods/{demod_id}/sinc', sinc) #sinc filter on
+        self.device_loc.demods[demod_id].sinc(sinc) #sinc filter on
 
 
 
     ##### GET SAMPLE ########
 
     def getsample(self, demod):
-        sample = self.daq.getSample(f"/{self.device}/demods/{demod}/sample")
+        sample = self.device_loc.demods[demod].sample()
         return sample
     
     ####### LOCKIN SCOPE ###### 
@@ -153,6 +154,7 @@ class Zurich(Instrument):
             self.device_loc.scopes[0].trigenable(False)
             self.device_loc.scopes[0].trigholdoff(0.050)
             self.device_loc.scopes[0].segments.enable(False)
+
         self.scope_module = self.session.modules.scope
         self.scope_module.mode(1)
         self.scope_module.averager.weight(1)
@@ -199,25 +201,26 @@ class Zurich(Instrument):
         data = self.scope_module.read()[self.wave_node]
         # Stop the module; to use it again we need to call execute().
         self.scope_module.finish()
-        return data#[0][0]['wave'][0]
+        return data[0]
     
     
     def to_timestamp(self,record):
         clockbase = self.device_loc.clockbase()
-        totalsamples = record[0][0]["totalsamples"]
-        dt = record[0][0]["dt"]
-        timestamp = record[0][0]["timestamp"]
-        triggertimestamp = record[0][0]["triggertimestamp"]
+        totalsamples = record[0]["totalsamples"]
+        dt = record[0]["dt"]
+        timestamp = record[0]["timestamp"]
+        triggertimestamp = record[0]["triggertimestamp"]
         t = np.arange(-totalsamples, 0) * dt + (
             timestamp - triggertimestamp
         ) / float(clockbase)
-        return 1e6 * t
+        return t
         
-# ########################### Test ###########################3
+########################### Test ###########################3
 
 # zur = Zurich('192.168.66.202')
 
-# zur.scope_init(1,1,0,16348)
+# dd = zur.getsample(0)
+# print(dd)
 
 # dd = zur.get_wave()
 

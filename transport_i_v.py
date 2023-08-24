@@ -12,6 +12,7 @@ from logic.find_instrument import FindInstrument
 from logic.save_results_path import SaveFilePath
 
 import numpy as np
+from logic.scope_rate import scope_rate
 
 from pymeasure.display.Qt import QtGui
 from pymeasure.display.Qt import QtWidgets
@@ -32,6 +33,7 @@ from modules.computer_resisrance import ComputerResistance
 from modules.Lockin_calibration import LockinCalibration
 from modules.Lockin_field import LockinField 
 from modules.Lockin_frequency import LockinFrequency
+from modules.Lockin_time import LockinTime
 from logic.measure_field import measure_field
 from hardware.field_sensor_noise_new import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
@@ -47,7 +49,7 @@ class IVTransfer(Procedure):
     finded_instruments = find_instruments.show_instrument() 
     print(finded_instruments)
 #################################################################### PARAMETERS #####################################################################
-    mode = ListParameter("Mode",  default='HDCMode', choices=['HDCMode', 'Fast Resistance', 'HDCACMode'])
+    mode = ListParameter("Mode",  default='HDCMode', choices=['HDCMode', 'Fast Resistance', 'HDCACMode', 'ScopeMode'])
     mode_lockin = ListParameter("Lockin mode", choices = ['Lockin field', 'Lockin frequency'],group_by='mode', group_condition=lambda v: v =='HDCACMode')
     agilent = BooleanParameter("Agilent", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
     agilent34401a_adress = Parameter("Agilent34401a adress", default="GPIB1::22::INSTR", group_by='agilent', group_condition=lambda v: v ==True)
@@ -69,19 +71,21 @@ class IVTransfer(Procedure):
     reverse_field = BooleanParameter("Reverse field", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
     delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='HDCMode')
     sample_name = Parameter("Sample Name", default="sample name", group_by='mode', group_condition=lambda v: v =='HDCMode')
-    bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='HDCACMode')
+    bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='HDCACMode' or v =="ScopeMode")
 
 
 #Lockin mode: 
-    lockin_adress = Parameter("Lockin adress", default="192.168.66.202", group_by='mode', group_condition=lambda v: v =='HDCACMode')
-    input_type = ListParameter("Input type", choices=["Voltage input", "Current input"], group_by='mode', group_condition=lambda v: v=="HDCACMode")
-    dc_field = FloatParameter('DC Field', units='Oe', default=0,group_by='mode', group_condition=lambda v: v =='HDCACMode')
-    ac_field_amplitude = FloatParameter('AC Field Amplitude', units='Oe', default=0,group_by=['mode', "mode_lockin", 'amplitude_vec'], group_condition=[lambda v: v =='HDCACMode','Lockin field', False])   
-    ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode','mode_lockin', "amplitude_vec"], group_condition=[lambda v: v =='HDCACMode','Lockin field', True])
-    lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDCACMode','Lockin field'])
-    avergaging_rate = IntegerParameter("Avergaging rate", default=1,group_by='mode', group_condition=lambda v: v =='HDCACMode' )
-    kepco = BooleanParameter("Kepco?", default=False, group_by='mode', group_condition=lambda v: v =='HDCACMode')
-    coil = FloatParameter("Coil constant",units='Oe/A', group_by='mode', default = 30, group_condition=lambda v: v =='HDCACMode')
+    lockin_adress = Parameter("Lockin adress", default="192.168.66.202", group_by='mode', group_condition=lambda v: v =='HDCACMode' or v == "ScopeMode")
+    input_type = ListParameter("Input type", choices=["Voltage input", "Current input"], group_by='mode', group_condition=lambda v: v=="HDCACMode" or v == "ScopeMode")
+    dc_field = FloatParameter('DC Field', units='Oe', default=0,group_by='mode', group_condition=lambda v: v =='HDCACMode' or v == "ScopeMode")
+    ac_field_amplitude = FloatParameter('AC Field Amplitude', units='Oe', default=0,group_by=['mode', "mode_lockin", 'amplitude_vec'], group_condition=[lambda v: v =='HDCACMode' or v == "ScopeMode",'Lockin field', False])   
+    ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode','mode_lockin', "amplitude_vec"], group_condition=[lambda v: v =='HDCACMode'or v == "ScopeMode",'Lockin field', True])
+    lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDCACMode'or v == "ScopeMode",'Lockin field'])
+    avergaging_rate = IntegerParameter("Avergaging rate", default=1,group_by='mode', group_condition=lambda v: v =='HDCACMode'or v == "ScopeMode" )
+    scope_rate = ListParameter("Scope Rate", choices = ["60MHz", "30MHz", "15MHz", "7.5MHz", "3.75MHz", "1.88MHz", "938kHz", "469kHz", "234kHz", "117kHz", "58.6kHz", "29.3kHz", "14.6kHz", "7.32kHz", "3.66kHz", "1.83kHz", "916Hz"], default = "60MHz", group_by='mode', group_condition=lambda v: v =='ScopeMode' )
+    scope_time = FloatParameter("Scope Length",  default = 16348, group_by='mode', group_condition=lambda v: v =='ScopeMode' )
+    kepco = BooleanParameter("Kepco?", default=False, group_by='mode', group_condition=lambda v: v =='HDCACMode'or v == "ScopeMode")
+    coil = FloatParameter("Coil constant",units='Oe/A', group_by='mode', default = 30, group_condition=lambda v: v =='HDCACMode'or v == "ScopeMode")
     start_f = FloatParameter("Start Freq",units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDCACMode', False])
     stop_f = FloatParameter("Stop Freq", units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDCACMode', False])
     no_points_f = IntegerParameter("No Points Freq",default = 1, group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDCACMode', False])
@@ -96,7 +100,7 @@ class IVTransfer(Procedure):
 
 
     DEBUG = 1
-    DATA_COLUMNS = ['Voltage (V)', 'frequency (Hz)','AC field amplitude (Oe)', 'Sense Voltage (V)','Bias voltage (V)','Current (A)','Phase', 'Resistance (ohm)', 'dX/dH', 'dR/dH', 'diff_I', 'diff_V', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
+    DATA_COLUMNS = ['time (s)','Voltage (V)', 'frequency (Hz)','AC field amplitude (Oe)', 'Sense Voltage (V)','Bias voltage (V)','Current (A)','Phase', 'Resistance (ohm)', 'dX/dH', 'dR/dH', 'diff_I', 'diff_V', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
 
     path_file = SaveFilePath() 
    
@@ -315,6 +319,32 @@ class IVTransfer(Procedure):
             elif self.mode == "Lockin calibration":
                 pass
 
+
+        elif self.mode == "ScopeMode":
+            self.rate_index = scope_rate(self.scope_rate)
+            try:
+                self.field_sensor = FieldSensor(self.field_sensor_adress)
+                self.field_sensor.read_field_init()
+                log.info("Config FieldSensor done")
+            except:
+                log.error("Config FieldSensor failed")
+                self.field_sensor = DummyFieldSensor()
+                log.info("Use DummyFieldSensor")
+            try:
+                self.lockin = LockinTime(self.lockin_adress)
+                if self.input_type == "Current input":
+                    self.lockin.init_lockin(1)
+                    self.lockin.init_scope(self.avergaging_rate, 1, self.rate_index, self.scope_time)
+                else: 
+                    self.lockin.init_lockin(0)
+                    self.lockin.init_scope(self.avergaging_rate, 0, self.rate_index, self.scope_time)
+
+                log.info("Lockin initialized")
+            except: 
+                log.error("Lockin init failed")
+            
+            self.lockin.set_constant_vbias(self.bias_voltage)
+            sleep(1)
 #################################### PROCEDURE##############################################
     def execute(self):
         diff = ComputeDiff()
@@ -371,6 +401,7 @@ class IVTransfer(Procedure):
                     
 
                     data = {
+                        'time (s)': math.nan,
                         'frequency (Hz)': math.nan,  
                         'AC field amplitude (Oe)': math.nan,
                         'Sense Voltage (V)': math.nan,
@@ -434,6 +465,7 @@ class IVTransfer(Procedure):
                     
 
                     data = {
+                        'time (s)': math.nan,
                         'frequency (Hz)': math.nan,  
                         'AC field amplitude (Oe)': math.nan,
                         'Sense Voltage (V)': math.nan,
@@ -492,6 +524,7 @@ class IVTransfer(Procedure):
                     
 
                     data = {
+                        'time (s)': math.nan,
                         'frequency (Hz)': math.nan,  
                         'AC field amplitude (Oe)': math.nan,
                         'Sense Voltage (V)': math.nan,
@@ -547,6 +580,7 @@ class IVTransfer(Procedure):
                     
 
                     data = {
+                        'time (s)': math.nan,
                         'frequency (Hz)': math.nan,  
                         'AC field amplitude (Oe)': math.nan,
                         'Sense Voltage (V)': math.nan,
@@ -614,6 +648,7 @@ class IVTransfer(Procedure):
                     try:
               
                         data_lockin = {
+                            'time (s)': math.nan,
                             'frequency (Hz)': i if self.amplitude_vec == False else self.ac_field_frequency, 
                             'AC field amplitude (Oe)': i if self.amplitude_vec == True else self.ac_field_amplitude,
                             'Sense Voltage (V)': r if self.input_type == "Voltage input" else math.nan,
@@ -663,6 +698,7 @@ class IVTransfer(Procedure):
                     self.emit('progress', 100 * self.counter / len(self.vector))
                     try:
                         data_lockin = {
+                            'time (s)': math.nan,
                             'frequency (Hz)': i,  
                             'AC field amplitude (Oe)': math.nan,
                             'Sense Voltage (V)':  r if self.input_type == "Voltage input" else math.nan,
@@ -688,6 +724,64 @@ class IVTransfer(Procedure):
                     if self.should_stop():
                         log.warning("Caught the stop flag in the procedure")
                         break   
+        
+
+        elif self.mode == "ScopeMode":
+
+              
+            if self.kepco == False:
+                self.calibration_field = LockinCalibration(self.lockin, self.ac_field_frequency,self.dc_field, self.coil)
+                self.cal_field_const = self.calibration_field.calibrate()
+                self.lockin.set_dc_field(self.dc_field/0.6)
+            else: 
+                self.cal_field_const = 15
+                self.lockin.set_dc_field(self.dc_field/15)
+           
+            self.lockin.set_lockin_freq(self.lockin_frequency)
+            
+           
+               
+            self.lockin.set_ac_field(self.ac_field_amplitude/self.cal_field_const,self.ac_field_frequency)
+                
+            sleep(2)
+                
+            scope_signal = self.lockin.get_wave()
+                
+                
+                
+                    
+            self.emit('progress', 100)
+               
+            try:
+                for w in range(len(scope_signal[0])):
+                    data_lockin = {
+                        'time (s)': scope_signal[0][w],
+                        'frequency (Hz)': self.ac_field_frequency, 
+                        'AC field amplitude (Oe)':self.ac_field_amplitude,
+                        'Sense Voltage (V)': float(scope_signal[1][w]) if self.input_type == "Voltage input" else math.nan,
+                        'Bias voltage (V)': self.bias_voltage,
+                        'X field (Oe)': 0,
+                        'Y field (Oe)':0,
+                        'Z field (Oe)': 0,
+                        'Voltage (V)':  math.nan,
+                        'Current (A)':  float(scope_signal[1][w]) if self.input_type == "Current input" else math.nan,
+                        'Phase': math.nan,
+                        'Resistance (ohm)': math.nan,
+                        'Field set (Oe)': self.ac_field_amplitude+self.dc_field,
+                        'dX/dH':math.nan,
+                        'dR/dH': math.nan,
+                        'diff_I':math.nan,
+                        'diff_V': math.nan
+                        }
+                    
+                 
+                    self.emit('results', data_lockin) 
+            except Exception as e:
+                print(e)
+                self.should_stop()
+            if self.should_stop():
+                log.warning("Caught the stop flag in the procedure")
+                
 
     def shutdown(self):
 
@@ -725,13 +819,13 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['mode','mode_lockin','sample_name','vector_param','coil','acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
             y_axis='Voltage (V)',
             directory_input=True,  
             sequencer=True,                                  
-            sequencer_inputs=['field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
+            sequencer_inputs=['field_bias', 'keithley_current_bias', 'keithley_voltage_bias','ac_field_amplitude', 'ac_field_frequency'],
             inputs_in_scrollarea=True,
             
         )

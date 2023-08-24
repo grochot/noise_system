@@ -15,7 +15,7 @@ class LockinCalibration:
         sleep(3)
         self.lockin.set_lockin_freq(self.ac_frequency)
         sleep(10)
-        self.v_ac =((self.lockin.lockin_measure_point(0,6)))
+        self.v_ac =((self.lockin.lockin_measure_R(0,6)))
         print(self.v_ac)
         self.hac = ((self.v_ac)/50)*self.coil_const
         print(self.hac)
