@@ -56,12 +56,21 @@ class LockinField():
         self.lockin.oscillatorfreq(0, freq)
 
     
-    def lockin_measure_point(self,demod, averaging_rate):
+    def lockin_measure_R(self,demod, averaging_rate):
         results = []
         avg = 0
         for samp in range(averaging_rate):
            sample = self.lockin.getsample(demod)
-           avg += np.abs(sample['x'][0] + 1j * sample['y'][0])
+           avg += sample['R'][0]
+        results = avg/averaging_rate
+        return results
+    
+    def lockin_measure_phase(self,demod, averaging_rate):
+        results = []
+        avg = 0
+        for samp in range(averaging_rate):
+           sample = self.lockin.getsample(demod)
+           avg += sample['Theta'][0]
         results = avg/averaging_rate
         return results
 

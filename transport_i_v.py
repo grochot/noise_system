@@ -96,7 +96,7 @@ class IVTransfer(Procedure):
 
 
     DEBUG = 1
-    DATA_COLUMNS = ['Voltage (V)', 'frequency (Hz)','AC field amplitude (Oe)', 'Sense Voltage (V)','Bias voltage (V)','Current (A)', 'Resistance (ohm)', 'dX/dH', 'dR/dH', 'diff_I', 'diff_V', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
+    DATA_COLUMNS = ['Voltage (V)', 'frequency (Hz)','AC field amplitude (Oe)', 'Sense Voltage (V)','Bias voltage (V)','Current (A)','Phase', 'Resistance (ohm)', 'dX/dH', 'dR/dH', 'diff_I', 'diff_V', 'X field (Oe)', 'Y field (Oe)', 'Z field (Oe)','Field set (Oe)'] #data columns
 
     path_file = SaveFilePath() 
    
@@ -377,6 +377,7 @@ class IVTransfer(Procedure):
                         'Bias voltage (V)': math.nan,
                         'Voltage (V)':  tmp_voltage[w],
                         'Current (A)':  tmp_current[w],
+                        'Phase': math.nan,
                         'Resistance (ohm)': tmp_resistance[w],
                         'X field (Oe)': tmp_field_x[w],
                         'Y field (Oe)': tmp_field_y[w],
@@ -439,6 +440,7 @@ class IVTransfer(Procedure):
                         'Bias voltage (V)': math.nan,
                         'Voltage (V)':  tmp_voltage[w],
                         'Current (A)':  tmp_current[w],
+                        'Phase': math.nan,
                         'Resistance (ohm)': tmp_resistance[w],
                         'X field (Oe)': tmp_field_x[w],
                         'Y field (Oe)': tmp_field_y[w],
@@ -496,6 +498,7 @@ class IVTransfer(Procedure):
                         'Bias voltage (V)': math.nan,
                         'Voltage (V)':  tmp_voltage[w],
                         'Current (A)':  tmp_current[w],
+                        'Phase': math.nan,
                         'Resistance (ohm)': tmp_resistance[w],
                         'X field (Oe)': tmp_field_x[w],
                         'Y field (Oe)': tmp_field_y[w],
@@ -550,6 +553,7 @@ class IVTransfer(Procedure):
                         'Bias voltage (V)': math.nan,
                         'Voltage (V)':  tmp_voltage[w],
                         'Current (A)':  tmp_current[w],
+                        'Phase': math.nan,
                         'Resistance (ohm)': tmp_resistance[w],
                         'X field (Oe)': tmp_field_x[w],
                         'Y field (Oe)': tmp_field_y[w],
@@ -601,7 +605,8 @@ class IVTransfer(Procedure):
                     else: 
                         sleep(1)
                     
-                    y = self.lockin.lockin_measure_point(0,self.avergaging_rate)
+                    r = self.lockin.lockin_measure_R(0,self.avergaging_rate)
+                    theta = self.lockin.lockin_measure_phase(0,self.avergaging_rate)
                     self.counter = self.counter + 1
                         
                     self.emit('progress', 100 * self.counter / len(self.vector))
@@ -611,13 +616,14 @@ class IVTransfer(Procedure):
                         data_lockin = {
                             'frequency (Hz)': i if self.amplitude_vec == False else self.ac_field_frequency, 
                             'AC field amplitude (Oe)': i if self.amplitude_vec == True else self.ac_field_amplitude,
-                            'Sense Voltage (V)': y if self.input_type == "Voltage input" else math.nan,
+                            'Sense Voltage (V)': r if self.input_type == "Voltage input" else math.nan,
                             'Bias voltage (V)': self.bias_voltage,
                             'X field (Oe)': i+self.dc_field if self.amplitude_vec == True else self.ac_field_amplitude+self.dc_field,
                             'Y field (Oe)':0,
                             'Z field (Oe)': 0,
                             'Voltage (V)':  math.nan,
-                            'Current (A)':  y if self.input_type == "Current input" else math.nan,
+                            'Current (A)':  r if self.input_type == "Current input" else math.nan,
+                            'Phase': theta,
                             'Resistance (ohm)': math.nan,
                             'Field set (Oe)': math.nan,
                             'dX/dH':math.nan,
@@ -651,20 +657,22 @@ class IVTransfer(Procedure):
                         sleep(2/i)
                     else: 
                         sleep(0.1)
-                    y = self.lockin.lockin_measure_point(0,self.avergaging_rate)
+                    r = self.lockin.lockin_measure_R(0,self.avergaging_rate)
+                    theta = self.lockin.lockin_measure_phase(0,self.avergaging_rate)
                     self.counter = self.counter + 1
                     self.emit('progress', 100 * self.counter / len(self.vector))
                     try:
                         data_lockin = {
                             'frequency (Hz)': i,  
                             'AC field amplitude (Oe)': math.nan,
-                            'Sense Voltage (V)':  y if self.input_type == "Voltage input" else math.nan,
+                            'Sense Voltage (V)':  r if self.input_type == "Voltage input" else math.nan,
                             'Bias voltage (V)': self.bias_voltage,
                             'X field (Oe)':self.field_value[0],
                             'Y field (Oe)':self.field_value[1],
                             'Z field (Oe)': self.field_value[2],
                             'Voltage (V)':  math.nan,
-                            'Current (A)':   y if self.input_type == "Current input" else math.nan,
+                            'Current (A)':   r if self.input_type == "Current input" else math.nan,
+                            'Phase': theta,
                             'Resistance (ohm)': math.nan,
                             'Field set (Oe)': math.nan,
                             'dX/dH':math.nan,
