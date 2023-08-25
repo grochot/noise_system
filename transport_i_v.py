@@ -70,7 +70,7 @@ class IVTransfer(Procedure):
     # no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='HDCMode')
     reverse_field = BooleanParameter("Reverse field", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
     delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='HDCMode')
-    sample_name = Parameter("Sample Name", default="sample name", group_by='mode', group_condition=lambda v: v =='HDCMode')
+    sample_name = Parameter("Sample Name", default="sample name")
     bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='HDCACMode' or v =="ScopeMode")
 
 
