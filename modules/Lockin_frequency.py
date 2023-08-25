@@ -28,7 +28,7 @@ class LockinFrequency():
         self.lockin.enabledemod(0,1)
         self.lockin.auxout(0,0)
         self.lockin.auxout(1,0)
-        self.lockin.daq.sync() 
+    
 
    
     def set_constant_field(self, value=0):
