@@ -36,17 +36,17 @@ class LockinField():
         self.lockin.enabledemod(0,1)
         self.lockin.aux_set_manual(1)
         self.lockin.auxout(1,0)
-        self.lockin.daq.sync() 
+
 
    
     def set_ac_field(self, value=0, freq=1): # TO DO
         self.lockin.oscillatorfreq(1,freq)
         self.lockin.outputamplitude(1,value)
-        self.lockin.daq.sync()
+   
     
     def set_dc_field(self, value=0):
         self.lockin.outputoffset(0,value)
-        self.lockin.daq.sync()
+   
       
     
     def set_constant_vbias(self, value=0):
