@@ -36,8 +36,8 @@ class Zurich(Instrument):
     def siginac(self, signal, ac=0):
         self.device_loc.sigins[signal].ac(ac)
 
-    def sigindiff(self, diff=0):
-        self.device_loc.sigins[0].diff(diff)
+    def sigindiff(self, signal, diff=0):
+        self.device_loc.sigins[signal].diff(diff)
 
     def siginfloat(self, signal, float=1):
         self.device_loc.sigins[signal].float(float)

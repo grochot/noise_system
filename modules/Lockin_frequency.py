@@ -13,11 +13,12 @@ class LockinFrequency():
     def __init__(self, server=""):
         self.lockin = Zurich(server)
 
-    def init(self, input_type=0):
+    def init(self, input_type=0, differential=False):
         self.lockin.setadc(0,input_type) # 0 - voltage, 1 - current
         self.lockin.siginfloat(0,1)
         self.lockin.oscillatorfreq(0,0)
         self.lockin.siginimp50(0,0)
+        self.lockin.sigindiff(0,differential)
         self.lockin.settimeconst(0, 0.3)
         self.lockin.setorder(0, 2)
         self.lockin.setharmonic(0, 1)

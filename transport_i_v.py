@@ -80,6 +80,7 @@ class IVTransfer(Procedure):
     dc_field = FloatParameter('DC Field', units='Oe', default=0,group_by='mode', group_condition=lambda v: v =='HDCACMode' or v == "ScopeMode")
     ac_field_amplitude = FloatParameter('AC Field Amplitude', units='Oe', default=0,group_by=['mode'], group_condition=lambda v: v =='HDCACMode' or v == "ScopeMode")   
     ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode'], group_condition=lambda v: v =='HDCACMode'or v == "ScopeMode")
+    differential_signal = BooleanParameter('Differential voltage input', default=False, group_by=[mode,input_type], group_condition=[lambda v: v =='HDCACMode'or v == "ScopeMode", lambda v: v == "Voltage input"])
     lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDCACMode'or v == "ScopeMode",'Lockin field'])
     avergaging_rate = IntegerParameter("Avergaging rate", default=1,group_by='mode', group_condition=lambda v: v =='HDCACMode'or v == "ScopeMode" )
     scope_rate = ListParameter("Scope Rate", choices = ["60MHz", "30MHz", "15MHz", "7.5MHz", "3.75MHz", "1.88MHz", "938kHz", "469kHz", "234kHz", "117kHz", "58.6kHz", "29.3kHz", "14.6kHz", "7.32kHz", "3.66kHz", "1.83kHz", "916Hz"], default = "60MHz", group_by='mode', group_condition=lambda v: v =='ScopeMode' )
@@ -278,9 +279,12 @@ class IVTransfer(Procedure):
                 try:
                     self.lockin = LockinField(self.lockin_adress)
                     if self.input_type == "Current input":
-                        self.lockin.init(1) 
+                        self.lockin.init(1, False) 
                     else: 
-                        self.lockin.init(0)
+                        if self.differential_signal == True:
+                            self.lockin.init(0, True)
+                        else:
+                            self.lockin.init(0, False)
                     log.info("Lockin initialized")
                 except: 
                     log.error("Lockin init failed")
@@ -309,7 +313,10 @@ class IVTransfer(Procedure):
                 if self.input_type == "Current input":
                         self.lockin.init(1) 
                 else: 
-                        self.lockin.init(0)
+                        if self.differential_signal == True:
+                            self.lockin.init(0, True)
+                        else:
+                            self.lockin.init(0, False)
                 self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
                 self.lockin.set_constant_field(self.dc_field/0.6)
                 sleep(1)
@@ -333,10 +340,13 @@ class IVTransfer(Procedure):
             try:
                 self.lockin = LockinTime(self.lockin_adress)
                 if self.input_type == "Current input":
-                    self.lockin.init_lockin(1)
+                    self.lockin.init_lockin(1, False)
                     self.lockin.init_scope(self.avergaging_rate, 1, self.rate_index, self.scope_time)
                 else: 
-                    self.lockin.init_lockin(0)
+                        if self.differential_signal == True:
+                            self.lockin.init_lockin(0, True)
+                        else:
+                            self.lockin.init_lockin(0, False)
                     self.lockin.init_scope(self.avergaging_rate, 0, self.rate_index, self.scope_time)
 
                 log.info("Lockin initialized")
@@ -819,7 +829,7 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['mode','mode_lockin','sample_name','vector_param','coil','acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','differential_signal', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='Current (A)',
             y_axis='Voltage (V)',
