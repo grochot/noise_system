@@ -80,7 +80,7 @@ class IVTransfer(Procedure):
     dc_field = FloatParameter('DC Field', units='Oe', default=0,group_by='mode', group_condition=lambda v: v =='HDCACMode' or v == "ScopeMode")
     ac_field_amplitude = FloatParameter('AC Field Amplitude', units='Oe', default=0,group_by=['mode'], group_condition=lambda v: v =='HDCACMode' or v == "ScopeMode")   
     ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode'], group_condition=lambda v: v =='HDCACMode'or v == "ScopeMode")
-    differential_signal = BooleanParameter('Differential voltage input', default=False, group_by=[mode,input_type], group_condition=[lambda v: v =='HDCACMode'or v == "ScopeMode", lambda v: v == "Voltage input"])
+    differential_signal = BooleanParameter('Differential voltage input', default=False, group_by=['mode','input_type'], group_condition=[lambda v: v =='HDCACMode'or v == "ScopeMode", lambda v: v == "Voltage input"])
     lockin_frequency = FloatParameter('Lockin Frequency', units='Hz', default=0,group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDCACMode'or v == "ScopeMode",'Lockin field'])
     avergaging_rate = IntegerParameter("Avergaging rate", default=1,group_by='mode', group_condition=lambda v: v =='HDCACMode'or v == "ScopeMode" )
     scope_rate = ListParameter("Scope Rate", choices = ["60MHz", "30MHz", "15MHz", "7.5MHz", "3.75MHz", "1.88MHz", "938kHz", "469kHz", "234kHz", "117kHz", "58.6kHz", "29.3kHz", "14.6kHz", "7.32kHz", "3.66kHz", "1.83kHz", "916Hz"], default = "60MHz", group_by='mode', group_condition=lambda v: v =='ScopeMode' )
