@@ -343,10 +343,10 @@ class IVTransfer(Procedure):
                     self.lockin.init_lockin(1, False)
                     self.lockin.init_scope(self.avergaging_rate, 1, self.rate_index, self.scope_time)
                 else: 
-                        if self.differential_signal == True:
-                            self.lockin.init_lockin(0, True)
-                        else:
-                            self.lockin.init_lockin(0, False)
+                    if self.differential_signal == True:
+                        self.lockin.init_lockin(0, True)
+                    else:
+                        self.lockin.init_lockin(0, False)
                     self.lockin.init_scope(self.avergaging_rate, 0, self.rate_index, self.scope_time)
 
                 log.info("Lockin initialized")
