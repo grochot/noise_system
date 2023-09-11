@@ -106,10 +106,11 @@ class IVTransfer(Procedure):
 
     path_file = SaveFilePath() 
     
-    def value_function(self, a):
+    def value_function(self,lista,iter):
         try:
-            return a
-        except ValueError:
+            wynik = lista[iter]
+            return wynik
+        except:
             return np.nan
     
     ################ STARTUP ##################3
@@ -441,29 +442,29 @@ class IVTransfer(Procedure):
                     
                 for l in range(len(tmp_voltage)):        
                     data = {
-                        'V (V)':  tmp_voltage[w],
-                        'I (A)':  tmp_current[w],
-                        'R (ohm)': tmp_resistance[w],
-                        'X field (Oe)': tmp_field_x[w],
-                        'Y field (Oe)': tmp_field_y[w],
-                        'Z field (Oe)': tmp_field_z[w],
-                        'Hset (Oe)': tmp_field_set[w],
-                        'dX/dH': tmp_diff_x,
-                        'dR/dH': tmp_dR,
-                        'dI': tmp_dI,
-                        'dV': tmp_dV,
-                        'dI/dH': tmp_dI_dH, 
-                        'NdI': tmp_NdI, 
-                        'SPdI': tmp_SPdI, 
-                        'HdIS': tmp_HdIS, 
-                        'HdR':tmp_HdR, 
-                        'HdG': tmp_HdG, 
-                        'dR': tmp_dR, 
-                        'dG': tmp_dG, 
-                        'NdR': tmp_NdR,
-                        'NdG': tmp_NdG, 
-                        'HdRS': tmp_HdRS, 
-                        'HdGS': tmp_HdGS 
+                        'V (V)':  self.value_function(tmp_voltage,l),
+                        'I (A)':  self.value_function(tmp_current, l),
+                        'R (ohm)': self.value_function(tmp_resistance, l),
+                        'X field (Oe)': self.value_function(tmp_field_x, l),
+                        'Y field (Oe)': self.value_function(tmp_field_y, l),
+                        'Z field (Oe)': self.value_function(tmp_field_z, l),
+                        'Hset (Oe)': self.value_function(tmp_field_set, l),
+                        'dX/dH': self.value_function(tmp_diff_x, l),
+                        'dR/dH': self.value_function(tmp_dR, l),
+                        'dI': self.value_function(tmp_dI, l),
+                        'dV': self.value_function(tmp_dV, l),
+                        'dI/dH': self.value_function(tmp_dI_dH, l), 
+                        'NdI': self.value_function(tmp_NdI, l), 
+                        'SPdI': self.value_function(tmp_SPdI, l), 
+                        'HdIS': self.value_function(tmp_HdIS, l),
+                        'HdR':self.value_function(tmp_HdR, l), 
+                        'HdG': self.value_function(tmp_HdG, l), 
+                        'dR': self.value_function(tmp_dR, l), 
+                        'dG': self.value_function(tmp_dG, l), 
+                        'NdR': self.value_function(tmp_NdR, l),
+                        'NdG': self.value_function(tmp_NdG, l), 
+                        'HdRS': self.value_function(tmp_HdRS, l),
+                        'HdGS': self.value_function(tmp_HdGS, l),
                         }
                     self.emit('results', data) 
                
