@@ -390,7 +390,12 @@ class IVTransfer(Procedure):
         tmp_NdR = []
         tmp_NdG = [] 
         tmp_HdRS = [] 
-        tmp_HdGS = []
+        tmp_HdGS = []     
+        tmp_NdV = []
+        tmp_SPdV = []
+        tmp_HdVS = []
+        tmp_dI_dV = []
+        tmp_dV_dI = []
 
         if self.mode == "HDCMode":
             if self.acquire_type == 'I(Hdc) | set Vb':
@@ -414,12 +419,17 @@ class IVTransfer(Procedure):
                         self.tmp_current = self.agilent_34410.current_dc
                     else:
                         self.tmp_current= self.keithley.current
+                    #surowe dane:
                     tmp_current.append(self.tmp_current)   #surowy prąd
                     tmp_voltage.append(self.keithley_voltage_bias) #surowe napiecie
-                    tmp_resistance.append(float(self.keithley_voltage_bias)/float(self.tmp_current)) #surowa rezystancja
-                    tmp_conductance.append(1/(float(self.keithley_voltage_bias)/float(self.tmp_current))) #surowa konduktancja
+                    tmp_resistance.append(float(self.keithley_voltage_bias)/float(self.tmp_current) if self.tmp_current != 0 else np.nan) #surowa rezystancja
+                    tmp_conductance.append(1/(float(self.keithley_voltage_bias)/float(self.tmp_current)) if self.tmp_current != 0 else np.nan) #surowa konduktancja
+
                     self.emit('progress', 100 * w / len(self.vector))
                     w = w + 1
+                    if self.should_stop():
+                        log.warning("Caught the stop flag in the procedure")
+                        break
                     
                 #opracowanie: 
                 tmp_dI_dH = diff.diffs(tmp_field_set, tmp_current)
@@ -435,10 +445,6 @@ class IVTransfer(Procedure):
                 tmp_NdG = diff.NormalizedDiff(tmp_conductance) 
                 tmp_HdRS = diff.HdIS(tmp_HdR,tmp_current) 
                 tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
-
-
-
-            
                     
                 for l in range(len(tmp_voltage)):        
                     data = {
@@ -450,10 +456,8 @@ class IVTransfer(Procedure):
                         'Y field (Oe)': self.value_function(tmp_field_y, l),
                         'Z field (Oe)': self.value_function(tmp_field_z, l),
                         'Hset (Oe)': self.value_function(tmp_field_set, l),
-                        'dX/dH': self.value_function(tmp_diff_x, l),
                         'dR/dH': self.value_function(tmp_dR, l),
                         'dI': self.value_function(tmp_dI, l),
-                        'dV': self.value_function(tmp_dV, l),
                         'dI/dH': self.value_function(tmp_dI_dH, l), 
                         'NdI': self.value_function(tmp_NdI, l), 
                         'SPdI': self.value_function(tmp_SPdI, l), 
@@ -468,6 +472,7 @@ class IVTransfer(Procedure):
                         'HdGS': self.value_function(tmp_HdGS, l),
                         }
                     self.emit('results', data) 
+                
                
                    
 
@@ -494,38 +499,61 @@ class IVTransfer(Procedure):
                         self.tmp_volatage = self.agilent_34410.voltage_dc
                     else:
                         self.tmp_volatage = self.keithley.voltage
+                    #surowe dane: 
+
                     tmp_current.append(self.keithley_current_bias)
                     tmp_voltage.append(self.tmp_volatage)
                     tmp_resistance.append(float(self.tmp_volatage)/float(self.keithley_current_bias) if self.keithley_current_bias != 0 else np.nan )
+                    tmp_conductance.append(1/(float(self.tmp_volatage)/float(self.keithley_current_bias)) if self.tmp_current != 0 else np.nan) #surowa konduktancja
                     self.emit('progress', 100 * w / len(self.vector))
-                    if i == 0:
-                        tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
-                        tmp_dR = np.nan # diff.diff(tmp_resistance, tmp_field_set)
-                        tmp_dI = np.nan #diff.diffIV(tmp_current)
-                        tmp_dV = np.nan #diff.diffIV(tmp_voltage)
-                    else: 
-                        tmp_diff_x = diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
-                        tmp_dR = diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
-                        tmp_dI = diff.diffIV(tmp_current[w-1],tmp_current[w])
-                        tmp_dV = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
-                    
-
-                    data = {
-                        'V (V)':  tmp_voltage[w],
-                        'I (A)':  tmp_current[w],
-                        'R (ohm)': tmp_resistance[w],
-                        'X field (Oe)': tmp_field_x[w],
-                        'Y field (Oe)': tmp_field_y[w],
-                        'Z field (Oe)': tmp_field_z[w],
-                        'Hset (Oe)': tmp_field_set[w],
-                        'dX/dH': tmp_diff_x,
-                        'dR/dH': tmp_dR,
-                        'dI': tmp_dI,
-                        'dV': tmp_dV,
-                        }
                     w = w + 1
+                    if self.should_stop():
+                        log.warning("Caught the stop flag in the procedure")
+                        break
+                   
+                #opracowanie: 
+                tmp_dV_dH = diff.diffs(tmp_field_set, tmp_voltage)
+                tmp_dV = diff.diffIV(tmp_voltage)
+                tmp_NdV = diff.NormalizedDiff(tmp_voltage)
+                tmp_SPdV = diff.SlopeDiff(tmp_voltage, self.vector)
+                tmp_HdVS = diff.HdIS(tmp_dI_dH,tmp_resistance)
+                tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
+                tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance) 
+                tmp_dR = diff.diffIV(tmp_resistance)
+                tmp_dG = diff.diffIV(tmp_conductance)
+                tmp_NdR = diff.NormalizedDiff(tmp_resistance)
+                tmp_NdG = diff.NormalizedDiff(tmp_conductance) 
+                tmp_HdRS = diff.HdIS(tmp_HdR,tmp_current) 
+                tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)     
+
+                for l in range(len(tmp_voltage)):        
+                    data = {
+                        'V (V)':  self.value_function(tmp_voltage,l),
+                        'R (ohm)': self.value_function(tmp_resistance, l),
+                        'G': self.value_function(tmp_conductance, l),
+                        'X field (Oe)': self.value_function(tmp_field_x, l),
+                        'Y field (Oe)': self.value_function(tmp_field_y, l),
+                        'Z field (Oe)': self.value_function(tmp_field_z, l),
+                        'Hset (Oe)': self.value_function(tmp_field_set, l),
+                        'dR/dH': self.value_function(tmp_dR, l),
+                        'dV': self.value_function(tmp_dV, l),
+                        'dV/dH': self.value_function(tmp_dV_dH, l), 
+                        'NdV': self.value_function(tmp_NdV, l), 
+                        'SPdV': self.value_function(tmp_SPdV, l), 
+                        'HdVS': self.value_function(tmp_HdVS, l),
+                        'HdR':self.value_function(tmp_HdR, l), 
+                        'HdG': self.value_function(tmp_HdG, l), 
+                        'dR': self.value_function(tmp_dR, l), 
+                        'dG': self.value_function(tmp_dG, l), 
+                        'NdR': self.value_function(tmp_NdR, l),
+                        'NdG': self.value_function(tmp_NdG, l), 
+                        'HdRS': self.value_function(tmp_HdRS, l),
+                        'HdGS': self.value_function(tmp_HdGS, l),
+                        }
                     self.emit('results', data) 
                
+
+
                     
             elif self.acquire_type == 'I(Vb) | set Hdc':
                 log.info("Starting to sweep through voltage")
@@ -546,37 +574,41 @@ class IVTransfer(Procedure):
                     tmp_field_x.append(self.tmp_field[0])
                     tmp_field_y.append(self.tmp_field[1])
                     tmp_field_z.append(self.tmp_field[2])
+                    # surowe
                     tmp_current.append(self.tmp_current)
                     tmp_voltage.append(i)
                     tmp_resistance.append(float(i)/float(self.tmp_current))
-                    self.emit('progress', 100 * w / len(self.vector))
-                    if i == 0:
-                        tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
-                        tmp_dR = np.nan # diff.diff(tmp_resistance, tmp_field_set)
-                        tmp_dI = np.nan #diff.diffIV(tmp_current)
-                        tmp_dV = np.nan #diff.diffIV(tmp_voltage)
-                    else: 
-                        tmp_diff_x = np.nan#diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
-                        tmp_dR = np.nan #diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
-                        tmp_dI = diff.diffIV(tmp_current[w-1],tmp_current[w])
-                        tmp_dV = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
+                    tmp_conductance.append(1/(float(i)/float(self.tmp_current)))
                     
-
-                    data = {
-                        'V (V)':  tmp_voltage[w],
-                        'I (A)':  tmp_current[w],
-                        'R (ohm)': tmp_resistance[w],
-                        'X field (Oe)': tmp_field_x[w],
-                        'Y field (Oe)': tmp_field_y[w],
-                        'Z field (Oe)': tmp_field_z[w],
-                        'Hset (Oe)': tmp_field_set[w],
-                        'dX/dH': tmp_diff_x,
-                        'dR/dH': tmp_dR,
-                        'dI': tmp_dI,
-                        'dV': tmp_dV,
-
-                        }
+                    self.emit('progress', 100 * w / len(self.vector))
                     w = w + 1
+                    if self.should_stop():
+                        log.warning("Caught the stop flag in the procedure")
+                        break
+
+                #opracowanie: 
+                tmp_dI_dV = diff.diffs(tmp_voltage, tmp_current)
+                tmp_dI = diff.diffIV(tmp_current)
+                tmp_dR = diff.diffIV(tmp_resistance)
+                tmp_dG = diff.diffIV(tmp_conductance)
+             
+            
+                    
+                for l in range(len(tmp_voltage)):        
+                    data = {
+                        'V (V)':  self.value_function(tmp_voltage,l),
+                        'I (A)':  self.value_function(tmp_current, l),
+                        'R (ohm)': self.value_function(tmp_resistance, l),
+                        'G': self.value_function(tmp_conductance, l),
+                        'X field (Oe)': self.value_function(tmp_field_x, l),
+                        'Y field (Oe)': self.value_function(tmp_field_y, l),
+                        'Z field (Oe)': self.value_function(tmp_field_z, l),
+                        'Hset (Oe)': self.value_function(tmp_field_set, l),
+                        'dI': self.value_function(tmp_dI, l),
+                        'dI/dV': self.value_function(tmp_dI_dV, l), 
+                        'dR': self.value_function(tmp_dR, l), 
+                        'dG': self.value_function(tmp_dG, l), 
+                        }
                     self.emit('results', data) 
                
                 
@@ -596,36 +628,41 @@ class IVTransfer(Procedure):
                     tmp_field_x.append(self.tmp_field[0])
                     tmp_field_y.append(self.tmp_field[1])
                     tmp_field_z.append(self.tmp_field[2])
+
                     tmp_current.append(i)
                     tmp_voltage.append(self.tmp_volatage)
-                    tmp_resistance.append(float(self.tmp_volatage)/(i if i != 0 else 1e-9))
+                    tmp_resistance.append(float(self.tmp_volatage)/(i if i != 0 else 1e-9)) 
+                    tmp_conductance.append((float(i)/float(self.tmp_volatage)))
                     self.emit('progress', 100 * w / len(self.vector))
-                    if i == 0:
-                        tmp_diff_x = np.nan #diff.diff(tmp_current, tmp_field_set)
-                        tmp_dR = np.nan # diff.diff(tmp_resistance, tmp_field_set)
-                        tmp_dI = np.nan #diff.diffIV(tmp_current)
-                        tmp_dV = np.nan #diff.diffIV(tmp_voltage)
-                    else: 
-                        tmp_diff_x = np.nan #diff.diff(tmp_current[w-1], tmp_current[w],tmp_field_set[w-1], tmp_field_set[w])
-                        tmp_dR = np.nan #diff.diff(tmp_resistance[w-1], tmp_resistance[w], tmp_field_set[w-1], tmp_field_set[w])
-                        tmp_dI = diff.diffIV(tmp_current[w-1],tmp_current[w])
-                        tmp_dV = diff.diffIV(tmp_voltage[w-1], tmp_voltage[w])
+                    w = w + 1
+                    if self.should_stop():
+                        log.warning("Caught the stop flag in the procedure")
+                        break
                     
 
+                   #opracowanie: 
+                tmp_dV_dI = diff.diffs(tmp_current, tmp_voltage)
+                tmp_dV = diff.diffIV(tmp_voltage)
+                tmp_dR = diff.diffIV(tmp_resistance)
+                tmp_dG = diff.diffIV(tmp_conductance)
+             
+            
+                    
+                for l in range(len(tmp_voltage)):        
                     data = {
-                        'V (V)':  tmp_voltage[w],
-                        'I (A)':  tmp_current[w],
-                        'R (ohm)': tmp_resistance[w],
-                        'X field (Oe)': tmp_field_x[w],
-                        'Y field (Oe)': tmp_field_y[w],
-                        'Z field (Oe)': tmp_field_z[w],
-                        'Hset (Oe)': tmp_field_set[w],
-                        'dX/dH': tmp_diff_x,
-                        'dR/dH': tmp_dR,
-                        'dI': tmp_dI,
-                        'dV': tmp_dV,
+                        'V (V)':  self.value_function(tmp_voltage,l),
+                        'I (A)':  self.value_function(tmp_current, l),
+                        'R (ohm)': self.value_function(tmp_resistance, l),
+                        'G': self.value_function(tmp_conductance, l),
+                        'X field (Oe)': self.value_function(tmp_field_x, l),
+                        'Y field (Oe)': self.value_function(tmp_field_y, l),
+                        'Z field (Oe)': self.value_function(tmp_field_z, l),
+                        'Hset (Oe)': self.value_function(tmp_field_set, l),
+                        'dV': self.value_function(tmp_dV, l),
+                        'dV/dI': self.value_function(tmp_dV_dI, l), 
+                        'dR': self.value_function(tmp_dR, l), 
+                        'dG': self.value_function(tmp_dG, l), 
                         }
-                    w = w + 1
                     self.emit('results', data) 
                
         elif self.mode == "Fast Resistance":
@@ -683,7 +720,11 @@ class IVTransfer(Procedure):
                             'Z field (Oe)': 0,
                             'I (A)':  r if self.input_type == "Current input" else math.nan,
                             'Phase': theta,
+                            'I/Phase' : r/theta if self.input_type == "Current input" else math.nan,
+                            'V/Phase': r/theta if self.input_type == "Voltage input" else math.nan,
+                            'I/Ax': r/self.ac_field_amplitude if self.input_type == "Current input" and  self.amplitude_vec == True else math.nan,
                             }
+                            
                         
                      
                         self.emit('results', data_lockin) 
@@ -724,6 +765,9 @@ class IVTransfer(Procedure):
                             'Z field (Oe)': self.field_value[2],
                             'I (A)':   r if self.input_type == "Current input" else math.nan,
                             'Phase': theta,
+                            'I/Phase' : r/theta if self.input_type == "Current input" else math.nan,
+                            'V/Phase': r/theta if self.input_type == "Voltage input" else math.nan,
+                            'I/Ax': r/self.ac_field_amplitude if self.input_type == "Current input" and  self.amplitude_vec == True else math.nan,
                             }
                     
 
@@ -735,9 +779,10 @@ class IVTransfer(Procedure):
                         break   
         
 
-        elif self.mode == "TimeMode":
 
-              
+
+
+        elif self.mode == "TimeMode":
             if self.kepco == False:
                 self.calibration_field = LockinCalibration(self.lockin, self.ac_field_frequency,self.dc_field, self.coil)
                 self.cal_field_const = self.calibration_field.calibrate()
@@ -747,20 +792,10 @@ class IVTransfer(Procedure):
                 self.lockin.set_dc_field(self.dc_field/15)
            
             self.lockin.set_lockin_freq(self.lockin_frequency)
-            
-           
-               
             self.lockin.set_ac_field(self.ac_field_amplitude/self.cal_field_const,self.ac_field_frequency)
-                
             sleep(2)
-                
             scope_signal = self.lockin.get_wave()
-                
-                
-                
-                    
             self.emit('progress', 100)
-               
             try:
                 for w in range(len(scope_signal[0])):
                     data_lockin = {
@@ -774,6 +809,8 @@ class IVTransfer(Procedure):
                         'Z field (Oe)': 0,
                         'I (A)':  float(scope_signal[1][w]) if self.input_type == "Current input" else math.nan,
                         'Hset (Oe)': self.ac_field_amplitude+self.dc_field,
+                        "G(t)": float(scope_signal[1][w])/self.bias_voltage if self.input_type == "Current input" else math.nan, 
+                        "R(t)": self.bias_voltage/float(scope_signal[1][w]) if self.input_type == "Current input" else math.nan,
                         }
                     
                  
