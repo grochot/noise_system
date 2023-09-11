@@ -24,7 +24,7 @@ class ComputeDiff:
         max_l = max(x)
         min_l = min(x)
         res = []
-        for i in range(1,len(x-1)):
+        for i in range(1,len(x)-1): ##
             res.append(x[i-1]-x[i+1]/(max_l-min_l))
         return res
     
