@@ -29,15 +29,11 @@
 # ser.close()
 import numpy as np
 res = []
-def value_function(a):
-        try:
-            return a
-        except ValueError:
-            return np.nan
+
 
 pp = [1,2,3,4,5]
 
 for i in range(7):
-     res.append(value_function(pp[i]))
+     res.append(value_function(pp, i))
 
 print(res)
