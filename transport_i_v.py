@@ -380,6 +380,8 @@ class IVTransfer(Procedure):
         tmp_dV = []
         tmp_dI_dH = []
         tmp_dV_dH = []
+        tmp_dR_dH = []
+        tmp_dG_dH = []
         tmp_NdI = []
         tmp_SPdI = []
         tmp_HdIS = []
@@ -433,6 +435,8 @@ class IVTransfer(Procedure):
                     
                 #opracowanie: 
                 tmp_dI_dH = diff.diffs(tmp_field_set, tmp_current)
+                tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
+                tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
                 tmp_dI = diff.diffIV(tmp_current)
                 tmp_NdI = diff.NormalizedDiff(tmp_current)
                 tmp_SPdI = diff.SlopeDiff(tmp_current, self.vector)
@@ -456,7 +460,8 @@ class IVTransfer(Procedure):
                         'Y field (Oe)': self.value_function(tmp_field_y, l),
                         'Z field (Oe)': self.value_function(tmp_field_z, l),
                         'Hset (Oe)': self.value_function(tmp_field_set, l),
-                        'dR/dH': self.value_function(tmp_dR, l),
+                        'dR/dH': self.value_function(tmp_dR_dH, l),
+                        'dG/dH': self.value_function(tmp_dG_dH, l),
                         'dI': self.value_function(tmp_dI, l),
                         'dI/dH': self.value_function(tmp_dI_dH, l), 
                         'NdI': self.value_function(tmp_NdI, l), 
@@ -504,7 +509,7 @@ class IVTransfer(Procedure):
                     tmp_current.append(self.keithley_current_bias)
                     tmp_voltage.append(self.tmp_volatage)
                     tmp_resistance.append(float(self.tmp_volatage)/float(self.keithley_current_bias) if self.keithley_current_bias != 0 else np.nan )
-                    tmp_conductance.append(1/(float(self.tmp_volatage)/float(self.keithley_current_bias)) if self.tmp_current != 0 else np.nan) #surowa konduktancja
+                    tmp_conductance.append(1/(float(self.tmp_volatage)/float(self.keithley_current_bias)) if self.keithley_current_bias != 0  else np.nan) #surowa konduktancja
                     self.emit('progress', 100 * w / len(self.vector))
                     w = w + 1
                     if self.should_stop():
@@ -513,10 +518,12 @@ class IVTransfer(Procedure):
                    
                 #opracowanie: 
                 tmp_dV_dH = diff.diffs(tmp_field_set, tmp_voltage)
+                tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
+                tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
                 tmp_dV = diff.diffIV(tmp_voltage)
                 tmp_NdV = diff.NormalizedDiff(tmp_voltage)
                 tmp_SPdV = diff.SlopeDiff(tmp_voltage, self.vector)
-                tmp_HdVS = diff.HdIS(tmp_dI_dH,tmp_resistance)
+                tmp_HdVS = diff.HdIS(tmp_dV_dH,tmp_resistance)
                 tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
                 tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance) 
                 tmp_dR = diff.diffIV(tmp_resistance)
@@ -535,7 +542,8 @@ class IVTransfer(Procedure):
                         'Y field (Oe)': self.value_function(tmp_field_y, l),
                         'Z field (Oe)': self.value_function(tmp_field_z, l),
                         'Hset (Oe)': self.value_function(tmp_field_set, l),
-                        'dR/dH': self.value_function(tmp_dR, l),
+                        'dR/dH': self.value_function(tmp_dR_dH, l),
+                        'dG/dH': self.value_function(tmp_dG_dH, l),
                         'dV': self.value_function(tmp_dV, l),
                         'dV/dH': self.value_function(tmp_dV_dH, l), 
                         'NdV': self.value_function(tmp_NdV, l), 
@@ -577,8 +585,8 @@ class IVTransfer(Procedure):
                     # surowe
                     tmp_current.append(self.tmp_current)
                     tmp_voltage.append(i)
-                    tmp_resistance.append(float(i)/float(self.tmp_current))
-                    tmp_conductance.append(1/(float(i)/float(self.tmp_current)))
+                    tmp_resistance.append(float(i)/float(self.tmp_current) if self.tmp_current != 0 else math.nan)
+                    tmp_conductance.append(1/(float(i)/float(self.tmp_current)) if self.tmp_current != 0 and i !=0 else math.nan)
                     
                     self.emit('progress', 100 * w / len(self.vector))
                     w = w + 1
