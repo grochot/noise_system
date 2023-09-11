@@ -58,10 +58,10 @@ class IVTransfer(Procedure):
     keithley_adress = ListParameter("Keithley2400 adress",group_by='mode', group_condition=lambda v: v =='HDCMode', choices=["GPIB1::24::INSTR"])
     field_sensor_adress = Parameter("Field_sensor",  default="COM3") 
     #keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
-    keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by={'acquire_type':lambda v: v =='I(Hmb) | set Vb' or v == 'I(Vb) | set Hdc', 'mode':lambda v: v =='HDCMode'})
+    keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by={'acquire_type':lambda v: v =='I(Hdc) | set Vb' or v == 'I(Vb) | set Hdc', 'mode':lambda v: v =='HDCMode'})
     keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hdc) |set Ib' or v == 'V(Ib) | set Hdc', 'mode':lambda v: v =='HDCMode'})
     keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hdc) |set Ib', 'mode':lambda v: v =='HDCMode'})
-    keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hmb) | set Vb', 'mode':lambda v: v =='HDCMode' or v == 'Fast Resistance'})
+    keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hdc) | set Vb', 'mode':lambda v: v =='HDCMode' or v == 'Fast Resistance'})
     agilent_adress = Parameter("Agilent E3648A adress", default="COM9",group_by={'field_device':lambda v: v =='Agilent E3648A'} )
     field_device = ListParameter("Field device", choices = ["DAQ", "Agilent E3648A"], default = "DAQ", group_by='mode', group_condition=lambda v: v =='HDCMode')
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hdc' or v == 'V(Ib) | set Hdc', 'mode':lambda v: v =='HDCMode'})
@@ -174,7 +174,7 @@ class IVTransfer(Procedure):
             try:
                 
                 self.keithley = Keithley2400(self.keithley_adress)
-                if self.acquire_type == 'I(Hmb) | set Vb': 
+                if self.acquire_type == 'I(Hdc) | set Vb': 
                     self.keithley.apply_voltage()
                     self.keithley.source_voltage_range = 20
                     self.keithley.compliance_current = self.keithley_compliance_current
@@ -393,7 +393,7 @@ class IVTransfer(Procedure):
         tmp_HdGS = []
 
         if self.mode == "HDCMode":
-            if self.acquire_type == 'I(Hmb) | set Vb':
+            if self.acquire_type == 'I(Hdc) | set Vb':
                 log.info("Starting to sweep through field")
                 if self.coil == "Large":
                     self.field_const = 5
@@ -792,7 +792,7 @@ class IVTransfer(Procedure):
                     self.field.shutdown()
                     pass
                 else: 
-                    if self.acquire_type == 'I(Hmb) | set Vb' or self.acquire_type == 'V(Hdc) |set Ib':         
+                    if self.acquire_type == 'I(Hdc) | set Vb' or self.acquire_type == 'V(Hdc) |set Ib':         
                         self.field.shutdown(self.last_value/self.field_const)
                     else:
                         self.field.shutdown(self.field_bias/self.field_const)
