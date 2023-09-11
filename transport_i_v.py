@@ -432,7 +432,7 @@ class IVTransfer(Procedure):
                 tmp_dR = diff.diffIV(tmp_resistance)
                 tmp_dG = diff.diffIV(tmp_conductance)
                 tmp_NdR = diff.NormalizedDiff(tmp_resistance)
-                tmp_NdG = diff.NormalizedDiff(tmp_resistance) 
+                tmp_NdG = diff.NormalizedDiff(tmp_conductance) 
                 tmp_HdRS = diff.HdIS(tmp_HdR,tmp_current) 
                 tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
 
@@ -445,6 +445,7 @@ class IVTransfer(Procedure):
                         'V (V)':  self.value_function(tmp_voltage,l),
                         'I (A)':  self.value_function(tmp_current, l),
                         'R (ohm)': self.value_function(tmp_resistance, l),
+                        'G': self.value_function(tmp_conductance, l),
                         'X field (Oe)': self.value_function(tmp_field_x, l),
                         'Y field (Oe)': self.value_function(tmp_field_y, l),
                         'Z field (Oe)': self.value_function(tmp_field_z, l),

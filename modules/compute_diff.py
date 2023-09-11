@@ -16,7 +16,7 @@ class ComputeDiff:
     
     def SlopeDiff(self,x,y): 
         res = []
-        for i in range(1,len(x-1)):
+        for i in range(1,len(x)-1):
             res.append((y[i+1]-y[i-1])/x[i+1]-x[i-1])
         return res
 
@@ -25,7 +25,7 @@ class ComputeDiff:
         min_l = min(x)
         res = []
         for i in range(1,len(x)-1): ##
-            res.append(x[i-1]-x[i+1]/(max_l-min_l))
+            res.append((x[i+1]-x[i-1])/(max_l-min_l))
         return res
     
     def HdIS(self,x,R):
