@@ -6,6 +6,7 @@ import sys
 import tempfile
 import random
 from time import sleep
+from unique_name import unique_name
 from pymeasure.log import console_log
 from pymeasure.display.Qt import QtWidgets
 from pymeasure.display.windows import ManagedWindow
@@ -18,7 +19,7 @@ class RandomProcedure(Procedure):
     delay = FloatParameter('Delay Time', units='s', default=0.2)
     seed = Parameter('Random Seed', default='12345')
 
-    DATA_COLUMNS = ['Iteration', 'Random Number']
+    DATA_COLUMNS = ['Iteration', 'Random Number', 'test']
 
     def startup(self):
         log.info("Setting the seed of the random number generator")
@@ -48,12 +49,15 @@ class MainWindow(ManagedWindow):
             inputs=['iterations', 'delay', 'seed'],
             displays=['iterations', 'delay', 'seed'],
             x_axis='Iteration',
-            y_axis='Random Number'
+            y_axis='Random Number',
+            directory_input=True
         )
         self.setWindowTitle('GUI Example')
-
+        self.directory = r'C:/Path/to/default/directory' 
     def queue(self):
-        filename = tempfile.mktemp()
+        directory = self.directory                               # Added line
+        filename = unique_name(directory)  
+        
 
         procedure = self.make_procedure()
         results = Results(procedure, filename)
