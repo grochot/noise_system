@@ -185,7 +185,13 @@ class NoiseProcedure(Procedure):
 #One shot mode:
         elif self.mode == 'One Shot':
             self.oscilloscope = PicoScope( )
-            self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
+            if self.voltage_adress == 'none':
+                from hardware.sim928_dummy import SIM928 
+                self.voltage = SIM928()
+                log.warning("Use SIM928 Dummy")
+            else:
+                from hardware.sim928 import SIM928 
+                self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600)
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
                 self.no_samples = self.no_samples + 1
@@ -202,7 +208,13 @@ class NoiseProcedure(Procedure):
 #Bias mode:
         else: 
             self.oscilloscope = PicoScope()
-            self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltage 
+            if self.voltage_adress == 'none':
+                from hardware.sim928_dummy import SIM928 
+                self.voltage = SIM928()
+                log.warning("Use SIM928 Dummy")
+            else:
+                from hardware.sim928 import SIM928 
+                self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600)
             sleep(0.1)
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             self.oscilloscope.setTrigger()
