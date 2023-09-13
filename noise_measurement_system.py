@@ -212,7 +212,7 @@ class NoiseProcedure(Procedure):
                 from hardware.sim928_dummy import SIM928 
                 self.voltage = SIM928()
                 log.warning("Use SIM928 Dummy")
-            else:
+            else:                       ###################
                 from hardware.sim928 import SIM928 
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600)
             sleep(0.1)
