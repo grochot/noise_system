@@ -23,7 +23,7 @@ class LockinTime():
     def init_scope(self, av:int = 1, input_sel: int = 1, rate: float = 0, length:float = 16348 ):
         self.lockin.scope_init(av, input_sel, rate, length)
         
-    def init_lockin(self, input_type = 0, differential =False):                  
+    def init_lockin(self, input_type = 0, differential =False, siginrange_value=1):                  
         self.lockin.oscillatorfreq(0,0) 
         self.lockin.oscillatorfreq(1,0)
         self.lockin.siginscaling(0,1)
@@ -41,7 +41,7 @@ class LockinTime():
         self.lockin.enableoutput(1,1)
         self.lockin.outputoffset(0,0)
         self.lockin.outputon(0,1)
-        self.lockin.siginrange(0,10)
+        self.lockin.siginrange(0,siginrange_value)
         self.lockin.outputrange(0,10)
         self.lockin.enabledemod(0,1)
         self.lockin.aux_set_manual(1)
