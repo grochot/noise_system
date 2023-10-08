@@ -287,12 +287,12 @@ class IVTransfer(Procedure):
                 try:
                     self.lockin = LockinField(self.lockin_adress)
                     if self.input_type == "Current input":
-                        self.lockin.init(1, False, self.sigin_range) 
+                        self.lockin.init(1, False, float(self.sigin_range)) 
                     else: 
                         if self.differential_signal == True:
-                            self.lockin.init(0, True, self.sigin_range)
+                            self.lockin.init(0, True, float(self.sigin_range))
                         else:
-                            self.lockin.init(0, False, self.sigin_range)
+                            self.lockin.init(0, False, float(self.sigin_range))
                     log.info("Lockin initialized")
                 except: 
                     log.error("Lockin init failed")
@@ -319,12 +319,12 @@ class IVTransfer(Procedure):
                 
                 self.lockin = LockinFrequency(self.lockin_adress)
                 if self.input_type == "Current input":
-                        self.lockin.init(1, False, self.sigin_range) 
+                        self.lockin.init(1, False, float(self.sigin_range)) 
                 else: 
                         if self.differential_signal == True:
-                            self.lockin.init(0, True, self.sigin_range)
+                            self.lockin.init(0, True, float(self.sigin_range))
                         else:
-                            self.lockin.init(0, False, self.sigin_range)
+                            self.lockin.init(0, False, float(self.sigin_range))
                 self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
                 self.lockin.set_constant_field(self.dc_field/0.6)
                 sleep(1)
@@ -348,13 +348,13 @@ class IVTransfer(Procedure):
             try:
                 self.lockin = LockinTime(self.lockin_adress)
                 if self.input_type == "Current input":
-                    self.lockin.init_lockin(1, False,self.sigin_range)
+                    self.lockin.init_lockin(1, False, float(self.sigin_range))
                     self.lockin.init_scope(self.avergaging_rate, 1, self.rate_index, self.scope_time)
                 else: 
                     if self.differential_signal == True:
-                        self.lockin.init_lockin(0, True, self.sigin_range)
+                        self.lockin.init_lockin(0, True, float(self.sigin_range))
                     else:
-                        self.lockin.init_lockin(0, False, self.sigin_range)
+                        self.lockin.init_lockin(0, False, float(self.sigin_range))
                     self.lockin.init_scope(self.avergaging_rate, 0, self.rate_index, self.scope_time)
 
                 log.info("Lockin initialized")
