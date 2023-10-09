@@ -95,7 +95,7 @@ class IVTransfer(Procedure):
     start_v = FloatParameter("Start H AC",units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
     stop_v = FloatParameter("Stop H AC", units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
     no_points_v = IntegerParameter("No Points H AC",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
-    sigin_range = FloatParameter("SigIn Range", units = 'V', default = 1 ,group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode" )
+    sigin_range = FloatParameter("SigIn Range", units = 'V', default = 1, decimals=9, step= None ,group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode" )
 
 
 ##############################################################################################################################################################
