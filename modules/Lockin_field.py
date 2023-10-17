@@ -14,13 +14,17 @@ class LockinField():
         self.lockin = Zurich(server)
 
 
-    def init(self, input_type = 0, differential =False, siginrange_value = 1):                     
+    def init(self, input_type = 0, differential =False, siginrange_value = 1, imp50=False):  
+        if imp50 == False:
+            self.imp50 = 0 
+        else:
+            self.imp50 = 1                   
         self.lockin.oscillatorfreq(0,0) 
         self.lockin.oscillatorfreq(1,0)
         self.lockin.siginscaling(0,1)
         self.lockin.siginfloat(0,1)
         self.lockin.sigindiff(0,differential)
-        self.lockin.siginimp50(0,0)
+        self.lockin.siginimp50(0,self.imp50)
         self.lockin.setosc(0,0)
         self.lockin.setosc(1,1)
         self.lockin.setadc(0,input_type) # 0 - voltage, 1 - current
