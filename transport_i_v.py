@@ -95,9 +95,12 @@ class IVTransfer(Procedure):
     start_v = FloatParameter("Start H AC",units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
     stop_v = FloatParameter("Stop H AC", units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
     no_points_v = IntegerParameter("No Points H AC",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
-    sigin_range = FloatParameter("SigIn Range", units = 'V', default = 1, decimals=9, step= None ,group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode" )
+    
     sigin_imp = BooleanParameter("50 Ohm", default=False, group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
-
+    sigin_ac = BooleanParameter("AC ON", default=False, group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
+   
+    sigin_range = FloatParameter("SigIn Range", units = 'V', default = 1, decimals=9, step= None ,group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"] )
+    sigin_autorange = BooleanParameter("Autorange ON",  group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode"])
 ##############################################################################################################################################################
 
 
@@ -287,12 +290,12 @@ class IVTransfer(Procedure):
                 try:
                     self.lockin = LockinField(self.lockin_adress)
                     if self.input_type == "Current input":
-                        self.lockin.init(1, False, float(self.sigin_range), self.sigin_imp) 
+                        self.lockin.init(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange) 
                     else: 
                         if self.differential_signal == True:
-                            self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp)
+                            self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
                         else:
-                            self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp)
+                            self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
                     log.info("Lockin initialized")
                 except: 
                     log.error("Lockin init failed")
@@ -319,12 +322,12 @@ class IVTransfer(Procedure):
                 
                 self.lockin = LockinFrequency(self.lockin_adress)
                 if self.input_type == "Current input":
-                        self.lockin.init(1, False, float(self.sigin_range), self.sigin_imp) 
+                        self.lockin.init(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange) 
                 else: 
                         if self.differential_signal == True:
-                            self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp)
+                            self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
                         else:
-                            self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp)
+                            self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
                 self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
                 self.lockin.set_constant_field(self.dc_field/0.6)
                 sleep(1)
@@ -348,13 +351,13 @@ class IVTransfer(Procedure):
             try:
                 self.lockin = LockinTime(self.lockin_adress)
                 if self.input_type == "Current input":
-                    self.lockin.init_lockin(1, False, float(self.sigin_range), self.sigin_imp)
+                    self.lockin.init_lockin(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
                     self.lockin.init_scope(self.avergaging_rate, 1, self.rate_index, self.scope_time)
                 else: 
                     if self.differential_signal == True:
-                        self.lockin.init_lockin(0, True, float(self.sigin_range), self.sigin_imp)
+                        self.lockin.init_lockin(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
                     else:
-                        self.lockin.init_lockin(0, False, float(self.sigin_range), self.sigin_imp)
+                        self.lockin.init_lockin(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
                     self.lockin.init_scope(self.avergaging_rate, 0, self.rate_index, self.scope_time)
 
                 log.info("Lockin initialized")
@@ -867,7 +870,7 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['mode','mode_lockin','sample_name','vector_param','coil','acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','differential_signal', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange', 'sigin_ac','differential_signal', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='I (A)',
             y_axis='V (V)',

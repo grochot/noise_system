@@ -23,11 +23,18 @@ class LockinTime():
     def init_scope(self, av:int = 1, input_sel: int = 1, rate: float = 0, length:float = 16348 ):
         self.lockin.scope_init(av, input_sel, rate, length)
         
-    def init_lockin(self, input_type = 0, differential =False, siginrange_value=1, imp50=False):
-        if imp50 == False:
-            self.imp50 = 0 
+    def init_lockin(self, input_type = 0, differential =False, siginrange_value=1, imp50=False, ac = False, autorange=False):
+                      
+        if autorange == True:            
+            self.lockin.siginautorange(0,autorange)
         else:
-            self.imp50 = 1                   
+            self.lockin.siginrange(0, siginrange_value)
+        self.lockin.siginac(0,ac)
+        if autorange == True:
+            self.lockin.currinautorange(0,autorange)
+        else:
+            self.lockin.currinrange(0,siginrange_value) 
+        self.lockin.siginac(0,changetonum(ac))                 
         self.lockin.oscillatorfreq(0,0) 
         self.lockin.oscillatorfreq(1,0)
         self.lockin.siginscaling(0,1)
@@ -45,7 +52,6 @@ class LockinTime():
         self.lockin.enableoutput(1,1)
         self.lockin.outputoffset(0,0)
         self.lockin.outputon(0,1)
-        self.lockin.siginrange(0,siginrange_value)
         self.lockin.outputrange(0,10)
         self.lockin.enabledemod(0,1)
         self.lockin.aux_set_manual(1)
