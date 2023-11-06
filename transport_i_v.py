@@ -66,7 +66,7 @@ class IVTransfer(Procedure):
     field_device = ListParameter("Field device", choices = ["DAQ", "Agilent E3648A"], default = "DAQ", group_by='mode', group_condition=lambda v: v =='HDCMode')
     field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hdc' or v == 'V(Ib) | set Hdc', 'mode':lambda v: v =='HDCMode'})
     coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='HDCMode')
-    vector_param = Parameter("Vector", group_by='mode', group_condition=lambda v: v =='HDCMode')
+    vector_param = Parameter("Vector", group_by='mode', default = "1,1,1", group_condition=lambda v: v =='HDCMode')
     # stop = FloatParameter("Stop", group_by='mode', group_condition=lambda v: v =='HDCMode')
     # no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='HDCMode')
     reverse_field = BooleanParameter("Reverse field", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
@@ -750,7 +750,7 @@ class IVTransfer(Procedure):
 
 
 
-
+            #####SWEEP FREQUENCY ########
 
 
 
@@ -760,10 +760,11 @@ class IVTransfer(Procedure):
                 for i in self.vector:
                     self.lockin.set_lockin_freq(i) 
                     if i != 0:
-                        sleep(2/i)
+                        sleep(3)
                     else: 
-                        sleep(0.1)
+                        sleep(0.5)
                     r = self.lockin.lockin_measure_R(0,self.avergaging_rate)
+                    sleep(1)
                     theta = self.lockin.lockin_measure_phase(0,self.avergaging_rate)
                     self.counter = self.counter + 1
                     self.emit('progress', 100 * self.counter / len(self.vector))
