@@ -87,20 +87,15 @@ class IVTransfer(Procedure):
     scope_rate = ListParameter("Scope Rate", choices = ["60MHz", "30MHz", "15MHz", "7.5MHz", "3.75MHz", "1.88MHz", "938kHz", "469kHz", "234kHz", "117kHz", "58.6kHz", "29.3kHz", "14.6kHz", "7.32kHz", "3.66kHz", "1.83kHz", "916Hz"], default = "60MHz", group_by='mode', group_condition=lambda v: v =='TimeMode' )
     scope_time = FloatParameter("Scope Length",  default = 16348, group_by='mode', group_condition=lambda v: v =='TimeMode' )
     kepco = BooleanParameter("Kepco?", default=False, group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
-    coil = FloatParameter("Coil constant",units='Oe/A', group_by='mode', default = 30, group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
-    start_f = FloatParameter("Start Freq",units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', False])
-    stop_f = FloatParameter("Stop Freq", units='Hz', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', False])
-    no_points_f = IntegerParameter("No Points Freq",default = 1, group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', False])
+    coil_constant = FloatParameter("Coil constant",units='Oe/A', group_by='mode', default = 30, group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
     amplitude_vec = BooleanParameter("Sweep field", default=False, group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDC-ACModeLockin','Sweep field'])
-    start_v = FloatParameter("Start H AC",units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
-    stop_v = FloatParameter("Stop H AC", units='Oe', group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
-    no_points_v = IntegerParameter("No Points H AC",default = 1,group_by=['mode', 'amplitude_vec'], group_condition=[lambda v: v =='HDC-ACModeLockin', True])
     
     sigin_imp = BooleanParameter("50 Ohm", default=False, group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
     sigin_ac = BooleanParameter("AC ON", default=False, group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
    
     sigin_range = FloatParameter("SigIn Range", units = 'V', default = 1, decimals=9, step= None ,group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"] )
-    sigin_autorange = BooleanParameter("Autorange ON",  group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode"])
+    sigin_autorange = BooleanParameter("Autorange ON",  group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"])
+    lockin_vector = Parameter("Vector", group_by='mode', default = "1,1,1", group_condition=lambda v: v =='HDC-ACModeLockin')
 ##############################################################################################################################################################
 
 
@@ -299,10 +294,7 @@ class IVTransfer(Procedure):
                     log.info("Lockin initialized")
                 except: 
                     log.error("Lockin init failed")
-                if self.amplitude_vec == True:
-                    self.vector = np.linspace(self.start_v, self.stop_v,self.no_points_v)
-                else: 
-                    self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
+                self.vector = self.vector_obj.generate_vector(self.lockin_vector)
                 
                 self.lockin.set_constant_vbias(self.bias_voltage)
                 sleep(1)
@@ -328,7 +320,7 @@ class IVTransfer(Procedure):
                             self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
                         else:
                             self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
-                self.vector = np.linspace(self.start_f, self.stop_f,self.no_points_f)
+                self.vector = self.vector_obj.generate_vector(self.lockin_vector)
                 self.lockin.set_constant_field(self.dc_field/0.6)
                 sleep(1)
                 self.lockin.set_constant_vbias(self.bias_voltage)
@@ -694,7 +686,7 @@ class IVTransfer(Procedure):
             if self.mode_lockin == "Sweep field":
               
                 if self.kepco == False:
-                    self.calibration_field = LockinCalibration(self.lockin, self.ac_field_frequency,self.dc_field, self.coil)
+                    self.calibration_field = LockinCalibration(self.lockin, self.ac_field_frequency,self.dc_field, self.coil_constant)
                     self.cal_field_const = self.calibration_field.calibrate()
                     self.lockin.set_dc_field(self.dc_field/0.6)
                 else: 
@@ -797,7 +789,7 @@ class IVTransfer(Procedure):
 
         elif self.mode == "TimeMode":
             if self.kepco == False:
-                self.calibration_field = LockinCalibration(self.lockin, self.ac_field_frequency,self.dc_field, self.coil)
+                self.calibration_field = LockinCalibration(self.lockin, self.ac_field_frequency,self.dc_field, self.coil_constant)
                 self.cal_field_const = self.calibration_field.calibrate()
                 self.lockin.set_dc_field(self.dc_field/0.6)
             else: 
@@ -870,8 +862,8 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= IVTransfer,
-            inputs=['mode','mode_lockin','sample_name','vector_param','coil','acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange', 'sigin_ac','differential_signal', 'kepco', 'coil', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec','start_f', 'stop_f', 'no_points_f',  'start_v', 'stop_v', 'no_points_v'],
+            inputs=['mode','mode_lockin','sample_name','vector_param','lockin_vector','coil','coil_constant', 'acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange', 'sigin_ac','differential_signal', 'kepco', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='I (A)',
             y_axis='V (V)',
