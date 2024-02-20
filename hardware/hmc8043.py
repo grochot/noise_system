@@ -34,8 +34,8 @@ class HMC8043(Instrument):
         
 
     def disable_channel(self): 
-        self.write("OUTP:CHAN OFF") 
-        sleep(0.2)
+        # self.write("OUTP:CHAN OFF") 
+        # sleep(0.2)
         self.write("OUTP:MAST OFF") 
         
 
@@ -56,18 +56,18 @@ class HMC8043(Instrument):
         self.disable_channel()
 
 
-# zasilacz = HMC8043('ASRL/dev/ttyUSB0::INSTR') 
-# sleep(1)
+# zasilacz = HMC8043('USB0::2733::309::032163928::0::INSTR') 
+# # sleep(1)
 
-# #zasilacz.reset()
-# zasilacz.set_voltage(4)
-# zasilacz.set_voltage(4)
+# zasilacz.reset()
+# zasilacz.set_voltage(3)
+# # zasilacz.set_voltage(4)
 
 # zasilacz.enable_channel()
 # zasilacz.enable_channel_master()
-# sleep(2)
-#zasilacz.set_channel(1)
-#zasilacz.disable_channel()
+# # sleep(2)
+# #zasilacz.set_channel(1)
+# #zasilacz.disable_channel()
 
 
 

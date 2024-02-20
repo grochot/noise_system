@@ -169,8 +169,8 @@ class NoiseProcedure(Procedure):
                 log.info("Set bias field to {} mA".format(float(self.bias_field_current)/1000))
             else: 
                 self.field_coil = HMC8043(self.field_adress) #connction to field controller
-                self.field_coil.reset()
-                self.field_coil.set_voltage(self.bias_field_voltage)
+                #self.field_coil.reset()
+                self.field_coil.set_voltage(self.bias_field_voltage/1000)
                 self.field_coil.set_channel(1)
                 
                 self.field_coil.enable_channel_master()
@@ -643,7 +643,7 @@ class NoiseProcedure(Procedure):
                 if self.field_device == "E3600A":
                     self.field_coil.disabled(abs(self.bias_field_current/1000))
                 else: 
-                    self.field_coil.disabled(abs(self.bias_field_voltage/1000))
+                    self.field_coil.disabled()
                 NoiseProcedure.licznik = 0
             NoiseProcedure.licznik += 1
          

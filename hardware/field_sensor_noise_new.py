@@ -51,4 +51,6 @@ test = FieldSensor('ASRL/dev/ttyACM0::INSTR')
 
 
 
-test.read_field_init()
+# test.read_field_init()
+
+# print(test.read_field())
