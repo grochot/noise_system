@@ -42,6 +42,12 @@ class HMC8043(Instrument):
     def set_voltage(self, voltage): 
         self.write("VOLT {}".format(voltage))
         
+    def disabled(self):
+        """ Turns on the persistent switch,
+        ramps down the current to zero, and turns off the persistent switch.
+        """
+        self.disable_channel()
+
 
     def shutdown(self):
         """ Turns on the persistent switch,
@@ -50,7 +56,7 @@ class HMC8043(Instrument):
         self.disable_channel()
 
 
-# zasilacz = HMC8043('USB0::2733::309::032163928::0::INSTR') 
+# zasilacz = HMC8043('ASRL/dev/ttyUSB0::INSTR') 
 # sleep(1)
 
 # #zasilacz.reset()
