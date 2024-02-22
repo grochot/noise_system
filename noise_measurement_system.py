@@ -60,7 +60,7 @@ class NoiseProcedure(Procedure):
     no_time = IntegerParameter('Number of times', default = parameters_from_file["no_time"], group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
     sampling_interval =FloatParameter('Sampling frequency', units='Hz', default = parameters_from_file["sampling_interval"], group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v=='One Shot')
     bias_voltage = FloatParameter('Bias Voltage', units='mV', default = parameters_from_file["bias_voltage"],group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw')
-    bias_field_current = FloatParameter('Bias Field Current', units='mA', default = parameters_from_file["bias_field_current"],group_by={"mode": lambda v: v =='Mean' or v=='Mean + Raw', "field_device": lambda v: v=="E3600A"})
+    bias_field_current = FloatParameter('Bias Field Current', units='mA', default = parameters_from_file["bias_field_current"],group_by={"mode": lambda v: v =='Mean' or v=='Mean + Raw'})
     bias_field_voltage = FloatParameter('Bias Field Voltage', units='mV', default = parameters_from_file["bias_field_voltage"],group_by={"mode": lambda v: v =='Mean' or v=='Mean + Raw', "field_device": lambda v: v=="HMC8043"})
     voltage_device = ListParameter('Voltage Device', choices=['SIM928', 'LowNoise', 'none'],default = parameters_from_file["voltage_device"],group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
     voltage_adress = ListParameter("Voltage supply address", choices=finded_instruments, group_by='mode', default = parameters_from_file["voltage_adress"] if parameters_from_file["voltage_adress"] in finded_instruments else 'None', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
@@ -116,8 +116,8 @@ class NoiseProcedure(Procedure):
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             else: 
                 from hardware.low_noise_ps import LowNoisePS 
-                self.voltage = LowNoisePS(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
-            sleep(0.1)
+                self.voltage = LowNoisePS(self.voltage_adress,timeout = 25000, baud_rate = 115200) #connect to voltagemeter
+            sleep(1)
        
         
         
@@ -168,16 +168,24 @@ class NoiseProcedure(Procedure):
                 sleep(1)
                 log.info("Set bias field to {} mA".format(float(self.bias_field_current)/1000))
             else: 
-                self.field_coil = HMC8043(self.field_adress) #connction to field controller
-                #self.field_coil.reset()
-                self.field_coil.set_voltage(self.bias_field_voltage/1000)
-                self.field_coil.set_channel(1)
-                
-                self.field_coil.enable_channel_master()
+                flag1 = True
+                while flag1 == True:
+                    try:    
+                        self.field_coil = HMC8043(self.field_adress) #connction to field controller
+                        sleep(0.2)
+                        self.field_coil.inst_out(1)
+                        self.field_coil.set_current(self.bias_field_current/1000)
+                        self.field_coil.enable_channel()
+                        sleep(5)
+                        flag1 = False
+                    except Exception as a: 
+                        log.error(a)
+                        sleep(15)
+                        flag1 = True
+                    
 
         
     ##Bias voltage:
-            log.info("read calibration parameters from file")
             try:
                 fit_parameters = fit_parameters_from_file()
                 a = fit_parameters[0]
@@ -186,7 +194,7 @@ class NoiseProcedure(Procedure):
                 set_vol = calculationbias(self.bias_voltage, a,b,0, "linear")
                 print(set_vol)
                 self.voltage.voltage_setpoint(set_vol) #set bias voltage  
-                log.info("read parameters succesfull")
+                log.info("read parameters from file succesfull")
                 sleep(0.5)
                 self.voltage.enabled() #enable channel 
                 sleep(2)
@@ -644,6 +652,8 @@ class NoiseProcedure(Procedure):
                     self.field_coil.disabled(abs(self.bias_field_current/1000))
                 else: 
                     self.field_coil.disabled()
+                    sleep(10)
+                 
                 NoiseProcedure.licznik = 0
             NoiseProcedure.licznik += 1
          
