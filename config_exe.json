@@ -11,7 +11,7 @@
   },
   {
    "optionDest": "onefile",
-   "value": true
+   "value": false
   },
   {
    "optionDest": "console",
@@ -51,11 +51,23 @@
   },
   {
    "optionDest": "datas",
-   "value": "/home/pw/git/noise_system:noise_system/"
+   "value": "/home/pw/git/noise_system:."
   },
   {
    "optionDest": "pathex",
    "value": "/home/pw/git/noise_system"
+  },
+  {
+   "optionDest": "pathex",
+   "value": "/home/pw/.local/lib/python3.10/site-packages"
+  },
+  {
+   "optionDest": "pathex",
+   "value": "/home/pw/git/noise_system/logic"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "pyvisa"
   }
  ],
  "nonPyinstallerOptions": {
