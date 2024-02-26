@@ -501,7 +501,7 @@ class NoiseProcedure(Procedure):
                 self.emit('progress', 100 * k / len(self.vector))
                 k = k + 1
             
-            self.voltage.voltage_setpoint(0) #set bias voltage to 0
+            self.voltage.voltage_setpoint(1) #set bias voltage to 0
             self.voltage.disabled() #disable channel
             ##Fitting data:
             
@@ -584,7 +584,7 @@ class NoiseProcedure(Procedure):
                 vs_list.append(np.average(tmp_vs_list))   #list of Vs 
                 self.emit('progress', 100 * k / len(self.vector))
                 k = k + 1
-            self.voltage.voltage_setpoint(0) #set bias voltage to 0
+            self.voltage.voltage_setpoint(1) #set bias voltage to 0
             self.voltage.disabled() #disable channel
         #Send results:
             for ele in range(len(vbias_list)):
@@ -645,7 +645,7 @@ class NoiseProcedure(Procedure):
         self.oscilloscope.disconnect_scope()
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
-                self.voltage.voltage_setpoint(0)
+                self.voltage.voltage_setpoint(1)
                 sleep(0.5)
                 self.voltage.disabled()
                 if self.field_device == "E3600A":

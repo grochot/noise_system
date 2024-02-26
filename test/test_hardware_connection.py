@@ -9,11 +9,11 @@ print(rm.list_resources())
 # k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
 #k.voltage_setpoint(10)
 
-inst = rm.open_resource('ASRL/dev/ttyACM1::INSTR')  
+# inst = rm.open_resource('ASRL/dev/ttyACM1::INSTR')  
 
-inst.write("GETV")
-sleep(1)
-print(inst.read())
+# inst.write("GETV")
+# sleep(1)
+# print(inst.read())
 
 
 # # inst = rm.open_resource('ASRL/dev/ttyS0::INSTR')
