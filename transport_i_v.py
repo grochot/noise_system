@@ -37,6 +37,8 @@ from modules.Lockin_time import LockinTime
 from logic.measure_field import measure_field
 from hardware.field_sensor_noise_new import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
+from logic.save_parameters import SaveParameters
+
 
 log = logging.getLogger(__name__) 
 log.addHandler(logging.NullHandler()) 
@@ -46,56 +48,61 @@ log.addHandler(logging.NullHandler())
 class IVTransfer(Procedure):
     licznik = 1 # licznik
     find_instruments = FindInstrument()
-    finded_instruments = find_instruments.show_instrument() 
+    finded_instruments = find_instruments.show_instrument()
+    save_parameter = SaveParameters()
+    used_parameters_list=['mode','mode_lockin','sample_name','vector_param','lockin_vector','coil','coil_constant', 'acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange', 'sigin_ac','differential_signal', 'kepco', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec']
+    parameters_from_file = save_parameter.ReadFile()
+    parameters = {}
 
 
 #################################################################### PARAMETERS #####################################################################
-    mode = ListParameter("Mode",  default='HDCMode', choices=['HDCMode', 'Fast Resistance', 'HDC-ACModeLockin', 'TimeMode'])
-    mode_lockin = ListParameter("Lockin mode", choices = ['Sweep field', 'Sweep frequency'],group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin')
-    agilent = BooleanParameter("Agilent", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
-    agilent34401a_adress = Parameter("Agilent34401a adress", default="GPIB1::22::INSTR", group_by='agilent', group_condition=lambda v: v ==True)
-    acquire_type = ListParameter("Acquisition type", choices = ['I(Hdc) | set Vb', 'V(Hdc) |set Ib', 'I(Vb) | set Hdc', 'V(Ib) | set Hdc'],group_by='mode', group_condition=lambda v: v =='HDCMode')
-    keithley_adress = ListParameter("Keithley2400 adress",group_by='mode', group_condition=lambda v: v =='HDCMode', choices=["GPIB1::24::INSTR"])
-    field_sensor_adress = Parameter("Field_sensor",  default="COM3") 
+    mode = ListParameter("Mode",  default = parameters_from_file["mode"], choices=['HDCMode', 'Fast Resistance', 'HDC-ACModeLockin', 'TimeMode'])
+    mode_lockin = ListParameter("Lockin mode", default = parameters_from_file["mode_lockin"],  choices = ['Sweep field', 'Sweep frequency'],group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin')
+    agilent = BooleanParameter("Agilent", default = parameters_from_file["agilent"], group_by='mode', group_condition=lambda v: v =='HDCMode')
+    agilent34401a_adress = ListParameter("Agilent34401a adress", default = parameters_from_file["agilent34401a_adress"] if parameters_from_file["agilent34401a_adress"] in finded_instruments else 'None', choices=finded_instruments, group_by='agilent', group_condition=lambda v: v ==True)
+    acquire_type = ListParameter("Acquisition type", default = parameters_from_file["acquire_type"], choices = ['I(Hdc) | set Vb', 'V(Hdc) |set Ib', 'I(Vb) | set Hdc', 'V(Ib) | set Hdc'],group_by='mode', group_condition=lambda v: v =='HDCMode')
+    keithley_adress = ListParameter("Keithley2400 adress", default = parameters_from_file["keithley_adress"] if parameters_from_file["keithley_adress"] in finded_instruments else 'None', choices=finded_instruments, group_by='mode', group_condition=lambda v: v =='HDCMode')
+    field_sensor_adress = Parameter("Field_sensor",  default = parameters_from_file["field_sensor_adress"]) 
     #keithley_source_type = ListParameter("Source type", default = "Current", choices = ['Current', 'Voltage'])
-    keithley_compliance_current = FloatParameter('Compliance current', units='A', default=0.1, group_by={'acquire_type':lambda v: v =='I(Hdc) | set Vb' or v == 'I(Vb) | set Hdc', 'mode':lambda v: v =='HDCMode'})
-    keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default=1,group_by={'acquire_type': lambda v: v =='V(Hdc) |set Ib' or v == 'V(Ib) | set Hdc', 'mode':lambda v: v =='HDCMode'})
-    keithley_current_bias = FloatParameter('Current bias', units='A', default=0, group_by={'acquire_type':'V(Hdc) |set Ib', 'mode':lambda v: v =='HDCMode'})
-    keithley_voltage_bias = FloatParameter('Volage bias', units='V', default=0.1, group_by={'acquire_type':'I(Hdc) | set Vb', 'mode':lambda v: v =='HDCMode' or v == 'Fast Resistance'})
-    agilent_adress = Parameter("Agilent E3648A adress", default="COM9",group_by={'field_device':lambda v: v =='Agilent E3648A'} )
+    keithley_compliance_current = FloatParameter('Compliance current', units='A', default = parameters_from_file["keithley_compliance_current"], group_by={'acquire_type':lambda v: v =='I(Hdc) | set Vb' or v == 'I(Vb) | set Hdc', 'mode':lambda v: v =='HDCMode'})
+    keithley_compliance_voltage = FloatParameter('Compliance voltage', units='V', default = parameters_from_file["keithley_compliance_voltage"],group_by={'acquire_type': lambda v: v =='V(Hdc) |set Ib' or v == 'V(Ib) | set Hdc', 'mode':lambda v: v =='HDCMode'})
+    keithley_current_bias = FloatParameter('Current bias', units='A', default = parameters_from_file["keithley_current_bias"], group_by={'acquire_type':'V(Hdc) |set Ib', 'mode':lambda v: v =='HDCMode'})
+    keithley_voltage_bias = FloatParameter('Volage bias', units='V', default = parameters_from_file["keithley_voltage_bias"], group_by={'acquire_type':'I(Hdc) | set Vb', 'mode':lambda v: v =='HDCMode' or v == 'Fast Resistance'})
+    agilent_adress = ListParameter("Agilent E3648A adress", default = parameters_from_file["agilent_adress"] if parameters_from_file["agilent_adress"] in finded_instruments else 'None' , choices=finded_instruments, group_by={'field_device':lambda v: v =='Agilent E3648A'} )
     field_device = ListParameter("Field device", choices = ["DAQ", "Agilent E3648A"], default = "DAQ", group_by='mode', group_condition=lambda v: v =='HDCMode')
-    field_bias = FloatParameter('Field bias', units='Oe', default=10, group_by={'acquire_type':lambda v: v =='I(Vb) | set Hdc' or v == 'V(Ib) | set Hdc', 'mode':lambda v: v =='HDCMode'})
-    coil = ListParameter("Coil",  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='HDCMode')
-    vector_param = Parameter("Vector", group_by='mode', default = "1,1,1", group_condition=lambda v: v =='HDCMode')
+    field_bias = FloatParameter('Field bias', units='Oe', default = parameters_from_file["field_bias"], group_by={'acquire_type':lambda v: v =='I(Vb) | set Hdc' or v == 'V(Ib) | set Hdc', 'mode':lambda v: v =='HDCMode'})
+    coil = ListParameter("Coil", default = parameters_from_file["coil"],  choices=["Large", "Small"], group_by='mode', group_condition=lambda v: v =='HDCMode')
+    vector_param = Parameter("Vector",  group_by='mode', default = parameters_from_file["vector_param"], group_condition=lambda v: v =='HDCMode')
     # stop = FloatParameter("Stop", group_by='mode', group_condition=lambda v: v =='HDCMode')
     # no_points = IntegerParameter("No Points", group_by='mode', group_condition=lambda v: v =='HDCMode')
-    reverse_field = BooleanParameter("Reverse field", default=False, group_by='mode', group_condition=lambda v: v =='HDCMode')
-    delay = FloatParameter("Delay", units = "ms", default = 1000, group_by='mode', group_condition=lambda v: v =='HDCMode')
-    sample_name = Parameter("Sample Name", default="sample name")
-    bias_voltage = FloatParameter('Bias Voltage', units='mV', default=100,group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v =="TimeMode")
+    reverse_field = BooleanParameter("Reverse field", default = parameters_from_file["reverse_field"], group_by='mode', group_condition=lambda v: v =='HDCMode')
+    delay = FloatParameter("Delay", units = "ms", default = parameters_from_file["delay"], group_by='mode', group_condition=lambda v: v =='HDCMode')
+    sample_name = Parameter("Sample Name", default = parameters_from_file["sample_name"])
+    bias_voltage = FloatParameter('Bias Voltage', units='mV', default = parameters_from_file["bias_voltage"],group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v =="TimeMode")
 
 
 #Lockin mode: 
-    lockin_adress = Parameter("Lockin adress", default="192.168.66.202", group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")
-    input_type = ListParameter("Input type", choices=["Voltage input", "Current input"], group_by='mode', group_condition=lambda v: v=="HDC-ACModeLockin" or v == "TimeMode")
-    dc_field = FloatParameter('DC Field', units='Oe', default=0,group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")
-    ac_field_amplitude = FloatParameter('AC Field Amplitude', units='Oe', default=0,group_by=['mode'], group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")   
-    ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default=0,group_by=['mode'], group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
-    differential_signal = BooleanParameter('Differential voltage input', default=False, group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
-    lockin_frequency = FloatParameter('Sweep frequency', units='Hz', default=0,group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode",'Sweep field'])
-    avergaging_rate = IntegerParameter("Avergaging rate", default=1,group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode" )
-    scope_rate = ListParameter("Scope Rate", choices = ["60MHz", "30MHz", "15MHz", "7.5MHz", "3.75MHz", "1.88MHz", "938kHz", "469kHz", "234kHz", "117kHz", "58.6kHz", "29.3kHz", "14.6kHz", "7.32kHz", "3.66kHz", "1.83kHz", "916Hz"], default = "60MHz", group_by='mode', group_condition=lambda v: v =='TimeMode' )
-    scope_time = FloatParameter("Scope Length",  default = 16348, group_by='mode', group_condition=lambda v: v =='TimeMode' )
-    kepco = BooleanParameter("Kepco?", default=False, group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
-    coil_constant = FloatParameter("Coil constant",units='Oe/A', group_by='mode', default = 30, group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
-    amplitude_vec = BooleanParameter("Sweep field", default=False, group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDC-ACModeLockin','Sweep field'])
+    lockin_adress = Parameter("Lockin adress", default = parameters_from_file["lockin_adress"], group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")
+    input_type = ListParameter("Input type", default = parameters_from_file["input_type"], choices=["Voltage input", "Current input"], group_by='mode', group_condition=lambda v: v=="HDC-ACModeLockin" or v == "TimeMode")
+    dc_field = FloatParameter('DC Field', units='Oe', default = parameters_from_file["dc_field"],group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")
+    ac_field_amplitude = FloatParameter('AC Field Amplitude', units='Oe', default = parameters_from_file["ac_field_amplitude"],group_by=['mode'], group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")   
+    ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default = parameters_from_file["ac_field_frequency"],group_by=['mode'], group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
+    differential_signal = BooleanParameter('Differential voltage input', default = parameters_from_file["differential_signal"], group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
+    lockin_frequency = FloatParameter('Sweep frequency', units='Hz', default = parameters_from_file["lockin_frequency"],group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode",'Sweep field'])
+    avergaging_rate = IntegerParameter("Avergaging rate", default = parameters_from_file["avergaging_rate"],group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode" )
+    scope_rate = ListParameter("Scope Rate", choices = ["60MHz", "30MHz", "15MHz", "7.5MHz", "3.75MHz", "1.88MHz", "938kHz", "469kHz", "234kHz", "117kHz", "58.6kHz", "29.3kHz", "14.6kHz", "7.32kHz", "3.66kHz", "1.83kHz", "916Hz"], default = parameters_from_file["scope_rate"], group_by='mode', group_condition=lambda v: v =='TimeMode' )
+    scope_time = FloatParameter("Scope Length",  default = parameters_from_file["scope_time"], group_by='mode', group_condition=lambda v: v =='TimeMode' )
+    kepco = BooleanParameter("Kepco?", default = parameters_from_file["kepco"], group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
+    coil_constant = FloatParameter("Coil constant",units='Oe/A', group_by='mode', default = parameters_from_file["coil_constant"], group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
+    amplitude_vec = BooleanParameter("Sweep field", default = parameters_from_file["amplitude_vec"], group_by=['mode', 'mode_lockin'], group_condition=[lambda v: v =='HDC-ACModeLockin','Sweep field'])
     
-    sigin_imp = BooleanParameter("50 Ohm", default=False, group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
-    sigin_ac = BooleanParameter("AC ON", default=False, group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
+    sigin_imp = BooleanParameter("50 Ohm", default = parameters_from_file["sigin_imp"], group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
+    sigin_ac = BooleanParameter("AC ON", default = parameters_from_file["sigin_ac"], group_by=['mode','input_type'], group_condition=[lambda v: v =='HDC-ACModeLockin'or v == "TimeMode", lambda v: v == "Voltage input"])
    
-    sigin_range = FloatParameter("SigIn Range", units = 'V', default = 1, decimals=9, step= None ,group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"] )
-    sigin_autorange = BooleanParameter("Autorange ON",  group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"])
-    lockin_vector = Parameter("Vector", group_by='mode', default = "1,1,1", group_condition=lambda v: v =='HDC-ACModeLockin')
+    sigin_range = FloatParameter("SigIn Range", units = 'V', default = parameters_from_file["sigin_range"], decimals=9, step= None ,group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"] )
+    sigin_autorange = BooleanParameter("Autorange ON", default = parameters_from_file["sigin_autorange"], group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"])
+    lockin_vector = Parameter("Vector", default = parameters_from_file["lockin_vector"], group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin')
 ##############################################################################################################################################################
 
 
@@ -113,6 +120,11 @@ class IVTransfer(Procedure):
     
     ################ STARTUP ##################3
     def startup(self):
+        for i in self.used_parameters_list:
+            self.param = eval("self."+i)
+            self.parameters[i] = self.param
+        
+        self.save_parameter.WriteFile(self.parameters)
         self.vector_obj = Vector()
         if self.mode == 'HDCMode':
             log.info("Finding instruments...")
@@ -328,18 +340,20 @@ class IVTransfer(Procedure):
                
             elif self.mode == "Lockin calibration":
                 pass
-
+########################### TIME MODE ###########################3
 
         elif self.mode == "TimeMode":
             self.rate_index = scope_rate(self.scope_rate)
+            ####### Field sensor ########
             try:
                 self.field_sensor = FieldSensor(self.field_sensor_adress)
                 self.field_sensor.read_field_init()
                 log.info("Config FieldSensor done")
             except:
-                log.error("Config FieldSensor failed")
+                log.error("Config FieldSensor failed.")
                 self.field_sensor = DummyFieldSensor()
                 log.info("Use DummyFieldSensor")
+            ########### Lockin #############
             try:
                 self.lockin = LockinTime(self.lockin_adress)
                 if self.input_type == "Current input":
@@ -353,7 +367,8 @@ class IVTransfer(Procedure):
                     self.lockin.init_scope(self.avergaging_rate, 0, self.rate_index, self.scope_time)
 
                 log.info("Lockin initialized")
-            except: 
+            except Exception as a: 
+                log.error(a)
                 log.error("Lockin init failed")
             
             self.lockin.set_constant_vbias(self.bias_voltage)

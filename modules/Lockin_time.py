@@ -17,82 +17,82 @@ from time import sleep
 import numpy as np
 class LockinTime():
     def __init__(self, server=""):
-        self.lockin = Zurich(server)
+        self.lockin_device = Zurich(server)
 
     
     def init_scope(self, av:int = 1, input_sel: int = 1, rate: float = 0, length:float = 16348 ):
-        self.lockin.scope_init(av, input_sel, rate, length)
+        self.lockin_device.scope_init(av, input_sel, rate, length)
         
     def init_lockin(self, input_type = 0, differential =False, siginrange_value=1, imp50=False, ac = False, autorange=False):
                       
         if autorange == True:            
-            self.lockin.siginautorange(0,autorange)
+            self.lockin_device.siginautorange(0,autorange)
         else:
-            self.lockin.siginrange(0, siginrange_value)
-        self.lockin.siginac(0,ac)
+            self.lockin_device.siginrange(0, siginrange_value)
+        self.lockin_device.siginac(0,ac)
         if autorange == True:
-            self.lockin.currinautorange(0,autorange)
+            self.lockin_device.currinautorange(0,autorange)
         else:
-            self.lockin.currinrange(0,siginrange_value) 
-        self.lockin.siginac(0,changetonum(ac))                 
-        self.lockin.oscillatorfreq(0,0) 
-        self.lockin.oscillatorfreq(1,0)
-        self.lockin.siginscaling(0,1)
-        self.lockin.siginfloat(0,1)
-        self.lockin.siginimp50(0,self.imp50)
-        self.lockin.sigindiff(0,differential)
-        self.lockin.setosc(0,0)
-        self.lockin.setosc(1,1)
-        self.lockin.setadc(0,input_type) # 0 - voltage, 1 - current
-        self.lockin.settimeconst(0, 0.3)
-        self.lockin.setorder(0, 2)
-        self.lockin.setharmonic(0, 1)
-        self.lockin.setharmonic(1, 1)
-        self.lockin.outputamplitude(0,0)
-        self.lockin.enableoutput(1,1)
-        self.lockin.outputoffset(0,0)
-        self.lockin.outputon(0,1)
-        self.lockin.outputrange(0,10)
-        self.lockin.enabledemod(0,1)
-        self.lockin.aux_set_manual(1)
-        self.lockin.auxout(1,0)
+            self.lockin_device.currinrange(0,siginrange_value) 
+        self.lockin_device.siginac(0,ac)                 
+        self.lockin_device.oscillatorfreq(0,0) 
+        self.lockin_device.oscillatorfreq(1,0)
+        self.lockin_device.siginscaling(0,1)
+        self.lockin_device.siginfloat(0,1)
+        self.lockin_device.siginimp50(0,imp50)
+        self.lockin_device.sigindiff(0,differential)
+        self.lockin_device.setosc(0,0)
+        self.lockin_device.setosc(1,1)
+        self.lockin_device.setadc(0,input_type) # 0 - voltage, 1 - current
+        self.lockin_device.settimeconst(0, 0.3)
+        self.lockin_device.setorder(0, 2)
+        self.lockin_device.setharmonic(0, 1)
+        self.lockin_device.setharmonic(1, 1)
+        self.lockin_device.outputamplitude(0,0)
+        self.lockin_device.enableoutput(1,1)
+        self.lockin_device.outputoffset(0,0)
+        self.lockin_device.outputon(0,1)
+        self.lockin_device.outputrange(0,10)
+        self.lockin_device.enabledemod(0,1)
+        self.lockin_device.aux_set_manual(1)
+        self.lockin_device.auxout(1,0)
          
 
    
     def get_wave(self):
-        value = self.lockin.get_wave()
-        time = self.lockin.to_timestamp(value)
+        value = self.lockin_device.get_wave()
+        time = self.lockin_device.to_timestamp(value)
 
         return time, value[0]['wave'][0]
 
     def set_ac_field(self, value=0, freq=1): # TO DO
-        self.lockin.oscillatorfreq(1,freq)
-        self.lockin.outputamplitude(1,value)
+        self.lockin_device.oscillatorfreq(1,freq)
+        self.lockin_device.outputamplitude(1,value)
        
     def set_dc_field(self, value=0):
-        self.lockin.outputoffset(0,value)
+        self.lockin_device.outputoffset(0,value)
       
     def lockin_measure_R(self,demod, averaging_rate):
         results = []
         avg = 0
         for samp in range(averaging_rate):
-           sample = self.lockin.getsample(demod)
+           sample = self.lockin_device.getsample(demod)
            avg += np.sqrt(sample['x'][0]**2+sample['y'][0]**2)
         results = avg/averaging_rate
         return results
     
     def set_constant_vbias(self, value=0):
-         self.lockin.auxout(1,value/1000)
+         self.lockin_device.auxout(1,value/1000)
     
     def set_lockin_freq(self,freq):
-        self.lockin.oscillatorfreq(0, freq)
+        self.lockin_device.oscillatorfreq(0, freq)
 
 
     def shutdown(self):
-        self.lockin.auxout(1,0)
-        self.lockin.outputamplitude(0,0)
-        self.lockin.outputoffset(0,0)    
-        self.lockin.outputon(0,0)
+        self.lockin_device.auxout(1,0)
+        self.lockin_device.outputamplitude(0,0)
+        self.lockin_device.outputoffset(0,0)    
+        self.lockin_device.outputon(0,0)
     
     def set_field(self, value_dc=0, value_ac=0, freq=1, calib_dc=1, calib_ac = 1):
         self.dc_value = (value_dc*50)/calib_dc
@@ -109,7 +109,7 @@ class LockinTime():
 # ax1 = fig.add_subplot(1,1,1)
 # loc = LockinTime('192.168.66.202')
 
-# loc.init(1,1,0,16348)
+# loc.init_scope(1,1,0,16348)
 
 # data = loc.get_wave()
 
@@ -127,7 +127,7 @@ class LockinTime():
 # ax1 = fig.add_subplot(1,1,1)
 # loc = LockinTime("192.168.66.202")
 
-# loc.init_lockin(1)
+# loc.init_lockin_device(1)
 # loc.init_scope(1,1,9,1000)
 
 

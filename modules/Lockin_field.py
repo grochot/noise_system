@@ -15,6 +15,7 @@ class LockinField():
 
 
     def init(self, input_type = 0, differential =False, siginrange_value = 1, imp50=False, ac = False, autorange = False):  
+
         if autorange == True:            
             self.lockin.siginautorange(0,autorange)
         else:
@@ -42,7 +43,6 @@ class LockinField():
         self.lockin.enableoutput(1,1)
         self.lockin.outputoffset(0,0)
         self.lockin.outputon(0,1)
-        
         self.lockin.outputrange(0,10)
         self.lockin.enabledemod(0,1)
         self.lockin.aux_set_manual(1)
@@ -105,7 +105,7 @@ class LockinField():
 # # style.use('fivethirtyeight')
 # # fig = plt.figure()
 # # ax1 = fig.add_subplot(1,1,1)
-# loc = LockinField()
+loc = LockinField('192.168.66.202')
 
 # loc.init()
 

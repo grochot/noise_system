@@ -216,7 +216,6 @@ class Zurich(Instrument):
         return t
         
 ########################### Test ###########################3
-
 # zur = Zurich('192.168.66.202')
 
 # dd = zur.getsample(0)
