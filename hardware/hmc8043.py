@@ -79,6 +79,9 @@ class HMC8043():
     def opc(self):
         self.inst.write("*OPC")
     
+    def close_connection(self):
+        self.inst.close()
+
 
 
 # zasilacz = HMC8043('USB0::2733::309::032163928::0::INSTR', timeout=50000) 

@@ -655,6 +655,8 @@ class NoiseProcedure(Procedure):
                     sleep(10)
                  
                 NoiseProcedure.licznik = 0
+            if self.field_device == "HMC8043":
+                self.field_coil.close_connection()    
             NoiseProcedure.licznik += 1
          
         
@@ -668,13 +670,13 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'bias_field_voltage', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
+            inputs=['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
             displays=['bias_voltage', 'period_time', 'no_time','sampling_interval', 'sample_name'],
             x_axis='time (s)',
             y_axis='Sense Voltage (mV)',
             directory_input=True,  
             sequencer=True,                                      
-            sequencer_inputs=['bias_voltage','bias_field'],    
+            sequencer_inputs=['bias_voltage','bias_field_current', 'period_time', 'sampling_interval'],    
             inputs_in_scrollarea=True,
             
         )
