@@ -78,6 +78,6 @@ class LowNoisePS(Instrument):
 ################## TEST ################## 
 
 # k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
-# k.voltage_setpoint(120)
+# #k.voltage_setpoint(10)
 
-#print(k.read_voltage())
+# print(k.read_voltage())
