@@ -481,9 +481,9 @@ class NoiseProcedure(Procedure):
             vs_list = []
             vs_fit = []
             k=0
-            print("main loop")
+           
             self.voltage.enabled() #enable channel 
-            print("enabled outlput")
+         
            
             for i in self.vector:  
                 self.voltage.voltage_setpoint(i) #set bias voltage
@@ -511,11 +511,11 @@ class NoiseProcedure(Procedure):
             ##Save to file:
             log.info("Saving data to file start")
             fit_parameters_to_file(self.fit_parameters)
-            print(self.fit_parameters)
+            log.info("Linear function: a = {}, b = {}".format(self.fit_parameters[0], self.fit_parameters[1]))
             log.info("Saving data to file end")
             for l in vbias_list:
                 vs_fit.append(linear_func(l, self.fit_parameters[0],self.fit_parameters[1]))
-            print(vs_fit)
+           
         
                 
 
