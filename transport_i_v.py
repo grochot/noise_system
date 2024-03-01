@@ -423,11 +423,13 @@ class IVTransfer(Procedure):
                     self.field.set_field(i/self.field_const)
                     tmp_field_set.append(i)   # surowe pole 
                     sleep(self.delay*0.001)
+                    print("DEBUG:set field: {}".format(i))
                     self.tmp_field = self.field_sensor.read_field()
                     tmp_field_x.append(self.tmp_field[0])
                     tmp_field_y.append(self.tmp_field[1])
                     tmp_field_z.append(self.tmp_field[2])
                     sleep(self.delay*0.001)
+                    print("DEBUG: field masured:  {}".format(self.tmp_field))
                     if self.agilent == True:
                         self.tmp_current = self.agilent_34410.current_dc
                     else:
@@ -443,7 +445,7 @@ class IVTransfer(Procedure):
                     if self.should_stop():
                         log.warning("Caught the stop flag in the procedure")
                         break
-                    
+                print("DEBUG:\n current: {} \n voltage: {} \n resistance: {} \n conductance: {}".format(tmp_current, tmp_voltage,tmp_resistance, tmp_conductance))    
                 #opracowanie: 
                 tmp_dI_dH = diff.diffs(tmp_field_set, tmp_current)
                 tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
