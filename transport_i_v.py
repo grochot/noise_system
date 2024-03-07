@@ -48,12 +48,14 @@ log.addHandler(logging.NullHandler())
 class IVTransfer(Procedure):
     licznik = 1 # licznik
     find_instruments = FindInstrument()
-    finded_instruments = find_instruments.show_instrument()
+    finded_instruments = list(find_instruments.show_instrument())
+    finded_instruments.append('None')
     save_parameter = SaveParameters()
     used_parameters_list=['mode','mode_lockin','sample_name','vector_param','lockin_vector','coil','coil_constant', 'acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
             'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange', 'sigin_ac','differential_signal', 'kepco', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec']
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
+    #print(finde_instruments)
 
 
 #################################################################### PARAMETERS #####################################################################
