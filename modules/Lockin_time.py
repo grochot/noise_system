@@ -41,11 +41,13 @@ class LockinTime():
         self.lockin_device.siginimp50(0,imp50)
         self.lockin_device.sigindiff(0,differential)
         self.lockin_device.setosc(0,0)
-        self.lockin_device.setosc(1,1)
+        self.lockin_device.setosc(1,2)
         self.lockin_device.setadc(0,input_type) # 0 - voltage, 1 - current
         self.lockin_device.setadc(1,1 if input_type == 0 else 1) # 0 - voltage, 1 - current
         self.lockin_device.settimeconst(0, 0.3)
         self.lockin_device.setorder(0, 2)
+        self.lockin_device.settimeconst(1, 0.3)
+        self.lockin_device.setorder(1, 2)
         self.lockin_device.setharmonic(0, 1)
         self.lockin_device.setharmonic(1, 1)
         self.lockin_device.outputamplitude(0,0)
@@ -78,7 +80,7 @@ class LockinTime():
     def lockin_measure_R(self,demod, averaging_rate):
         results = []
         avg = 0
-        for samp in range(averaging_rate):
+        for samp in range(averaging_rate):s
            sample = self.lockin_device.getsample(demod)
            avg += np.sqrt(sample['x'][0]**2+sample['y'][0]**2)
         results = avg/averaging_rate
@@ -89,6 +91,7 @@ class LockinTime():
     
     def set_lockin_freq(self,freq):
         self.lockin_device.oscillatorfreq(0, freq)
+        elf.lockin_device.oscillatorfreq(2, freq)
 
 
     def shutdown(self):

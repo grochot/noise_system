@@ -33,14 +33,17 @@ class LockinField():
         self.lockin.sigindiff(0,differential)
         self.lockin.siginimp50(0,imp50)
         self.lockin.setosc(0,0)
-        self.lockin.setosc(1,1)
+        self.lockin.setosc(1,2)
         self.lockin.setadc(0,input_type) # 0 - voltage, 1 - current
         self.lockin.setadc(1, 0 if input_type==1 else 1) # 0 - voltage, 1 - current
         
         self.lockin.settimeconst(0, 0.3)
+        self.lockin.settimeconst(1, 0.3)
         self.lockin.setorder(0, 2)
+        self.lockin.setorder(1, 2)
         self.lockin.setharmonic(0, 1)
         self.lockin.setharmonic(1, 1)
+        self.lockin.outputamplitude(0,0)
         self.lockin.outputamplitude(0,0)
         self.lockin.enableoutput(1,1)
         self.lockin.outputoffset(0,0)
@@ -70,6 +73,8 @@ class LockinField():
     
     def set_lockin_freq(self,freq):
         self.lockin.oscillatorfreq(0, freq)
+        sleep(0.3)
+        self.lockin.oscillatorfreq(2, freq)
 
     
     def lockin_measure_R(self,demod, averaging_rate):
@@ -110,7 +115,7 @@ class LockinField():
 # # style.use('fivethirtyeight')
 # # fig = plt.figure()
 # # ax1 = fig.add_subplot(1,1,1)
-loc = LockinField('192.168.66.202')
+#loc = LockinField('192.168.66.202')
 
 # loc.init()
 

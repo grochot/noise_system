@@ -52,7 +52,7 @@ class IVTransfer(Procedure):
     finded_instruments.append('None')
     save_parameter = SaveParameters()
     used_parameters_list=['mode','mode_lockin','sample_name','vector_param','lockin_vector','coil','coil_constant', 'acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange', 'sigin_ac','differential_signal', 'kepco', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec']
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange', 'sigin_ac','differential_signal', 'kepco', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec', 'currins_range', 'currins_autorange']
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
     #print(finde_instruments)
@@ -86,7 +86,7 @@ class IVTransfer(Procedure):
 
 #Lockin mode: 
     lockin_adress = Parameter("Lockin adress", default = parameters_from_file["lockin_adress"], group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")
-    input_type = ListParameter("Input type", default = parameters_from_file["input_type"], choices=["Voltage input", "Current input"], group_by='mode', group_condition=lambda v: v=="HDC-ACModeLockin" or v == "TimeMode")
+    input_type = ListParameter("Signal input", default = parameters_from_file["input_type"], choices=["Voltage input", "Current input"], group_by='mode', group_condition=lambda v: v=="HDC-ACModeLockin" or v == "TimeMode")
     dc_field = FloatParameter('DC Field', units='Oe', default = parameters_from_file["dc_field"],group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")
     ac_field_amplitude = FloatParameter('AC Field Amplitude', units='Oe', default = parameters_from_file["ac_field_amplitude"],group_by=['mode'], group_condition=lambda v: v =='HDC-ACModeLockin' or v == "TimeMode")   
     ac_field_frequency = FloatParameter('AC Field Frequency', units='Hz', default = parameters_from_file["ac_field_frequency"],group_by=['mode'], group_condition=lambda v: v =='HDC-ACModeLockin'or v == "TimeMode")
@@ -288,8 +288,6 @@ class IVTransfer(Procedure):
         elif self.mode =="HDC-ACModeLockin":
 
             if self.mode_lockin == "Sweep field":
-
-                
                 try:
                     self.field_sensor = FieldSensor(self.field_sensor_adress)
                     self.field_sensor.read_field_init()
@@ -732,6 +730,8 @@ class IVTransfer(Procedure):
                     
                     r = self.lockin.lockin_measure_R(0,self.avergaging_rate)
                     theta = self.lockin.lockin_measure_phase(0,self.avergaging_rate)
+                    r2 = self.lockin.lockin_measure_R(1,self.avergaging_rate)
+                    theta2 = self.lockin.lockin_measure_phase(1,self.avergaging_rate)
                     self.counter = self.counter + 1
                         
                     self.emit('progress', 100 * self.counter / len(self.vector))
@@ -741,12 +741,12 @@ class IVTransfer(Procedure):
                         data_lockin = {
                             'f (Hz)': i if self.amplitude_vec == False else self.ac_field_frequency, 
                             'AHac (Oe)': i if self.amplitude_vec == True else self.ac_field_amplitude,
-                            'Vsense (V)': r if self.input_type == "Voltage input" else math.nan,
-                            'Vbias (V)': self.bias_voltage,
+                            'Vsense (V)': r if self.input_type == "Voltage input" else r2,
+                            'Vbias (V)': self.bias_voltage/1000,
                             'X field (Oe)': i+self.dc_field if self.amplitude_vec == True else self.ac_field_amplitude+self.dc_field,
                             'Y field (Oe)':0,
                             'Z field (Oe)': 0,
-                            'I (A)':  r if self.input_type == "Current input" else math.nan,
+                            'I (A)':  r if self.input_type == "Current input" else r2,
                             'Phase': theta,
                             'I/Phase' : r/theta if self.input_type == "Current input" else math.nan,
                             'V/Phase': r/theta if self.input_type == "Voltage input" else math.nan,
@@ -780,19 +780,23 @@ class IVTransfer(Procedure):
                     else: 
                         sleep(0.5)
                     r = self.lockin.lockin_measure_R(0,self.avergaging_rate)
-                    sleep(1)
+                    sleep(0.5)
                     theta = self.lockin.lockin_measure_phase(0,self.avergaging_rate)
+                    sleep(0.5)
+                    r2 = self.lockin.lockin_measure_R(1,self.avergaging_rate)
+                    sleep(0.5)
+                    theta2 = self.lockin.lockin_measure_phase(1,self.avergaging_rate)
                     self.counter = self.counter + 1
                     self.emit('progress', 100 * self.counter / len(self.vector))
                     try:
                         data_lockin = {
                             'f (Hz)': i,  
-                            'Vsense (V)':  r if self.input_type == "Voltage input" else math.nan,
+                            'Vsense (V)':  r if self.input_type == "Voltage input" else r2,
                             'Vbias (V)': self.bias_voltage,
                             'X field (Oe)':self.field_value[0],
                             'Y field (Oe)':self.field_value[1],
                             'Z field (Oe)': self.field_value[2],
-                            'I (A)':   r if self.input_type == "Current input" else math.nan,
+                            'I (A)':   r if self.input_type == "Current input" else r2,
                             'Phase': theta,
                             'I/Phase' : r/theta if self.input_type == "Current input" else math.nan,
                             'V/Phase': r/theta if self.input_type == "Voltage input" else math.nan,
@@ -887,7 +891,7 @@ class MainWindow(ManagedWindow):
         super().__init__(
             procedure_class= IVTransfer,
             inputs=['mode','mode_lockin','sample_name','vector_param','lockin_vector','coil','coil_constant', 'acquire_type','keithley_adress','agilent','agilent34401a_adress','field_sensor_adress', 'keithley_compliance_current', 'keithley_compliance_voltage',
-            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange', 'sigin_ac','differential_signal', 'kepco', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec'],
+            'keithley_current_bias', 'keithley_voltage_bias', 'field_device', 'field_bias', 'agilent_adress', 'delay', 'reverse_field', 'lockin_adress','input_type','sigin_imp','sigin_autorange','currins_range','currins_autorange', 'sigin_ac','differential_signal', 'kepco', 'dc_field','bias_voltage', 'ac_field_amplitude', 'ac_field_frequency', 'sigin_range', 'lockin_frequency', 'avergaging_rate','scope_rate', 'scope_time', 'amplitude_vec'],
             displays=['sample_name', 'acquire_type', 'field_bias', 'keithley_current_bias', 'keithley_voltage_bias'],
             x_axis='I (A)',
             y_axis='V (V)',
