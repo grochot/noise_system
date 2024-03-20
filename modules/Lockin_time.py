@@ -80,7 +80,7 @@ class LockinTime():
     def lockin_measure_R(self,demod, averaging_rate):
         results = []
         avg = 0
-        for samp in range(averaging_rate):s
+        for samp in range(averaging_rate):
            sample = self.lockin_device.getsample(demod)
            avg += np.sqrt(sample['x'][0]**2+sample['y'][0]**2)
         results = avg/averaging_rate

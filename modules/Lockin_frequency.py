@@ -34,6 +34,8 @@ class LockinFrequency():
         self.lockin.sigindiff(0,differential)
         self.lockin.settimeconst(0, 0.3)
         self.lockin.setorder(0, 2)
+        self.lockin.settimeconst(1, 0.3)
+        self.lockin.setorder(1, 2)
         self.lockin.setharmonic(0, 1)
         self.lockin.setharmonic(1, 1)
         self.lockin.outputon(0,0)
@@ -56,6 +58,7 @@ class LockinFrequency():
 
     def set_lockin_freq(self,freq):
         self.lockin.oscillatorfreq(0, freq)
+        self.lockin.oscillatorfreq(2, freq)
 
     def lockin_measure_R(self,demod, averaging_rate):
         results = []

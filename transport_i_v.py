@@ -2,7 +2,6 @@ from ast import Num
 from email.policy import default
 import logging
 import pandas as pd 
-
 import math
 import sys
 import random
@@ -10,10 +9,8 @@ from time import sleep, time
 import traceback
 from logic.find_instrument import FindInstrument
 from logic.save_results_path import SaveFilePath
-
 import numpy as np
 from logic.scope_rate import scope_rate
-
 from pymeasure.display.Qt import QtGui
 from pymeasure.display.Qt import QtWidgets
 from pymeasure.display.windows import ManagedWindow
@@ -57,8 +54,7 @@ class IVTransfer(Procedure):
     parameters = {}
     #print(finde_instruments)
 
-
-#################################################################### PARAMETERS #####################################################################
+# Define parameters
     mode = ListParameter("Mode",  default = parameters_from_file["mode"], choices=['HDCMode', 'Fast Resistance', 'HDC-ACModeLockin', 'TimeMode'])
     mode_lockin = ListParameter("Lockin mode", default = parameters_from_file["mode_lockin"],  choices = ['Sweep field', 'Sweep frequency'],group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin')
     agilent = BooleanParameter("Agilent", default = parameters_from_file["agilent"], group_by='mode', group_condition=lambda v: v =='HDCMode')
