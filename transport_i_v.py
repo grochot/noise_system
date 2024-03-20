@@ -104,6 +104,8 @@ class IVTransfer(Procedure):
    
     sigin_range = FloatParameter("SigIn Range", units = 'V', default = parameters_from_file["sigin_range"], decimals=9, step= None ,group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"] )
     sigin_autorange = BooleanParameter("Autorange ON", default = parameters_from_file["sigin_autorange"], group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"])
+    currins_range = FloatParameter("CurrIn Range", units = 'V', default = parameters_from_file["currins_range"], decimals=9, step= None ,group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"] )
+    currins_autorange = BooleanParameter("CurrIn Autorange ON", default = parameters_from_file["currins_autorange"], group_by=['mode'], group_condition=[lambda v: v =='HDC-ACModeLockin' or v == "TimeMode"])
     lockin_vector = Parameter("Vector", default = parameters_from_file["lockin_vector"], group_by='mode', group_condition=lambda v: v =='HDC-ACModeLockin')
 ##############################################################################################################################################################
 
@@ -299,15 +301,18 @@ class IVTransfer(Procedure):
                 try:
                     self.lockin = LockinField(self.lockin_adress)
                     if self.input_type == "Current input":
-                        self.lockin.init(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange) 
+                        self.lockin.init(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange, self.currins_range , self.currins_autorange) 
                     else: 
                         if self.differential_signal == True:
-                            self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
+                            self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange, self.currins_range , self.currins_autorange)
                         else:
-                            self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
+                            self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange, self.currins_range , self.currins_autorange)
+                    
                     log.info("Lockin initialized")
+                
                 except: 
                     log.error("Lockin init failed")
+                
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
                 
                 self.lockin.set_constant_vbias(self.bias_voltage)
@@ -328,12 +333,12 @@ class IVTransfer(Procedure):
                 
                 self.lockin = LockinFrequency(self.lockin_adress)
                 if self.input_type == "Current input":
-                        self.lockin.init(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange) 
+                        self.lockin.init(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange,  self.currins_range , self.currins_autorange) 
                 else: 
                         if self.differential_signal == True:
-                            self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
+                            self.lockin.init(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange,  self.currins_range , self.currins_autorange)
                         else:
-                            self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
+                            self.lockin.init(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange,  self.currins_range , self.currins_autorange)
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
                 self.lockin.set_constant_field(self.dc_field/0.6)
                 sleep(1)
@@ -359,13 +364,13 @@ class IVTransfer(Procedure):
             try:
                 self.lockin = LockinTime(self.lockin_adress)
                 if self.input_type == "Current input":
-                    self.lockin.init_lockin(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
+                    self.lockin.init_lockin(1, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange, self.currins_range , self.currins_autorange)
                     self.lockin.init_scope(self.avergaging_rate, 1, self.rate_index, self.scope_time)
                 else: 
                     if self.differential_signal == True:
-                        self.lockin.init_lockin(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
+                        self.lockin.init_lockin(0, True, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange, self.currins_range , self.currins_autorange)
                     else:
-                        self.lockin.init_lockin(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange)
+                        self.lockin.init_lockin(0, False, float(self.sigin_range), self.sigin_imp, self.sigin_ac, self.sigin_autorange, self.currins_range , self.currins_autorange)
                     self.lockin.init_scope(self.avergaging_rate, 0, self.rate_index, self.scope_time)
 
                 log.info("Lockin initialized")

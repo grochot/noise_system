@@ -13,8 +13,7 @@ from logic.fit_parameters_to_file import fit_parameters_to_file, fit_parameters_
 from logic.vbiascalibration import vbiascalibration, calculationbias, func, linear_func
 from time import sleep
 import numpy as np
-from time import sleep
-import numpy as np
+
 class LockinTime():
     def __init__(self, server=""):
         self.lockin_device = Zurich(server)
@@ -23,7 +22,7 @@ class LockinTime():
     def init_scope(self, av:int = 1, input_sel: int = 1, rate: float = 0, length:float = 16348 ):
         self.lockin_device.scope_init(av, input_sel, rate, length)
         
-    def init_lockin(self, input_type = 0, differential =False, siginrange_value=1, imp50=False, ac = False, autorange=False):
+    def init_lockin(self, input_type = 0, differential =False, siginrange_value=1, imp50=False, ac = False, autorange=False, currins_range=1.0 , currins_autorange=False):
                       
         if autorange == True:            
             self.lockin_device.siginautorange(0,autorange)
@@ -44,16 +43,20 @@ class LockinTime():
         self.lockin_device.setosc(0,0)
         self.lockin_device.setosc(1,1)
         self.lockin_device.setadc(0,input_type) # 0 - voltage, 1 - current
+        self.lockin_device.setadc(1,1 if input_type == 0 else 1) # 0 - voltage, 1 - current
         self.lockin_device.settimeconst(0, 0.3)
         self.lockin_device.setorder(0, 2)
         self.lockin_device.setharmonic(0, 1)
         self.lockin_device.setharmonic(1, 1)
         self.lockin_device.outputamplitude(0,0)
         self.lockin_device.enableoutput(1,1)
+        self.lockin_device.currinautorange(0,currins_autorange)
+        self.lockin_device.currinrange(0,currins_range)
         self.lockin_device.outputoffset(0,0)
         self.lockin_device.outputon(0,1)
         self.lockin_device.outputrange(0,10)
         self.lockin_device.enabledemod(0,1)
+        self.lockin_device.enabledemod(1,1)
         self.lockin_device.aux_set_manual(1)
         self.lockin_device.auxout(1,0)
          

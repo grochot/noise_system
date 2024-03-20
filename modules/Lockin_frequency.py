@@ -13,7 +13,7 @@ class LockinFrequency():
     def __init__(self, server=""):
         self.lockin = Zurich(server)
 
-    def init(self, input_type=0, differential=False, siginrange_value=1, imp50=False, ac = False, autorange = False):
+    def init(self, input_type = 0, differential =False, siginrange_value = 1.0, imp50=False, ac = False, autorange = False, currins_range = 1.0, currins_autorange = False):
                     
         if autorange == True:            
             self.lockin.siginautorange(0,autorange)
@@ -26,17 +26,21 @@ class LockinFrequency():
             self.lockin.currinrange(0,siginrange_value)
         self.lockin.siginac(0,ac)
         self.lockin.setadc(0,input_type) # 0 - voltage, 1 - current
+        self.lockin.setadc(1, 0 if input_type==1 else 1) # 0 - voltage, 1 - current
         self.lockin.siginfloat(0,1)
         self.lockin.oscillatorfreq(0,0)
+        self.lockin.oscillatorfreq(1,0)
         self.lockin.siginimp50(0,imp50)
         self.lockin.sigindiff(0,differential)
         self.lockin.settimeconst(0, 0.3)
         self.lockin.setorder(0, 2)
         self.lockin.setharmonic(0, 1)
+        self.lockin.setharmonic(1, 1)
         self.lockin.outputon(0,0)
         self.lockin.aux_set_manual(0)
         self.lockin.aux_set_manual(1)
         self.lockin.enabledemod(0,1)
+        self.lockin.enabledemod(1,1)
         self.lockin.auxout(0,0)
         self.lockin.auxout(1,0)
     

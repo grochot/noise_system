@@ -27,7 +27,7 @@ class Zurich(Instrument):
     def siginautorange(self, signal:int, auto=1):
         self.device_loc.sigins[signal].autorange(auto)
 
-    def siginrange(self, signal, range=1):
+    def siginrange(self, signal, range=1.0):
         self.device_loc.sigins[signal].range(range)
 
     def siginscaling(self, signal, scaling=1):
@@ -47,10 +47,10 @@ class Zurich(Instrument):
 
     ##### SET INPUT CURRENT #####
 
-    def currinautorange(self, signal, auto=1):
+    def currinautorange(self, signal, auto=True):
         self.device_loc.currins[signal].autorange(auto)
 
-    def currinrange(self, signal, range=1):
+    def currinrange(self, signal, range=1.0):
         self.device_loc.currins[signal].range(range)
 
     def currinscaling(self, signal, scaling=1):
