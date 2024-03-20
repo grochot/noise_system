@@ -4,15 +4,16 @@ from time import sleep, time
 from zhinst.toolkit import Session
 import numpy as np
 
+
 class Zurich(Instrument):
 
     def __init__(self, server):
-        #self.daq = zhinst.core.ziDAQServer(server, 8004, 6)
+        # self.daq = zhinst.core.ziDAQServer(server, 8004, 6)
         self.session = Session(server)
         self.device_loc = self.session.connect_device("dev4274")
-       
+
         # self.API_LEVEL = 6
-        self.device = 'dev4274'
+        self.device = "dev4274"
         # self.ERR_MSG = 'ERR'
         # (self.daq, self.device, _) = zhinst.utils.create_api_session(self.DEVICE_ID,
         #                                                    self.API_LEVEL, required_devtype='.*LI|.*IA',
@@ -24,7 +25,7 @@ class Zurich(Instrument):
 
     ##### SET INPUT SIGNAL #####
 
-    def siginautorange(self, signal:int, auto=1):
+    def siginautorange(self, signal: int, auto=1):
         self.device_loc.sigins[signal].autorange(auto)
 
     def siginrange(self, signal, range=1.0):
@@ -67,7 +68,7 @@ class Zurich(Instrument):
     def output50ohm(self, output, ohm):
         self.device_loc.sigouts[output].imp50(ohm)
 
-    def outputdiff(self,output, diff):
+    def outputdiff(self, output, diff):
         self.device_loc.sigouts[output].diff(diff)
 
     def outputadd(self, output, add):
@@ -81,21 +82,21 @@ class Zurich(Instrument):
 
     def outputoffset(self, output, offset):
         self.device_loc.sigouts[output].offset(offset)
-    
+
     def aux_set_manual(self, out):
         self.device_loc.auxouts[out].outputselect(-1)
-    
-    def auxout(self, out, offset = 0): 
+
+    def auxout(self, out, offset=0):
         self.device_loc.auxouts[out].offset(offset)
 
-#????????????????????????
+    # ????????????????????????
     def enableoutput(self, demod, enable):
         self.device_loc.sigouts[0].enables(enable)
 
     def outputamplitude(self, output, ampli):
-        self.device_loc.sigouts[0].amplitudes(ampli) # Vpp
-#?????????????????????????
+        self.device_loc.sigouts[0].amplitudes(ampli)  # Vpp
 
+    # ?????????????????????????
 
     ##### SET OSCILLATORS #####
     def oscillatorfreq(self, osc_id, freq):
@@ -116,34 +117,33 @@ class Zurich(Instrument):
         self.device_loc.demods[demod_id].timeconstant(timeconst)  # set timeconstant
 
     def setadc(self, demod_id, adc):
-        if(adc == 10):
+        if adc == 10:
             adc = 174
         self.device_loc.demods[demod_id].adcselect(adc)  # input select demod
 
     def setorder(self, demod_id, order):
-        self.device_loc.demods[demod_id].order(order)  # select the filter roll off between 6 and 48 dB/oct
+        self.device_loc.demods[demod_id].order(
+            order
+        )  # select the filter roll off between 6 and 48 dB/oct
 
     def enabledemod(self, demod_id, enable):
         self.device_loc.demods[demod_id].enable(enable)  # enable demodulator
 
     def rate(self, demod_id, rate):
-        self.device_loc.demods[demod_id].rate(rate)  # sampling rate 
+        self.device_loc.demods[demod_id].rate(rate)  # sampling rate
 
     def sinc(self, demod_id, sinc):
-        self.device_loc.demods[demod_id].sinc(sinc) #sinc filter on
-
-
+        self.device_loc.demods[demod_id].sinc(sinc)  # sinc filter on
 
     ##### GET SAMPLE ########
 
     def getsample(self, demod):
         sample = self.device_loc.demods[demod].sample()
         return sample
-    
-    ####### LOCKIN SCOPE ###### 
 
+    ####### LOCKIN SCOPE ######
 
-    def scope_init(self, av:int, input_sel:int, rate:float, length:float): 
+    def scope_init(self, av: int, input_sel: int, rate: float, length: float):
         with self.device_loc.set_transaction():
             self.device_loc.scopes[0].length(length)
             self.device_loc.scopes[0].channel(1)
@@ -162,9 +162,6 @@ class Zurich(Instrument):
         self.scope_module.fft.window(0)
         self.wave_node = self.device_loc.scopes[0].wave
         self.scope_module.subscribe(self.wave_node)
-    
-
-    
 
     def get_wave(self):
         """Obtain scope records from the device using an instance of the Scope Module."""
@@ -173,12 +170,12 @@ class Zurich(Instrument):
         self.session.sync()
 
         start = time()
-        timeout = 30 # [s]
+        timeout = 30  # [s]
         records = 0
         progress = 0
         # Wait until the Scope Module has received and processed
         # the desired number of records.
-        while (records < 1):
+        while records < 1:
             sleep(0.5)
             records = self.scope_module.records()
             progress = self.scope_module.progress()
@@ -202,19 +199,19 @@ class Zurich(Instrument):
         # Stop the module; to use it again we need to call execute().
         self.scope_module.finish()
         return data[0]
-    
-    
-    def to_timestamp(self,record):
+
+    def to_timestamp(self, record):
         clockbase = self.device_loc.clockbase()
         totalsamples = record[0]["totalsamples"]
         dt = record[0]["dt"]
         timestamp = record[0]["timestamp"]
         triggertimestamp = record[0]["triggertimestamp"]
-        t = np.arange(-totalsamples, 0) * dt + (
-            timestamp - triggertimestamp
-        ) / float(clockbase)
+        t = np.arange(-totalsamples, 0) * dt + (timestamp - triggertimestamp) / float(
+            clockbase
+        )
         return t
-        
+
+
 ########################### Test ###########################3
 # zur = Zurich('192.168.66.202')
 
@@ -227,7 +224,7 @@ class Zurich(Instrument):
 
 # ts = zur.to_timestamp(dd)
 
-# import matplotlib.pyplot as plt 
+# import matplotlib.pyplot as plt
 
 # plt.plot(ts,dd[0][0]['wave'][0])
 # plt.show()
