@@ -89,14 +89,13 @@ class Zurich(Instrument):
     def auxout(self, out, offset=0):
         self.device_loc.auxouts[out].offset(offset)
 
-    # ????????????????????????
     def enableoutput(self, demod, enable):
-        self.device_loc.sigouts[0].enables(enable)
+        self.device_loc.sigouts[0].enables[demod](enable)
 
     def outputamplitude(self, output, ampli):
         self.device_loc.sigouts[0].amplitudes(ampli)  # Vpp
 
-    # ?????????????????????????
+  
 
     ##### SET OSCILLATORS #####
     def oscillatorfreq(self, osc_id, freq):
@@ -106,8 +105,8 @@ class Zurich(Instrument):
     def setosc(self, demod_id, osc_id):
         self.device_loc.demods[demod_id].oscselect(osc_id)  # connect to oscilator
 
-    def setextrefs(self, demod_id, extrefs):
-        self.device_loc.extrefs[extrefs].enable(demod_id)  # input select demod
+    def setextrefs(self, demod_id, extrefs, enable):
+        self.device_loc.extrefs[extrefs].enable(enable)  # input select demod
         self.device_loc.extrefs[extrefs].demodselect(demod_id)
 
     def setharmonic(self, demod_id, harm):
@@ -214,7 +213,8 @@ class Zurich(Instrument):
 
 ########################### Test ###########################3
 # zur = Zurich('192.168.66.202')
-
+# # zur.enableoutput(2,1)
+# zur.setextrefs(0,0,1)
 # dd = zur.getsample(0)
 # print(dd)
 

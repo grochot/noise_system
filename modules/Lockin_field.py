@@ -30,51 +30,73 @@ class LockinField:
         autorange=False,
         currins_range=1.0,
         currins_autorange=False,
-    ):
-
+    ):  
+        
+        if input_type == 0: #voltage 
+            VOLTAGE_DEMOD = 0 
+            CURRENT_DEMOD = 2
+        else: 
+            VOLTAGE_DEMOD = 2 
+            CURRENT_DEMOD = 0
+        #set ranges:
+        
         if autorange == True:
-            self.lockin.siginautorange(0, autorange)
+            self.lockin.siginautorange(VOLTAGE_DEMOD, autorange)
         else:
-            self.lockin.siginrange(0, siginrange_value)
-        self.lockin.siginac(0, ac)
-        if autorange == True:
-            self.lockin.currinautorange(0, autorange)
+            self.lockin.siginrange(VOLTAGE_DEMOD, siginrange_value)
+        self.lockin.siginac(VOLTAGE_DEMOD, ac)
+        
+        if currins_autorange == True:
+            self.lockin.currinautorange(CURRENT_DEMOD, currins_autorange)
         else:
-            self.lockin.currinrange(0, siginrange_value)
-
+            self.lockin.currinrange(CURRENT_DEMOD, currins_range)
+        
+        #set input type to demodulators
+        self.lockin.setadc(0, input_type)  #0 demodulators to voltage/current
+        self.lockin.setadc(2, 0 if input_type == 1 else 1)  #1 demodulators to current/voltage 
+        self.lockin.setadc(3,174)  #2 demodulators to constant
+        
+        #Set oscillators freq to 0
         self.lockin.oscillatorfreq(0, 0)
         self.lockin.oscillatorfreq(1, 0)
-        self.lockin.siginscaling(0, 1)
-        self.lockin.siginfloat(0, 1)
-        self.lockin.sigindiff(0, differential)
-        self.lockin.siginimp50(0, imp50)
-        self.lockin.setosc(0, 0)
-        self.lockin.setosc(1, 2)
-        self.lockin.setadc(0, input_type)  # 0 - voltage, 1 - current
-        self.lockin.setadc(1, 0 if input_type == 1 else 1)  # 0 - voltage, 1 - current
-
+        self.lockin.oscillatorfreq(2, 0)
+        self.lockin.oscillatorfreq(3, 0)
+        
+        #set sigin voltage\current parametes
+        self.lockin.siginscaling(VOLTAGE_DEMOD, 1)
+        self.lockin.siginfloat(VOLTAGE_DEMOD, 1)
+        self.lockin.currinscaling(CURRENT_DEMOD, 1)
+        self.lockin.currinfloat(CURRENT_DEMOD, 1)
+        self.lockin.sigindiff(VOLTAGE_DEMOD, differential)
+        self.lockin.siginimp50(VOLTAGE_DEMOD, imp50)
+        
+        #set oscillators to demodulators
+        self.lockin.setextrefs(0,0,1)
+        self.lockin.setosc(2, 0) 
+        self.lockin.setosc(3, 1)
+        
+        # set sigin parameters
         self.lockin.settimeconst(0, 0.3)
-        self.lockin.settimeconst(1, 0.3)
+        self.lockin.settimeconst(2, 0.3)
         self.lockin.setorder(0, 2)
-        self.lockin.setorder(1, 2)
+        self.lockin.setorder(2, 2)
         self.lockin.setharmonic(0, 1)
-        self.lockin.setharmonic(1, 1)
-        self.lockin.outputamplitude(0, 0)
-        self.lockin.outputamplitude(0, 0)
-        self.lockin.enableoutput(1, 1)
-        self.lockin.outputoffset(0, 0)
-        self.lockin.outputon(0, 1)
-        self.lockin.currinautorange(0, currins_autorange)
-        self.lockin.currinrange(0, currins_range)
-        self.lockin.outputrange(0, 10)
+        self.lockin.setharmonic(2, 1)
         self.lockin.enabledemod(0, 1)
-        self.lockin.enabledemod(1, 1)
+        self.lockin.enabledemod(2, 1)
+
+        self.lockin.outputamplitude(3, 0)
+        self.lockin.enableoutput(3, 0)
+        self.lockin.outputoffset(3, 0)
+        self.lockin.outputon(0, 1)
+        self.lockin.outputrange(0, 10)
+        
         self.lockin.aux_set_manual(1)
         self.lockin.auxout(1, 0)
 
     def set_ac_field(self, value=0, freq=1):  # TO DO
-        self.lockin.oscillatorfreq(1, freq)
-        self.lockin.outputamplitude(1, value)
+        self.lockin.oscillatorfreq(0, freq)
+        self.lockin.outputamplitude(0, value)
 
     def set_dc_field(self, value=0):
         self.lockin.outputoffset(0, value)
@@ -83,9 +105,7 @@ class LockinField:
         self.lockin.auxout(1, value / 1000)
 
     def set_lockin_freq(self, freq):
-        self.lockin.oscillatorfreq(0, freq)
-        sleep(0.3)
-        self.lockin.oscillatorfreq(2, freq)
+        self.lockin.oscillatorfreq(1, freq)
 
     def lockin_measure_R(self, demod, averaging_rate):
         results = []
