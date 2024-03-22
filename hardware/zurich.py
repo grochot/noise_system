@@ -49,16 +49,16 @@ class Zurich(Instrument):
     ##### SET INPUT CURRENT #####
 
     def currinautorange(self, signal, auto=True):
-        self.device_loc.currins[signal].autorange(auto)
+        self.device_loc.currins[0].autorange(auto)
 
     def currinrange(self, signal, range=1.0):
-        self.device_loc.currins[signal].range(range)
+        self.device_loc.currins[0].range(range)
 
     def currinscaling(self, signal, scaling=1):
-        self.device_loc.currins[signal].scaling(scaling)
+        self.device_loc.currins[0].scaling(scaling)
 
     def currinfloat(self, signal, float=0):
-        self.device_loc.currins[signal].float(float)
+        self.device_loc.currins[0].float(float)
 
     ##### SET SIGNAL OUTPUT #####
 
@@ -81,7 +81,7 @@ class Zurich(Instrument):
         self.device_loc.sigouts[output].autorange(auto)
 
     def outputoffset(self, output, offset):
-        self.device_loc.sigouts[output].offset(offset)
+        self.device_loc.sigouts[0].offset(offset)
 
     def aux_set_manual(self, out):
         self.device_loc.auxouts[out].outputselect(-1)

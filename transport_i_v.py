@@ -286,8 +286,8 @@ class IVTransfer(Procedure):
         "AC Field Frequency",
         units="Hz",
         default=parameters_from_file["ac_field_frequency"],
-        group_by=["mode"],
-        group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+        group_by=["mode", "amplitude_vec"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", True],
     )
     differential_signal = BooleanParameter(
         "Differential voltage input",
@@ -696,8 +696,8 @@ class IVTransfer(Procedure):
 
                     log.info("Lockin initialized")
 
-                except:
-                    log.error("Lockin init failed")
+                except Exception as a:
+                    log.error("Lockin init failed: {}".format(a))
 
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
 

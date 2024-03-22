@@ -72,8 +72,8 @@ class LockinField:
         
         #set oscillators to demodulators
         self.lockin.setextrefs(0,0,1)
-        self.lockin.setosc(2, 0) 
-        self.lockin.setosc(3, 1)
+        self.lockin.setosc(2, 2) 
+        self.lockin.setosc(3, 3)
         
         # set sigin parameters
         self.lockin.settimeconst(0, 0.3)
@@ -94,9 +94,9 @@ class LockinField:
         self.lockin.aux_set_manual(1)
         self.lockin.auxout(1, 0)
 
-    def set_ac_field(self, value=0, freq=1):  # TO DO
-        self.lockin.oscillatorfreq(0, freq)
-        self.lockin.outputamplitude(0, value)
+    def set_ac_field(self, value, freq):  # TO DO
+        self.lockin.oscillatorfreq(3, freq)
+        self.lockin.outputamplitude(3, value)
 
     def set_dc_field(self, value=0):
         self.lockin.outputoffset(0, value)
@@ -105,7 +105,7 @@ class LockinField:
         self.lockin.auxout(1, value / 1000)
 
     def set_lockin_freq(self, freq):
-        self.lockin.oscillatorfreq(1, freq)
+        self.lockin.oscillatorfreq(2, freq)
 
     def lockin_measure_R(self, demod, averaging_rate):
         results = []
