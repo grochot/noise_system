@@ -6,7 +6,7 @@ pyvisa.ResourceManager('@py')
 rm = pyvisa.ResourceManager()
 print(rm.list_resources()) 
 
-# k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
+# = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
 #k.voltage_setpoint(10)
 
 # inst = rm.open_resource('ASRL/dev/ttyACM1::INSTR')  
@@ -16,17 +16,17 @@ print(rm.list_resources())
 # print(inst.read())
 
 
-# # inst = rm.open_resource('ASRL/dev/ttyS0::INSTR')
-# # inst.write_termination = "\n"
-# # inst.read_termination = "\n"
-# inst.write("*IDN?")
-# inst.read_bytes(1000, break_on_termchar='\r\n')
+inst = rm.open_resource('ASRL/dev/ttyACM1::INSTR')
+# inst.write_termination = "\n"
+# inst.read_termination = "\n"
+inst.write("GETV")
+#inst.read_bytes(1000, break_on_termchar='\r\n')
 # # inst.timeout = 2000
 
-# sleep(2)
+sleep(5)
 # inst.write('*VOLT?')
 # sleep(2)
-# print(inst.read())
+print(inst.read())
 # # inst.write('*RST')
 # #sleep(2)
 # inst.write('VOLT 4')

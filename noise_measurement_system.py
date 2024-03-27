@@ -174,6 +174,7 @@ class NoiseProcedure(Procedure):
                         self.field_coil = HMC8043(self.field_adress) #connction to field controller
                         sleep(0.2)
                         self.field_coil.inst_out(1)
+                        self.field_coil.set_voltage(10)
                         self.field_coil.set_current(self.bias_field_current/1000)
                         self.field_coil.enable_channel()
                         sleep(5)

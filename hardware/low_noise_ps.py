@@ -31,7 +31,9 @@ class LowNoisePS(Instrument):
         sleep(4)
     
     def read_voltage(self): 
-        p = self.ask('GETV')
+        self.write('GETV')
+        sleep(1)
+        p = self.read()
         return p
 
 
@@ -77,7 +79,7 @@ class LowNoisePS(Instrument):
 
 ################## TEST ################## 
 
-# k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
-# k.voltage_setpoint(1)
+k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
+# k.voltage_setpoint(100)
 
-# print(k.read_voltage())
+print(k.read_voltage())
