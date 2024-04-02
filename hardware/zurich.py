@@ -26,25 +26,25 @@ class Zurich(Instrument):
     ##### SET INPUT SIGNAL #####
 
     def siginautorange(self, signal: int, auto=1):
-        self.device_loc.sigins[signal].autorange(auto)
+        self.device_loc.sigins[0].autorange(auto)
 
     def siginrange(self, signal, range=1.0):
-        self.device_loc.sigins[signal].range(range)
+        self.device_loc.sigins[0].range(range)
 
     def siginscaling(self, signal, scaling=1):
-        self.device_loc.sigins[signal].scaling(scaling)
+        self.device_loc.sigins[0].scaling(scaling)
 
     def siginac(self, signal, ac=0):
-        self.device_loc.sigins[signal].ac(ac)
+        self.device_loc.sigins[0].ac(ac)
 
     def sigindiff(self, signal, diff=0):
-        self.device_loc.sigins[signal].diff(diff)
+        self.device_loc.sigins[0].diff(diff)
 
     def siginfloat(self, signal, float=1):
-        self.device_loc.sigins[signal].float(float)
+        self.device_loc.sigins[0].float(float)
 
     def siginimp50(self, signal, imp50=1):
-        self.device_loc.sigins[signal].imp50(imp50)
+        self.device_loc.sigins[0].imp50(imp50)
 
     ##### SET INPUT CURRENT #####
 
