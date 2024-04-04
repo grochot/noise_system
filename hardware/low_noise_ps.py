@@ -4,19 +4,16 @@ from time import sleep
 
 import time
 import logging
+import re 
+import serial
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class LowNoisePS(Instrument):
-    def __init__(self, adapter, read_termination="\n", **kwargs):
-        super().__init__(
-            adapter,
-            "Low Noise Power Supply" ,
-            read_termination=read_termination,
-            **kwargs
-        )
+class LowNoisePS():
+    def __init__(self, adapter, **kwargs):
+        self.ser = serial.Serial(adapter[4:16],9600, timeout=1)
 
     def enabled(self):
         pass
@@ -27,21 +24,22 @@ class LowNoisePS(Instrument):
     def voltage_setpoint(self, vol = 0): 
         sleep(0.1)
         print("VOLT:{} mV".format(vol))
-        self.write("SETV {}".format(vol))
+        self.ser.write("SETV {}".format(vol).encode())
         sleep(4)
     
-    def read_voltage(self): 
-        self.write('GETV')
-        sleep(1)
-        p = self.read()
-        return p
+    def read_voltage(self):
+        self.ser.write(b'GETV\r')
+        self.ser.read(36).decode()
+        sleep(1) 
+        self.ser.write(b'GETV\r')
+        data = self.ser.read(100).decode()
+        reg= 'MEASURED: \\d+ mV'
+        x = re.findall(reg, data)
+        splited = x[0].split()
+        print(data)
+        return splited[1]
 
 
-    voltage = Instrument.measurement(
-        "GETV",
-        """Reads the voltage (in Volt) the dc power supply is putting out.
-        """,
-    )
 
     def run_to_zero(self): 
         self.voltage_setpoint(0)
@@ -79,7 +77,9 @@ class LowNoisePS(Instrument):
 
 ################## TEST ################## 
 
-k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
-# k.voltage_setpoint(100)
+# k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
+# k.voltage_setpoint(24)
+# sleep(1)
+# print(k.read_voltage())
 
-print(k.read_voltage())
+# print(k.read_voltage())

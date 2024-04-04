@@ -29,7 +29,6 @@ class FieldSensor(Instrument):
         text = text.replace("'", "")
         pattern = "X: (?P<x>[0-9,.,-]+) Y: (?P<y>[0-9,.,-]+) Z: (?P<z>[0-9,.,-]+)"
         result = re.match(pattern, text)
-        print(float(result["x"]) ,float(result["y"]) ,float(result["z"]))
         return float(result["x"]) ,float(result["y"]) ,float(result["z"])
 
     def read_field_init(self):
@@ -44,13 +43,18 @@ class FieldSensor(Instrument):
         text = text.replace("'", "")
         pattern = "X: (?P<x>[0-9,.,-]+) Y: (?P<y>[0-9,.,-]+) Z: (?P<z>[0-9,.,-]+)"
         result = re.match(pattern, text)
-        print(np.sqrt(float(result["x"])**2+float(result["y"])**2+float(result["z"])**2))
         return float(result["x"]) ,float(result["y"]) ,float(result["z"])
+    
+    def set_dynamic_mode(self):
+        self.address = self.resource[4:16]
+        serial_port = serial.Serial(self.address, 115200, timeout=1)
+        serial_port.write(b"SET_MODE MODE_DYNAMIC")
+        sleep(0.5)
 
-test = FieldSensor('ASRL/dev/ttyACM0::INSTR')
+# test = FieldSensor('ASRL/dev/ttyACM0::INSTR')
 
 
 
 # test.read_field_init()
-
+# test.set_dynamic_mode()
 # print(test.read_field())

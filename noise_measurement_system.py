@@ -92,14 +92,13 @@ class NoiseProcedure(Procedure):
         for k in range(1,len(columns)):
             columns_f.append(","+ columns[k])
         return columns_f
-######################################## INIT ########################################
+######################################## Startup ########################################
     def startup(self):
-#Mean mode:
         for par in self.used_parameters_list:
             self.param = eval("self."+par)
             self.parameters[par] = self.param
         self.save_parameter.WriteFile(self.parameters)
-        
+#Mean mode:       
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             if self.mode == 'Mean + Raw':
                 self.header = GenerateHeader()
@@ -116,7 +115,7 @@ class NoiseProcedure(Procedure):
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             else: 
                 from hardware.low_noise_ps import LowNoisePS 
-                self.voltage = LowNoisePS(self.voltage_adress,timeout = 25000, baud_rate = 115200) #connect to voltagemeter
+                self.voltage = LowNoisePS(self.voltage_adress) #connect to voltagemeter
             sleep(1)
        
         
@@ -187,29 +186,29 @@ class NoiseProcedure(Procedure):
 
         
     ##Bias voltage:
+
             try:
-                fit_parameters = fit_parameters_from_file()
-                a = fit_parameters[0]
-                b = fit_parameters[1]
-                print(a,b)
-                set_vol = calculationbias(self.bias_voltage, a,b,0, "linear")
-                print(set_vol)
-                self.voltage.voltage_setpoint(set_vol) #set bias voltage  
-                log.info("read parameters from file succesfull")
-                sleep(0.5)
-                self.voltage.enabled() #enable channel 
-                sleep(2)
+                if self.voltage_device == "LowNoise":
+                    fit_parameters = fit_parameters_from_file()
+                    a = fit_parameters[0]
+                    b = fit_parameters[1]
+                    print(a,b)
+                    set_vol = calculationbias(self.bias_voltage, a,b,0, "linear")
+                    print(set_vol)
+                    self.voltage.voltage_setpoint(set_vol) #set bias voltage  
+                    log.info("read parameters from file succesfull")
+                    sleep(0.5)
+                    self.voltage.enabled() #enable channel 
+                    sleep(2)
+                else:
+                    self.voltage.voltage_setpoint(self.bias_voltage)
+                    self.set_lownoise_voltage = self.voltage.read_voltage()
                     
             except Exception:
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
-                
-                 
 
-            
     ##Picoscope:
-            
-        
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
             self.oscilloscope.setTrigger()
@@ -232,21 +231,25 @@ class NoiseProcedure(Procedure):
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             else: 
                 from hardware.low_noise_ps import LowNoisePS 
-                self.voltage = LowNoisePS(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
+                self.voltage = LowNoisePS(self.voltage_adress) #connect to voltagemeter
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
                 self.no_samples = self.no_samples + 1
             self.oscilloscope.setChannelA('AC', self.channelA_range )
             self.oscilloscope.setTrigger()
-            try:   
-                self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
-                sleep(0.1)
-                self.voltage.enabled() #enable channel 
+            try: 
+                if self.voltage_device != "LowNoise":
+                    self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
+                    sleep(0.1)
+                    self.voltage.enabled()
+                else:
+                    self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
+                    self.set_lownoise_voltage = self.voltage.read_voltage()
                 
             except Exception:
                 traceback.print_exc()
                 log.error("Could not connect to bias voltage source")
-#Bias mode:
+#Vbias mode:
         else: 
             self.oscilloscope = PicoScope()
             if self.voltage_device == 'none':
@@ -259,7 +262,7 @@ class NoiseProcedure(Procedure):
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             else: 
                 from hardware.low_noise_ps import LowNoisePS 
-                self.voltage = LowNoisePS(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
+                self.voltage = LowNoisePS(self.voltage_adress) #connect to voltagemeter
             sleep(0.1)
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             self.oscilloscope.setTrigger()
@@ -267,7 +270,7 @@ class NoiseProcedure(Procedure):
             self.oscilloscope.set_timebase(int((1/10000)*10000000)-1)
             log.info("Setup instrument done")
             try:
-                if self.voltage == True: 
+                if self.reverse_voltage == True: 
                     self.vector_to = np.linspace(self.start, self.stop,self.no_points)
                     self.vector_rev = self.vector_to[::-1]
                     self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
@@ -315,13 +318,12 @@ class NoiseProcedure(Procedure):
                     tmp_data_magnetic_field_x.append(float(tmp_x))
                     tmp_data_magnetic_field_y.append(float(tmp_y))
                     tmp_data_magnetic_field_z.append(float(tmp_z))
-                    sleep(0.1)
-
-        
+                    sleep(0.3)
+                    self.field.set_dynamic_mode()
+                
                     tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
                     tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
                     tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
-
                     tmp_total_field = np.sqrt(tmp_data_magnetic_field_x_mean**2 +  tmp_data_magnetic_field_y_mean**2 + tmp_data_magnetic_field_z_mean**2)
                
                 except Exception as e:
@@ -419,7 +421,7 @@ class NoiseProcedure(Procedure):
                             'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'time (s)': tmp_data_time_average[ele]*1e-9,
                             'Sense Voltage (mV)': tmp_data_voltage_average[ele],
-                            'Bias voltage (mV)': self.bias_voltage,
+                            'Bias voltage (mV)': self.set_lownoise_voltage,
                             'X field (Oe)': tmp_data_magnetic_field_x_mean,
                             'Y field (Oe)': tmp_data_magnetic_field_y_mean,
                             'Z field (Oe)': tmp_data_magnetic_field_z_mean,
@@ -438,9 +440,6 @@ class NoiseProcedure(Procedure):
                     log.warning("Caught the stop flag in the procedure")
                     break
 
-
-        
-       
 #One shot mode
         elif self.mode == 'One Shot':
             self.oscilloscope.set_number_samples(self.no_samples)
@@ -467,6 +466,7 @@ class NoiseProcedure(Procedure):
                         'log[frequency] (Hz)': math.nan,
                         'log[FFT] (mV)': math.nan,
                         'X field (Oe)': math.nan,
+                        'Bias voltage (mV)': self.set_lownoise_voltage,
                         'Y field (Oe)':math.nan,
                         'Z field (Oe)': math.nan,
                         'Field (Oe)': math.nan,
@@ -475,6 +475,7 @@ class NoiseProcedure(Procedure):
                         'divide_voltage (mV)': math.nan,
                         }
                 self.emit('results', data2) 
+
 #Vbias calibration mode:
         elif self.mode == "Vbias calibration":
             log.info("Vbias calibration mode start")
@@ -549,8 +550,6 @@ class NoiseProcedure(Procedure):
                     log.warning("Caught the stop flag in the procedure")
                     break
 
-
-
 #Vbias mode: 
         elif self.mode == "Vbias":
             log.info("Vbias mode start")
@@ -565,15 +564,21 @@ class NoiseProcedure(Procedure):
                 
 
             log.info("read calibration parameters from file end")
-            self.voltage.enabled() #enable channel 
+            if self.voltage_device != "LowNoise":
+                self.voltage.enabled() #enable channel 
             for i in self.vector:  
                 if self.should_stop():
                     log.warning("Caught the stop flag in the procedure")
                     break
-                set_vol = calculationbias(i, fit_parameters, "linear")
-                self.voltage.voltage_setpoint(set_vol) #set bias voltage
-                vbias_list.append(i)  #list of Vbias
-                sleep(0.1)
+                if self.voltage_device != "LowNoise":
+                    set_vol = calculationbias(i, fit_parameters, "linear")
+                    self.voltage.voltage_setpoint(set_vol) #set bias voltage
+                    vbias_list.append(i)  #list of Vbias
+                    sleep(0.1)
+                else:
+                    self.voltage.voltage_setpoint(i)
+                    self.tmp_set_voltage_lownoise = self.voltage.read_voltage()
+                    vbias_list.append(self.tmp_set_voltage_lownoise)
                 self.oscilloscope.run_block_capture()
                 self.oscilloscope.check_data_collection()
                 self.oscilloscope.create_buffers()
@@ -615,8 +620,6 @@ class NoiseProcedure(Procedure):
                 if self.should_stop():
                     log.warning("Caught the stop flag in the procedure")
                     break
-
-
 
 
 ######################################## End ########################################
