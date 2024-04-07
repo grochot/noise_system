@@ -16,17 +16,17 @@ print(rm.list_resources())
 # print(inst.read())
 
 
-inst = rm.open_resource('ASRL/dev/ttyACM1::INSTR')
-# inst.write_termination = "\n"
-# inst.read_termination = "\n"
-inst.write("GETV")
-#inst.read_bytes(1000, break_on_termchar='\r\n')
-# # inst.timeout = 2000
+# inst = rm.open_resource('ASRL/dev/ttyACM1::INSTR')
+# # inst.write_termination = "\n"
+# # inst.read_termination = "\n"
+# inst.write("GETV")
+# #inst.read_bytes(1000, break_on_termchar='\r\n')
+# # # inst.timeout = 2000
 
-sleep(5)
-# inst.write('*VOLT?')
-# sleep(2)
-print(inst.read())
+# sleep(5)
+# # inst.write('*VOLT?')
+# # sleep(2)
+# print(inst.read())
 # # inst.write('*RST')
 # #sleep(2)
 # inst.write('VOLT 4')

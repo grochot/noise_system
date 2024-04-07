@@ -188,7 +188,7 @@ class NoiseProcedure(Procedure):
     ##Bias voltage:
 
             try:
-                if self.voltage_device == "LowNoise":
+                if self.voltage_device != "LowNoise":
                     fit_parameters = fit_parameters_from_file()
                     a = fit_parameters[0]
                     b = fit_parameters[1]
@@ -202,7 +202,7 @@ class NoiseProcedure(Procedure):
                     sleep(2)
                 else:
                     self.voltage.voltage_setpoint(self.bias_voltage)
-                    self.set_lownoise_voltage = self.voltage.read_voltage()
+                    self.set_lownoise_voltage = float(self.voltage.read_voltage())
                     
             except Exception:
                 traceback.print_exc()
@@ -244,7 +244,7 @@ class NoiseProcedure(Procedure):
                     self.voltage.enabled()
                 else:
                     self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
-                    self.set_lownoise_voltage = self.voltage.read_voltage()
+                    self.set_lownoise_voltage = float(self.voltage.read_voltage())
                 
             except Exception:
                 traceback.print_exc()
@@ -684,7 +684,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.3 beta')
+        self.setWindowTitle('Noise Measurement System v.1.4 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 

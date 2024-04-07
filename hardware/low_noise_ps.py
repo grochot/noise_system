@@ -23,8 +23,8 @@ class LowNoisePS():
 
     def voltage_setpoint(self, vol = 0): 
         sleep(0.1)
-        print("VOLT:{} mV".format(vol))
-        self.ser.write("SETV {}".format(vol).encode())
+        print("SET VOLT:{} mV".format(vol))
+        self.ser.write("SETV {}\r".format(vol).encode())
         sleep(4)
     
     def read_voltage(self):
@@ -78,7 +78,7 @@ class LowNoisePS():
 ################## TEST ################## 
 
 # k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
-# k.voltage_setpoint(24)
+# k.voltage_setpoint(50)
 # sleep(1)
 # print(k.read_voltage())
 
