@@ -213,7 +213,7 @@ class Zurich(Instrument):
 
 ########################### Test ###########################3
 # zur = Zurich('192.168.66.202')
-# # zur.enableoutput(2,1)
+# zur.enableoutput(3,1)
 # zur.setextrefs(0,0,1)
 # dd = zur.getsample(0)
 # print(dd)

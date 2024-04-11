@@ -124,43 +124,4 @@ class LockinTime:
         self.set_ac_field(self.ac_value, freq)
 
 
-# ########################### Test ###########################3
-# import matplotlib.pyplot as plt
-# import matplotlib.animation as animation
-# from matplotlib import style
-# style.use('fivethirtyeight')
-# fig = plt.figure()
-# ax1 = fig.add_subplot(1,1,1)
-# loc = LockinTime('192.168.66.202')
-
-# loc.init_scope(1,1,0,16348)
-
-# data = loc.get_wave()
-
-# import matplotlib.pyplot as plt
-# plt.plot(data[0], data[1])
-# plt.show()
-
-
-########################### Test ###########
-# import matplotlib.pyplot as plt
-# import matplotlib.animation as animation
-# from matplotlib import style
-# style.use('fivethirtyeight')
-# fig = plt.figure()
-# ax1 = fig.add_subplot(1,1,1)
-# loc = LockinTime("192.168.66.202")
-
-# loc.init_lockin_device(1)
-# loc.init_scope(1,1,9,1000)
-
-
-# loc.set_constant_vbias(50)
-
-# y = loc.get_wave()
-# plt.plot(y[0], y[1], "ro-")
-# plt.title("Real Time plot")
-# plt.xlabel("x")
-
-
-# plt.show()
+ 

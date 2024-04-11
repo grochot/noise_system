@@ -135,34 +135,3 @@ class LockinFrequency:
     def shutdown(self):
         self.lockin.auxout(1, 0)
         self.lockin.auxout(0, 0)
-
-
-# # ########################### Test ###########
-# import matplotlib.pyplot as plt
-# import matplotlib.animation as animation
-# from matplotlib import style
-# # style.use('fivethirtyeight')
-# # fig = plt.figure()
-# # ax1 = fig.add_subplot(1,1,1)
-# loc = LockinFrequency()
-
-# loc.init()
-
-# start = 0
-# stop = 0
-# no_points = 20
-
-# vector_to = np.linspace(start, stop, no_points)
-
-# for k in vector_to:
-#     onstant_vbias(4)
-#     sleep(1)
-#     loc.set_lockin_freq(k)
-#     sleep(1)
-#     y = loc.lockin_measure_point(0,10)
-#     x = k
-#     plt.scatter(x, y, color = 'red', marker = 'x')
-#     plt.title("Real Time plot")
-#     plt.xlabel("x")
-#     plt.pause(0.05)
-# plt.show()

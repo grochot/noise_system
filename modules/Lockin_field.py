@@ -2,8 +2,6 @@ import sys
 
 sys.path.append(".")
 from hardware.hmc8043 import HMC8043
-
-# from hardware.picoscope4626 import PicoScope
 from hardware.field_sensor_noise_new import FieldSensor
 from hardware.dummy_field_sensor_iv import DummyFieldSensor
 from hardware.zurich import Zurich
@@ -53,6 +51,7 @@ class LockinField:
         
         #set input type to demodulators
         self.lockin.setadc(0, input_type)  #0 demodulators to voltage/current
+        self.lockin.setadc(1, 174)  #1 demodulators to current/voltage
         self.lockin.setadc(2, 0 if input_type == 1 else 1)  #1 demodulators to current/voltage 
         self.lockin.setadc(3,174)  #2 demodulators to constant
         
@@ -72,6 +71,7 @@ class LockinField:
         
         #set oscillators to demodulators
         self.lockin.setextrefs(0,0,1)
+        self.lockin.setosc(1, 1)
         self.lockin.setosc(2, 2) 
         self.lockin.setosc(3, 3)
         
@@ -86,7 +86,7 @@ class LockinField:
         self.lockin.enabledemod(2, 1)
 
         self.lockin.outputamplitude(3, 0)
-        self.lockin.enableoutput(3, 0)
+        self.lockin.enableoutput(3, 1)
         self.lockin.outputoffset(3, 0)
         self.lockin.outputon(0, 1)
         self.lockin.outputrange(0, 10)
@@ -138,35 +138,3 @@ class LockinField:
         self.set_ac_field(self.ac_value, freq)
 
 
-# ########################### Test ###########
-# import matplotlib.pyplot as plt
-# import matplotlib.animation as animation
-# from matplotlib import style
-# # style.use('fivethirtyeight')
-# # fig = plt.figure()
-# # ax1 = fig.add_subplot(1,1,1)
-# loc = LockinField('192.168.66.202')
-
-# loc.init()
-
-# start = 0.5
-# stop =  1
-# no_points = 10
-
-# vector_to = np.linspace(start, stop, no_points)
-
-# for k in vector_to:
-#     loc.set_ac_field(k,4)
-#     sleep(1)
-#     loc.set_dc_field(1)
-#     sleep(1)
-#     loc.set_constant_vbias(2)
-#     sleep(3) ### uzaleznic od czestotliwosci
-#     y = loc.lockin_measure_point(0,10)
-#     x = k
-#     plt.scatter(x, y, color = 'red', marker = 'x')
-#     plt.title("Real Time plot")
-#     plt.xlabel("x")
-#     plt.pause(0.05)
-
-# plt.show()

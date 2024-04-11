@@ -473,7 +473,6 @@ class IVTransfer(Procedure):
         except:
             return np.nan
 
-    ################ STARTUP ##################3
     def startup(self):
         for i in self.used_parameters_list:
             self.param = eval("self." + i)
@@ -625,7 +624,7 @@ class IVTransfer(Procedure):
                 except:
                     log.error("Config Agilent 34410A failed")
 
-        ################FAST RESISTANCE######################
+################FAST RESISTANCE######################
 
         elif self.mode == "Fast Resistance":
 
@@ -645,7 +644,7 @@ class IVTransfer(Procedure):
             except:
                 log.error("Config Keithley failed")
 
-        ################ LOCKIN MODE ######################
+################ LOCKIN MODE ########################
         elif self.mode == "HDC-ACModeLockin":
 
             if self.mode_lockin == "Sweep field":
@@ -758,7 +757,7 @@ class IVTransfer(Procedure):
 
             elif self.mode == "Lockin calibration":
                 pass
-        ########################### TIME MODE ###########################3
+################# TIME MODE #########################
 
         elif self.mode == "TimeMode":
             self.rate_index = scope_rate(self.scope_rate)
@@ -823,7 +822,7 @@ class IVTransfer(Procedure):
             self.lockin.set_constant_vbias(self.bias_voltage)
             sleep(1)
 
-    #################################### PROCEDURE##############################################
+########################### PROCEDURE ############################
     def execute(self):
         diff = ComputeDiff()
         res = ComputerResistance()
@@ -1168,7 +1167,6 @@ class IVTransfer(Procedure):
 
         elif self.mode == "HDC-ACModeLockin":
             if self.mode_lockin == "Sweep field":
-
                 if self.kepco == False:
                     self.calibration_field = LockinCalibration(
                         self.lockin,
