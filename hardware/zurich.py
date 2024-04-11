@@ -86,14 +86,14 @@ class Zurich(Instrument):
     def aux_set_manual(self, out):
         self.device_loc.auxouts[out].outputselect(-1)
 
-    def auxout(self, out, offset=0):
+    def auxout(self, out, offset=0.0):
         self.device_loc.auxouts[out].offset(offset)
 
     def enableoutput(self, demod, enable):
         self.device_loc.sigouts[0].enables[demod](enable)
 
-    def outputamplitude(self, output, ampli):
-        self.device_loc.sigouts[0].amplitudes(ampli)  # Vpp
+    def outputamplitude(self, demod, ampli):
+        self.device_loc.sigouts[0].amplitudes[demod](ampli)  # Vpp
 
   
 
@@ -108,6 +108,10 @@ class Zurich(Instrument):
     def setextrefs(self, demod_id, extrefs, enable):
         self.device_loc.extrefs[extrefs].enable(enable)  # input select demod
         self.device_loc.extrefs[extrefs].demodselect(demod_id)
+
+    def extrefsoff(self):
+        self.device_loc.extrefs[0].enable(0)  # input select demod
+        self.device_loc.extrefs[1].enable(0)  # input select demod
 
     def setharmonic(self, demod_id, harm):
         self.device_loc.demods[demod_id].harmonic(harm)  # select harmonic

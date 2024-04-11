@@ -57,45 +57,50 @@ class IVTransfer(Procedure):
     save_parameter = SaveParameters()
     used_parameters_list = [
         "mode",
-        "mode_lockin",
-        "sample_name",
-        "vector_param",
-        "lockin_vector",
-        "coil",
-        "coil_constant",
-        "acquire_type",
-        "keithley_adress",
-        "agilent",
-        "agilent34401a_adress",
-        "field_sensor_adress",
-        "keithley_compliance_current",
-        "keithley_compliance_voltage",
-        "keithley_current_bias",
-        "keithley_voltage_bias",
-        "field_device",
-        "field_bias",
-        "agilent_adress",
-        "delay",
-        "reverse_field",
-        "lockin_adress",
-        "input_type",
-        "sigin_imp",
-        "sigin_autorange",
-        "sigin_ac",
-        "differential_signal",
-        "kepco",
-        "dc_field",
-        "bias_voltage",
-        "ac_field_amplitude",
-        "ac_field_frequency",
-        "sigin_range",
-        "lockin_frequency",
-        "avergaging_rate",
-        "scope_rate",
-        "scope_time",
-        "amplitude_vec",
-        "currins_range",
-        "currins_autorange",
+                "mode_lockin",
+                "sample_name",
+                "vector_param",
+                "lockin_vector",
+                "coil",
+                "coil_constant",
+                "acquire_type",
+                "keithley_adress",
+                "agilent",
+                "agilent34401a_adress",
+                "field_sensor_adress",
+                "keithley_compliance_current",
+                "keithley_compliance_voltage",
+                "keithley_current_bias",
+                "keithley_voltage_bias",
+                "field_device",
+                "field_bias",
+                "agilent_adress",
+                "delay",
+                "reverse_field",
+                "lockin_adress",
+                "input_type",
+                "sigin_imp",
+                
+                "currins_range",
+                "currins_autorange",
+                "sigin_range",
+                "sigin_autorange",
+                "sigin_ac",
+                "differential_signal",
+                "kepco",
+                "dc_field",
+                "dc_field_time",
+                "bias_voltage",
+                "ac_field_amplitude",
+                "ac_field_frequency",
+                "ac_field_amplitude_time",
+                "ac_field_frequency_time",
+                "lockin_frequency",
+                "avergaging_rate",
+                "scope_rate",
+                "scope_time",
+                "amplitude_vec",
+                "external_ref"
     ]
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
@@ -273,21 +278,42 @@ class IVTransfer(Procedure):
         units="Oe",
         default=parameters_from_file["dc_field"],
         group_by="mode",
-        group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+        group_condition=lambda v: v == "HDC-ACModeLockin",
+    )
+    dc_field_time = FloatParameter(
+        "DC Field",
+        units="Oe",
+        default=parameters_from_file["dc_field_time"],
+        group_by="mode",
+        group_condition=lambda v: v == "TimeMode",
     )
     ac_field_amplitude = FloatParameter(
         "AC Field Amplitude",
         units="Oe",
         default=parameters_from_file["ac_field_amplitude"],
-        group_by=["mode"],
-        group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+        group_by=["mode", 'amplitude_vec', "mode_lockin" ],
+        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", False, "Sweep field"],
     )
     ac_field_frequency = FloatParameter(
         "AC Field Frequency",
         units="Hz",
         default=parameters_from_file["ac_field_frequency"],
-        group_by=["mode", "amplitude_vec"],
-        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", True],
+        group_by=["mode", "amplitude_vec", "mode_lockin"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", True, "Sweep field"],
+    )
+    ac_field_amplitude_time = FloatParameter(
+        "AC Field Amplitude",
+        units="Oe",
+        default=parameters_from_file["ac_field_amplitude_time"],
+        group_by=["mode" ],
+        group_condition=[lambda v: v == "TimeMode"],
+    )
+    ac_field_frequency_time = FloatParameter(
+        "AC Field Frequency",
+        units="Hz",
+        default=parameters_from_file["ac_field_frequency_time"],
+        group_by=["mode"],
+        group_condition=[lambda v: v == "TimeMode"],
     )
     differential_signal = BooleanParameter(
         "Differential voltage input",
@@ -298,14 +324,21 @@ class IVTransfer(Procedure):
             lambda v: v == "Voltage input",
         ],
     )
+    external_ref = BooleanParameter(
+        "Use external ref",
+        default=parameters_from_file["external_ref"],
+        group_by=["mode"],
+        group_condition=[
+            lambda v:  v == "TimeMode"
+        ],
+    )
     lockin_frequency = FloatParameter(
         "Lockin frequency",
         units="Hz",
         default=parameters_from_file["lockin_frequency"],
-        group_by=["mode", "mode_lockin"],
+        group_by=["mode", "external_ref"],
         group_condition=[
-            lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
-            "Sweep field",
+            lambda v: v == "TimeMode", False
         ],
     )
     avergaging_rate = IntegerParameter(
@@ -401,7 +434,7 @@ class IVTransfer(Procedure):
     )
     currins_range = FloatParameter(
         "CurrIn Range",
-        units="V",
+        units="A",
         default=parameters_from_file["currins_range"],
         decimals=9,
         step=None,
@@ -624,8 +657,6 @@ class IVTransfer(Procedure):
                 except:
                     log.error("Config Agilent 34410A failed")
 
-################FAST RESISTANCE######################
-
         elif self.mode == "Fast Resistance":
 
             ############## KEITHLEY CONFIG ###############
@@ -644,7 +675,6 @@ class IVTransfer(Procedure):
             except:
                 log.error("Config Keithley failed")
 
-################ LOCKIN MODE ########################
         elif self.mode == "HDC-ACModeLockin":
 
             if self.mode_lockin == "Sweep field":
@@ -757,7 +787,6 @@ class IVTransfer(Procedure):
 
             elif self.mode == "Lockin calibration":
                 pass
-################# TIME MODE #########################
 
         elif self.mode == "TimeMode":
             self.rate_index = scope_rate(self.scope_rate)
@@ -783,6 +812,7 @@ class IVTransfer(Procedure):
                         self.sigin_autorange,
                         self.currins_range,
                         self.currins_autorange,
+                        self.external_ref
                     )
                     self.lockin.init_scope(
                         self.avergaging_rate, 1, self.rate_index, self.scope_time
@@ -798,6 +828,7 @@ class IVTransfer(Procedure):
                             self.sigin_autorange,
                             self.currins_range,
                             self.currins_autorange,
+                            self.external_ref
                         )
                     else:
                         self.lockin.init_lockin(
@@ -809,6 +840,7 @@ class IVTransfer(Procedure):
                             self.sigin_autorange,
                             self.currins_range,
                             self.currins_autorange,
+                            self.external_ref
                         )
                     self.lockin.init_scope(
                         self.avergaging_rate, 0, self.rate_index, self.scope_time
@@ -1163,7 +1195,6 @@ class IVTransfer(Procedure):
             #             'Z field (Oe)': 0,
             #             'Hset (Oe)': 0,
 
-        # Lockin mode:
 
         elif self.mode == "HDC-ACModeLockin":
             if self.mode_lockin == "Sweep field":
@@ -1180,7 +1211,7 @@ class IVTransfer(Procedure):
                     self.cal_field_const = 15
                     self.lockin.set_dc_field(self.dc_field / 15)
 
-                self.lockin.set_lockin_freq(self.lockin_frequency)
+                # self.lockin.set_lockin_freq(self.lockin_frequency)
                 self.counter = 0
 
                 for i in self.vector:
@@ -1197,10 +1228,10 @@ class IVTransfer(Procedure):
                     else:
                         sleep(1)
 
-                    r = self.lockin.lockin_measure_R(0, self.avergaging_rate)
-                    theta = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
-                    r2 = self.lockin.lockin_measure_R(1, self.avergaging_rate)
-                    theta2 = self.lockin.lockin_measure_phase(1, self.avergaging_rate)
+                    r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
+                    theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
+                    r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                    theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
                     self.counter = self.counter + 1
 
                     self.emit("progress", 100 * self.counter / len(self.vector))
@@ -1257,8 +1288,6 @@ class IVTransfer(Procedure):
                         log.warning("Caught the stop flag in the procedure")
                         break
 
-            #####SWEEP FREQUENCY ########
-
             elif self.mode_lockin == "Sweep frequency":
                 self.field_value = measure_field(1, self.field_sensor, self.should_stop)
                 self.counter = 0
@@ -1268,20 +1297,20 @@ class IVTransfer(Procedure):
                         sleep(3)
                     else:
                         sleep(0.5)
-                    r = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                    r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
                     sleep(0.5)
-                    theta = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                    theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
                     sleep(0.5)
-                    r2 = self.lockin.lockin_measure_R(1, self.avergaging_rate)
+                    r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
                     sleep(0.5)
-                    theta2 = self.lockin.lockin_measure_phase(1, self.avergaging_rate)
+                    theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
                     self.counter = self.counter + 1
                     self.emit("progress", 100 * self.counter / len(self.vector))
                     try:
                         data_lockin = {
                             "f (Hz)": i,
                             "Vsense (V)": (
-                                r if self.input_type == "Voltage input" else r2
+                                r2 if self.input_type == "Voltage input" else r
                             ),
                             "Vbias (V)": self.bias_voltage,
                             "X field (Oe)": self.field_value[0],
@@ -1318,19 +1347,19 @@ class IVTransfer(Procedure):
             if self.kepco == False:
                 self.calibration_field = LockinCalibration(
                     self.lockin,
-                    self.ac_field_frequency,
-                    self.dc_field,
+                    self.ac_field_frequency_time,
+                    self.dc_field_time,
                     self.coil_constant,
                 )
                 self.cal_field_const = self.calibration_field.calibrate()
-                self.lockin.set_dc_field(self.dc_field / 0.6)
+                self.lockin.set_dc_field(self.dc_field_time / 0.6)
             else:
                 self.cal_field_const = 15
-                self.lockin.set_dc_field(self.dc_field / 15)
+                self.lockin.set_dc_field(self.dc_field_time / 15)
 
             self.lockin.set_lockin_freq(self.lockin_frequency)
             self.lockin.set_ac_field(
-                self.ac_field_amplitude / self.cal_field_const, self.ac_field_frequency
+                self.ac_field_amplitude_time / self.cal_field_const, self.ac_field_frequency_time
             )
             sleep(2)
             scope_signal = self.lockin.get_wave()
@@ -1339,8 +1368,8 @@ class IVTransfer(Procedure):
                 for w in range(len(scope_signal[0])):
                     data_lockin = {
                         "time (s)": scope_signal[0][w],
-                        "f (Hz)": self.ac_field_frequency,
-                        "AHac (Oe)": self.ac_field_amplitude,
+                        "f (Hz)": self.ac_field_frequency_time,
+                        "AHac (Oe)": self.ac_field_amplitude_time,
                         "Vsense (V)": (
                             float(scope_signal[1][w])
                             if self.input_type == "Voltage input"
@@ -1355,7 +1384,7 @@ class IVTransfer(Procedure):
                             if self.input_type == "Current input"
                             else math.nan
                         ),
-                        "Hset (Oe)": self.ac_field_amplitude + self.dc_field,
+                        "Hset (Oe)": self.ac_field_amplitude_time + self.dc_field_time,
                         "G(t)": (
                             float(scope_signal[1][w]) / self.bias_voltage
                             if self.input_type == "Current input"
@@ -1439,17 +1468,22 @@ class MainWindow(ManagedWindow):
                 "lockin_adress",
                 "input_type",
                 "sigin_imp",
-                "sigin_autorange",
+                
                 "currins_range",
                 "currins_autorange",
+                "sigin_range",
+                "sigin_autorange",
                 "sigin_ac",
                 "differential_signal",
                 "kepco",
                 "dc_field",
+                "dc_field_time",
                 "bias_voltage",
                 "ac_field_amplitude",
                 "ac_field_frequency",
-                "sigin_range",
+                "ac_field_amplitude_time",
+                "ac_field_frequency_time",
+                "external_ref",
                 "lockin_frequency",
                 "avergaging_rate",
                 "scope_rate",
@@ -1477,7 +1511,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
         )
 
-        self.setWindowTitle("IV Measurement System v.0.99")
+        self.setWindowTitle("IV Measurement System v.0.99.1")
         self.directory = self.procedure_class.path_file.ReadFile()
 
     def queue(self, procedure=None):

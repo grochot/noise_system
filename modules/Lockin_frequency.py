@@ -66,28 +66,30 @@ class LockinFrequency:
         self.lockin.siginimp50(VOLTAGE_DEMOD, imp50)
 
         #set input type to demodulators
-        self.lockin.setadc(0, input_type)  #0 demodulators to voltage/current
-        self.lockin.setadc(1, 0 if input_type == 1 else 1)  #1 demodulators to current/voltage 
-        self.lockin.setadc(2,174)  #2 demodulators to constant
+        self.lockin.setadc(2, input_type)  #0 demodulators to voltage/current
+        self.lockin.setadc(0, 0 if input_type == 1 else 1)  #1 demodulators to current/voltage 
+        self.lockin.setadc(1,174)  #2 demodulators to constant
         self.lockin.setadc(3,174)  #2 demodulators to constant
+        self.lockin.extrefsoff()
         
         #set oscillators to demodulators
-        self.lockin.setextrefs(0,0,0)
-        self.lockin.setosc(2, 2) 
-        self.lockin.setosc(3, 3)
+        # self.lockin.setextrefs(0,0,0)
+        self.lockin.setosc(2, 0) 
+        self.lockin.setosc(3, 0)
         self.lockin.setosc(0, 0) 
         self.lockin.setosc(1, 0)
+        
 
         # set sigin parameters
         self.lockin.settimeconst(0, 0.3)
-        self.lockin.settimeconst(1, 0.3)
+        self.lockin.settimeconst(2, 0.3)
         self.lockin.setorder(0, 2)
-        self.lockin.setorder(1, 2)
+        self.lockin.setorder(2, 2)
         self.lockin.setharmonic(0, 1)
-        self.lockin.setharmonic(1, 1)
+        self.lockin.setharmonic(2, 1)
         self.lockin.enabledemod(0, 1)
-        self.lockin.enabledemod(1, 1)
-        self.lockin.enabledemod(2, 0)
+        self.lockin.enabledemod(2, 1)
+        self.lockin.enabledemod(1, 0)
         self.lockin.enabledemod(3, 0)
 
         #set output

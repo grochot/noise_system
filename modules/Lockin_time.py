@@ -40,45 +40,56 @@ class LockinTime:
         autorange=False,
         currins_range=1.0,
         currins_autorange=False,
+        external_ref=False
     ):
+        if input_type == 0:
+            if autorange == True:
+                self.lockin_device.siginautorange(2, autorange)
+            else:
+                self.lockin_device.siginrange(2, siginrange_value)
+            self.lockin_device.siginac(2, ac)
+        else:
+            if currins_autorange == True:
+                self.lockin_device.currinautorange(2, currins_autorange)
+            else:
+                self.lockin_device.currinrange(2, currins_range)
+        #-------------------------------------------------------
 
-        if autorange == True:
-            self.lockin_device.siginautorange(0, autorange)
+        self.lockin_device.oscillatorfreq(0, 0)  
+        self.lockin_device.oscillatorfreq(1, 0) 
+        self.lockin_device.oscillatorfreq(2, 0) 
+        self.lockin_device.oscillatorfreq(3, 0) 
+        #-------------------------------------------------------
+        if input_type ==0:
+            self.lockin_device.siginscaling(2, 1)
+            self.lockin_device.siginfloat(2, 1)
+            self.lockin_device.siginimp50(2, imp50)
+            self.lockin_device.sigindiff(2, differential)
+        ## oscyl = 0 -- lockin oscyl 1 -- field 
+        # -------------------------------------------------------
+        self.lockin_device.setosc(1, 1)
+        if external_ref==True:
+            self.lockin_device.setextrefs(2,1,1)
         else:
-            self.lockin_device.siginrange(0, siginrange_value)
-        self.lockin_device.siginac(0, ac)
-        if autorange == True:
-            self.lockin_device.currinautorange(0, autorange)
-        else:
-            self.lockin_device.currinrange(0, siginrange_value)
-        self.lockin_device.siginac(0, ac)
-        self.lockin_device.oscillatorfreq(0, 0)
-        self.lockin_device.oscillatorfreq(1, 0)
-        self.lockin_device.siginscaling(0, 1)
-        self.lockin_device.siginfloat(0, 1)
-        self.lockin_device.siginimp50(0, imp50)
-        self.lockin_device.sigindiff(0, differential)
-        self.lockin_device.setosc(0, 0)
-        self.lockin_device.setosc(1, 2)
-        self.lockin_device.setadc(0, input_type)  # 0 - voltage, 1 - current
-        self.lockin_device.setadc(
-            1, 1 if input_type == 0 else 1
-        )  # 0 - voltage, 1 - current
-        self.lockin_device.settimeconst(0, 0.3)
-        self.lockin_device.setorder(0, 2)
-        self.lockin_device.settimeconst(1, 0.3)
-        self.lockin_device.setorder(1, 2)
-        self.lockin_device.setharmonic(0, 1)
-        self.lockin_device.setharmonic(1, 1)
-        self.lockin_device.outputamplitude(0, 0)
+            self.lockin_device.extrefsoff()
+            self.lockin_device.setosc(2,0)
+
+        # -------------------------------------------------------
+        self.lockin_device.setadc(2, input_type)  # 0 - voltage, 1 - current
+        self.lockin_device.setadc(1, 174) 
+        self.lockin_device.setadc(0, 174) 
+        self.lockin_device.setadc(3, 174) 
+
+        #--------------------------------------------- 
+        self.lockin_device.settimeconst(2, 0.3)
+        self.lockin_device.setorder(2, 2)
+        self.lockin_device.setharmonic(2, 1)
+        self.lockin_device.outputamplitude(1, 0)
         self.lockin_device.enableoutput(1, 1)
-        self.lockin_device.currinautorange(0, currins_autorange)
-        self.lockin_device.currinrange(0, currins_range)
-        self.lockin_device.outputoffset(0, 0)
+        self.lockin_device.outputoffset(1, 0)
         self.lockin_device.outputon(0, 1)
-        self.lockin_device.outputrange(0, 10)
-        self.lockin_device.enabledemod(0, 1)
-        self.lockin_device.enabledemod(1, 1)
+        self.lockin_device.enabledemod(2, 1)
+        self.lockin_device.enabledemod(1, 0)
         self.lockin_device.aux_set_manual(1)
         self.lockin_device.auxout(1, 0)
 
@@ -93,7 +104,7 @@ class LockinTime:
         self.lockin_device.outputamplitude(1, value)
 
     def set_dc_field(self, value=0):
-        self.lockin_device.outputoffset(0, value)
+        self.lockin_device.outputoffset(1, value)
 
     def lockin_measure_R(self, demod, averaging_rate):
         results = []
@@ -109,11 +120,10 @@ class LockinTime:
 
     def set_lockin_freq(self, freq):
         self.lockin_device.oscillatorfreq(0, freq)
-        elf.lockin_device.oscillatorfreq(2, freq)
 
     def shutdown(self):
         self.lockin_device.auxout(1, 0)
-        self.lockin_device.outputamplitude(0, 0)
+        self.lockin_device.outputamplitude(1, 0)
         self.lockin_device.outputoffset(0, 0)
         self.lockin_device.outputon(0, 0)
 
