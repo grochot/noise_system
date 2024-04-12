@@ -386,7 +386,7 @@ class IVTransfer(Procedure):
     )
     coil_constant = FloatParameter(
         "Coil constant",
-        units="Oe/A",
+        units="Oe/V",
         group_by="mode",
         default=parameters_from_file["coil_constant"],
         group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
@@ -1195,7 +1195,6 @@ class IVTransfer(Procedure):
             #             'Z field (Oe)': 0,
             #             'Hset (Oe)': 0,
 
-
         elif self.mode == "HDC-ACModeLockin":
             if self.mode_lockin == "Sweep field":
                 if self.kepco == False:
@@ -1206,27 +1205,26 @@ class IVTransfer(Procedure):
                         self.coil_constant,
                     )
                     self.cal_field_const = self.calibration_field.calibrate()
-                    self.lockin.set_dc_field(self.dc_field / 0.6)
+                    self.lockin.set_dc_field(self.dc_field / self.coil_constant)
                 else:
-                    self.cal_field_const = 15
-                    self.lockin.set_dc_field(self.dc_field / 15)
+                    self.lockin.set_dc_field(self.dc_field / self.coil_constant)
 
                 # self.lockin.set_lockin_freq(self.lockin_frequency)
                 self.counter = 0
 
                 for i in self.vector:
                     if self.amplitude_vec == True:
-                        self.lockin.set_ac_field(
-                            i / self.cal_field_const, self.ac_field_frequency
+                        self.lockin.set_ac_field( 
+                            i / self.coil_constant, self.ac_field_frequency
                         )
                     else:
                         self.lockin.set_ac_field(
-                            self.ac_field_amplitude / self.cal_field_const, i
+                            self.ac_field_amplitude / self.coil_constant, i
                         )
                     if i != 0:
                         sleep(2 / i)
                     else:
-                        sleep(1)
+                        sleep(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 
                     r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
                     theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
@@ -1425,6 +1423,8 @@ class IVTransfer(Procedure):
                 print("keithley shutdown done")
                 IVTransfer.licznik = 0
             elif self.mode == "HDC-ACModeLockin":
+                self.lockin.shutdown()
+            elif self.mode == "TimeMode":
                 self.lockin.shutdown()
         else:
             if self.mode == "HDCMode":

@@ -54,7 +54,7 @@ class LockinTime:
             else:
                 self.lockin_device.currinrange(2, currins_range)
         #-------------------------------------------------------
-
+        self.lockin_device.extrefsoff()
         self.lockin_device.oscillatorfreq(0, 0)  
         self.lockin_device.oscillatorfreq(1, 0) 
         self.lockin_device.oscillatorfreq(2, 0) 
@@ -90,6 +90,7 @@ class LockinTime:
         self.lockin_device.outputon(0, 1)
         self.lockin_device.enabledemod(2, 1)
         self.lockin_device.enabledemod(1, 0)
+        self.lockin_device.enabledemod(0, 0)
         self.lockin_device.aux_set_manual(1)
         self.lockin_device.auxout(1, 0)
 
