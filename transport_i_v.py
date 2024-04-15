@@ -292,14 +292,14 @@ class IVTransfer(Procedure):
         units="Oe",
         default=parameters_from_file["ac_field_amplitude"],
         group_by=["mode", 'amplitude_vec', "mode_lockin" ],
-        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", False, "Sweep field"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin", False, "Sweep field"],
     )
     ac_field_frequency = FloatParameter(
         "AC Field Frequency",
         units="Hz",
         default=parameters_from_file["ac_field_frequency"],
         group_by=["mode", "amplitude_vec", "mode_lockin"],
-        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", True, "Sweep field"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin", True, "Sweep field"],
     )
     ac_field_amplitude_time = FloatParameter(
         "AC Field Amplitude",
@@ -1198,16 +1198,16 @@ class IVTransfer(Procedure):
         elif self.mode == "HDC-ACModeLockin":
             if self.mode_lockin == "Sweep field":
                 if self.kepco == False:
-                    self.calibration_field = LockinCalibration(
-                        self.lockin,
-                        self.ac_field_frequency,
-                        self.dc_field,
-                        self.coil_constant,
-                    )
-                    self.cal_field_const = self.calibration_field.calibrate()
-                    self.lockin.set_dc_field(self.dc_field / self.coil_constant)
+                    # self.calibration_field = LockinCalibration(
+                    #     self.lockin,
+                    #     self.ac_field_frequency,
+                    #     self.dc_field,
+                    #     self.coil_constant,
+                    # )
+                    # self.cal_field_const = self.calibration_field.calibrate()
+                    self.lockin.set_dc_field(self.dc_field / (1/self.coil_constant))
                 else:
-                    self.lockin.set_dc_field(self.dc_field / self.coil_constant)
+                    self.lockin.set_dc_field(self.dc_field / (1/self.coil_constant))
 
                 # self.lockin.set_lockin_freq(self.lockin_frequency)
                 self.counter = 0
@@ -1215,12 +1215,10 @@ class IVTransfer(Procedure):
                 for i in self.vector:
                     if self.amplitude_vec == True:
                         self.lockin.set_ac_field( 
-                            i / self.coil_constant, self.ac_field_frequency
-                        )
+                            i / (1/self.coil_constant), self.ac_field_frequency)
                     else:
                         self.lockin.set_ac_field(
-                            self.ac_field_amplitude / self.coil_constant, i
-                        )
+                            self.ac_field_amplitude / (1/self.coil_constant), i)
                     if i != 0:
                         sleep(2 / i)
                     else:
@@ -1343,21 +1341,20 @@ class IVTransfer(Procedure):
 
         elif self.mode == "TimeMode":
             if self.kepco == False:
-                self.calibration_field = LockinCalibration(
-                    self.lockin,
-                    self.ac_field_frequency_time,
-                    self.dc_field_time,
-                    self.coil_constant,
-                )
-                self.cal_field_const = self.calibration_field.calibrate()
-                self.lockin.set_dc_field(self.dc_field_time / 0.6)
+                # self.calibration_field = LockinCalibration(
+                #     self.lockin,
+                #     self.ac_field_frequency_time,
+                #     self.dc_field_time,
+                #     self.coil_constant,
+                # )
+                # self.cal_field_const = self.calibration_field.calibrate()
+                self.lockin.set_dc_field(self.dc_field_time / (1/self.coil_constant))
             else:
-                self.cal_field_const = 15
-                self.lockin.set_dc_field(self.dc_field_time / 15)
+                self.lockin.set_dc_field(self.dc_field_time / (1/self.coil_constant))
 
             self.lockin.set_lockin_freq(self.lockin_frequency)
             self.lockin.set_ac_field(
-                self.ac_field_amplitude_time / self.cal_field_const, self.ac_field_frequency_time
+                self.ac_field_amplitude_time / (1/self.coil_constant), self.ac_field_frequency_time
             )
             sleep(2)
             scope_signal = self.lockin.get_wave()
@@ -1412,8 +1409,7 @@ class IVTransfer(Procedure):
                 else:
                     if (
                         self.acquire_type == "I(Hdc) | set Vb"
-                        or self.acquire_type == "V(Hdc) |set Ib"
-                    ):
+                        or self.acquire_type == "V(Hdc) |set Ib"):
                         self.field.shutdown(self.last_value / self.field_const)
                     else:
                         self.field.shutdown(self.field_bias / self.field_const)
@@ -1492,10 +1488,12 @@ class MainWindow(ManagedWindow):
             ],
             displays=[
                 "sample_name",
-                "acquire_type",
-                "field_bias",
-                "keithley_current_bias",
-                "keithley_voltage_bias",
+                "mode",
+                "dc_field",
+                "bias_voltage",
+                "ac_field_amplitude",
+                "ac_field_frequency",
+                "lockin_frequency",
             ],
             x_axis="I (A)",
             y_axis="V (V)",
@@ -1511,7 +1509,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
         )
 
-        self.setWindowTitle("IV Measurement System v.0.99.1")
+        self.setWindowTitle("IV Measurement System v.0.99.2")
         self.directory = self.procedure_class.path_file.ReadFile()
 
     def queue(self, procedure=None):
