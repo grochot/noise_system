@@ -13,15 +13,16 @@ log.addHandler(logging.NullHandler())
 
 class DummyFieldSensor(Instrument):
 
-    def __init__(self):
-        pass
+    def __init__(self, resourceName):
+        self.resource = resourceName
      
     
-    def read_field(self):
-        x = 0
-        y = 0
-        z = 0
-        #field = np.sqrt(x**2+y**2+z**2)
-       
-        return x,y,z
+    def read_field(self): 
+        return 0.0 , 0.0 ,0.0
+
+    def read_field_init(self): 
+        return 0.0 , 0.0 , 0.0
+    
+    def set_dynamic_mode(self):
+        pass
 
