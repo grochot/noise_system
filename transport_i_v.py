@@ -392,7 +392,7 @@ class IVTransfer(Procedure):
         group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
     )
     amplitude_vec = BooleanParameter(
-        "Sweep field",
+        "Amplitude/Frequency AC Field",
         default=parameters_from_file["amplitude_vec"],
         group_by=["mode", "mode_lockin"],
         group_condition=[lambda v: v == "HDC-ACModeLockin", "Sweep field"],
@@ -418,31 +418,31 @@ class IVTransfer(Procedure):
     )
 
     sigin_range = FloatParameter(
-        "SigIn Range",
+        "SigIN Range",
         units="V",
         default=parameters_from_file["sigin_range"],
         decimals=9,
         step=None,
-        group_by=["mode"],
-        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode"],
+        group_by=["mode", "sigin_autorange"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", False],
     )
     sigin_autorange = BooleanParameter(
-        "Autorange ON",
+        "SigIN Autorange ON",
         default=parameters_from_file["sigin_autorange"],
         group_by=["mode"],
         group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode"],
     )
     currins_range = FloatParameter(
-        "CurrIn Range",
+        "CurrIN Range",
         units="A",
         default=parameters_from_file["currins_range"],
         decimals=9,
         step=None,
-        group_by=["mode"],
-        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode"],
+        group_by=["mode", "currins_autorange"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", False],
     )
     currins_autorange = BooleanParameter(
-        "CurrIn Autorange ON",
+        "CurrIN Autorange ON",
         default=parameters_from_file["currins_autorange"],
         group_by=["mode"],
         group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode"],
