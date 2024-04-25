@@ -30,6 +30,10 @@ class LockinFrequency:
         autorange=False,
         currins_range=1.0,
         currins_autorange=False,
+        sigin_float = False, 
+        currin_float= False, 
+        timeconstat = 1, 
+        order = 1
     ):
 
         if input_type == 0: #voltage 
@@ -59,9 +63,9 @@ class LockinFrequency:
 
         #set sigin voltage\current parametes
         self.lockin.siginscaling(VOLTAGE_DEMOD, 1)
-        self.lockin.siginfloat(VOLTAGE_DEMOD, 1)
+       
         self.lockin.currinscaling(CURRENT_DEMOD, 1)
-        self.lockin.currinfloat(CURRENT_DEMOD, 1)
+      
         self.lockin.sigindiff(VOLTAGE_DEMOD, differential)
         self.lockin.siginimp50(VOLTAGE_DEMOD, imp50)
 
@@ -106,6 +110,13 @@ class LockinFrequency:
 
         self.lockin.auxout(0, 0)
         self.lockin.auxout(1, 0)
+
+        self.lockin.siginfloat(1 if sigin_float==True else 0) 
+        self.lockin.currinfloat(1 if currin_float==True else 0)
+        self.lockin.settimeconst(0,timeconstat)
+        self.lockin.settimeconst(2,timeconstat)
+        self.lockin.setorder(0,order)
+        self.lockin.setorder(2,order)
 
     def set_constant_field(self, value=0):
         self.lockin.auxout(0, value)

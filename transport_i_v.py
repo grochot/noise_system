@@ -100,7 +100,11 @@ class IVTransfer(Procedure):
                 "scope_rate",
                 "scope_time",
                 "amplitude_vec",
-                "external_ref"
+                "external_ref", 
+                "sigin_float", 
+                "currin_float", 
+                "timeconstant", 
+                "order"
     ]
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
@@ -324,6 +328,22 @@ class IVTransfer(Procedure):
             lambda v: v == "Voltage input",
         ],
     )
+    sigin_float = BooleanParameter(
+        "Signal Input Float",
+        default=parameters_from_file["sigin_float"],
+        group_by=["mode"],
+        group_condition=[
+            lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+        ],
+    )
+    currin_float = BooleanParameter(
+        "Current Input Float",
+        default=parameters_from_file["currin_float"],
+        group_by=["mode"],
+        group_condition=[
+            lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+        ],
+    )
     external_ref = BooleanParameter(
         "Use external ref",
         default=parameters_from_file["external_ref"],
@@ -378,6 +398,22 @@ class IVTransfer(Procedure):
         group_by="mode",
         group_condition=lambda v: v == "TimeMode",
     )
+
+    timeconstant = FloatParameter(
+        "Lockin TimeConstant",
+        units="s",
+        default=parameters_from_file["timeconstant"],
+        group_by="mode",
+        group_condition=lambda v: v == "HDC-ACModeLockin",
+    )
+
+    order = IntegerParameter(
+        "Lockin Filter order",
+        default=parameters_from_file["order"],
+        group_by="mode",
+        group_condition=lambda v: v == "HDC-ACModeLockin",
+    )
+
     kepco = BooleanParameter(
         "Kepco?",
         default=parameters_from_file["kepco"],
@@ -698,6 +734,10 @@ class IVTransfer(Procedure):
                             self.sigin_autorange,
                             self.currins_range,
                             self.currins_autorange,
+                            self.sigin_float, 
+                            self.currin_float, 
+                            self.timeconstant, 
+                            self.order
                         )
                     else:
                         if self.differential_signal == True:
@@ -710,6 +750,10 @@ class IVTransfer(Procedure):
                                 self.sigin_autorange,
                                 self.currins_range,
                                 self.currins_autorange,
+                                self.sigin_float, 
+                                self.currin_float, 
+                                self.timeconstant, 
+                                self.order
                             )
                         else:
                             self.lockin.init(
@@ -721,6 +765,10 @@ class IVTransfer(Procedure):
                                 self.sigin_autorange,
                                 self.currins_range,
                                 self.currins_autorange,
+                                self.sigin_float, 
+                                self.currin_float, 
+                                self.timeconstant, 
+                                self.order
                             )
 
                     log.info("Lockin initialized")
@@ -755,6 +803,10 @@ class IVTransfer(Procedure):
                         self.sigin_autorange,
                         self.currins_range,
                         self.currins_autorange,
+                        self.sigin_float, 
+                            self.currin_float, 
+                            self.timeconstant, 
+                            self.order
                     )
                 else:
                     if self.differential_signal == True:
@@ -767,6 +819,10 @@ class IVTransfer(Procedure):
                             self.sigin_autorange,
                             self.currins_range,
                             self.currins_autorange,
+                            self.sigin_float, 
+                            self.currin_float, 
+                            self.timeconstant, 
+                            self.order
                         )
                     else:
                         self.lockin.init(
@@ -778,6 +834,10 @@ class IVTransfer(Procedure):
                             self.sigin_autorange,
                             self.currins_range,
                             self.currins_autorange,
+                            self.sigin_float, 
+                            self.currin_float, 
+                            self.timeconstant, 
+                            self.order
                         )
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
                 self.lockin.set_constant_field(self.dc_field / 0.6)
@@ -812,7 +872,11 @@ class IVTransfer(Procedure):
                         self.sigin_autorange,
                         self.currins_range,
                         self.currins_autorange,
-                        self.external_ref
+                        self.external_ref,
+                        self.sigin_float, 
+                            self.currin_float, 
+                            self.timeconstant, 
+                            self.order
                     )
                     self.lockin.init_scope(
                         self.avergaging_rate, 1, self.rate_index, self.scope_time
@@ -828,7 +892,11 @@ class IVTransfer(Procedure):
                             self.sigin_autorange,
                             self.currins_range,
                             self.currins_autorange,
-                            self.external_ref
+                            self.external_ref,
+                            self.sigin_float, 
+                            self.currin_float, 
+                            self.timeconstant, 
+                            self.order
                         )
                     else:
                         self.lockin.init_lockin(
@@ -840,7 +908,11 @@ class IVTransfer(Procedure):
                             self.sigin_autorange,
                             self.currins_range,
                             self.currins_autorange,
-                            self.external_ref
+                            self.external_ref,
+                            self.sigin_float, 
+                            self.currin_float, 
+                            self.timeconstant, 
+                            self.order
                         )
                     self.lockin.init_scope(
                         self.avergaging_rate, 0, self.rate_index, self.scope_time
@@ -1306,7 +1378,7 @@ class IVTransfer(Procedure):
                         data_lockin = {
                             "f (Hz)": i,
                             "Vsense (V)": (
-                                r2 if self.input_type == "Voltage input" else r
+                                r if self.input_type == "Voltage input" else r2
                             ),
                             "Vbias (V)": self.bias_voltage,
                             "X field (Oe)": self.field_value[0],
@@ -1464,13 +1536,16 @@ class MainWindow(ManagedWindow):
                 "lockin_adress",
                 "input_type",
                 "sigin_imp",
-                
+                "timeconstant", 
+                "order", 
                 "currins_range",
                 "currins_autorange",
                 "sigin_range",
                 "sigin_autorange",
                 "sigin_ac",
                 "differential_signal",
+                "sigin_float",
+                "currin_float",
                 "kepco",
                 "dc_field",
                 "dc_field_time",
@@ -1509,7 +1584,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
         )
 
-        self.setWindowTitle("IV Measurement System v.0.99.2")
+        self.setWindowTitle("IV Measurement System v.0.99.4")
         self.directory = self.procedure_class.path_file.ReadFile()
 
     def queue(self, procedure=None):

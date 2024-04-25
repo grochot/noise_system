@@ -40,7 +40,7 @@ class Zurich(Instrument):
     def sigindiff(self, signal, diff=0):
         self.device_loc.sigins[0].diff(diff)
 
-    def siginfloat(self, signal, float=1):
+    def siginfloat(self, float=1):
         self.device_loc.sigins[0].float(float)
 
     def siginimp50(self, signal, imp50=1):
@@ -57,7 +57,7 @@ class Zurich(Instrument):
     def currinscaling(self, signal, scaling=1):
         self.device_loc.currins[0].scaling(scaling)
 
-    def currinfloat(self, signal, float=0):
+    def currinfloat(self, float=0):
         self.device_loc.currins[0].float(float)
 
     ##### SET SIGNAL OUTPUT #####
