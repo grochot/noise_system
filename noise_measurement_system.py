@@ -45,13 +45,14 @@ class NoiseProcedure(Procedure):
     parameters = {}
     save_parameter = SaveParameters()
     parameters_from_file = save_parameter.ReadFile()
-    used_parameters_list= ['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'bias_field_voltage', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay']
+    used_parameters_list= ['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'bias_field_voltage', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay', 'field_sensor']
     
     licznik = 0
     find_instruments = FindInstrument()
     finded_instruments = find_instruments.show_instrument()
-    # finded_instruments = finded_instrument.append('none')
     print(finded_instruments)
+    # finded_instruments = finded_instrument.append('none')
+    
     
 ################# PARAMETERS###################
 #Noise mode:
@@ -63,10 +64,13 @@ class NoiseProcedure(Procedure):
     bias_field_current = FloatParameter('Bias Field Current', units='mA', default = parameters_from_file["bias_field_current"],group_by={"mode": lambda v: v =='Mean' or v=='Mean + Raw'})
     bias_field_voltage = FloatParameter('Bias Field Voltage', units='mV', default = parameters_from_file["bias_field_voltage"],group_by={"mode": lambda v: v =='Mean' or v=='Mean + Raw', "field_device": lambda v: v=="HMC8043"})
     voltage_device = ListParameter('Voltage Device', choices=['SIM928', 'LowNoise', 'none'],default = parameters_from_file["voltage_device"],group_by='mode', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
-    voltage_adress = ListParameter("Voltage supply address", choices=finded_instruments, group_by='mode', default = parameters_from_file["voltage_adress"] if parameters_from_file["voltage_adress"] in finded_instruments else 'None', group_condition=lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias')
+    voltage_adress = ListParameter("Voltage supply address", choices=finded_instruments, group_by=['mode', 'voltage_device'], default = parameters_from_file["voltage_adress"] if parameters_from_file["voltage_adress"] in finded_instruments else 'none', group_condition=[lambda v: v =='Mean' or v=='One Shot' or v == 'Mean + Raw' or v == 'Vbias calibration' or v == 'Vbias', lambda v: v != 'none'])
     field_device = ListParameter("Field supply device",  choices=['HMC8043', 'E3600A', 'none'],default = parameters_from_file["field_device"],group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    field_adress = ListParameter("Field supply address",  choices=finded_instruments,group_by='mode', default = parameters_from_file["field_adress"] if parameters_from_file["field_adress"] in finded_instruments else 'None', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
-    field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by='mode', default = parameters_from_file["field_sensor_adress"] if parameters_from_file["field_sensor_adress"] in finded_instruments else 'None', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+    field_adress = ListParameter("Field supply address",  choices=finded_instruments,group_by=['mode', 'field_device'], default = parameters_from_file["field_adress"] if parameters_from_file["field_adress"] in finded_instruments else 'none', group_condition=[lambda v: v =='Mean' or v=='Mean + Raw', lambda v: v!='none'])
+
+    field_sensor = ListParameter("Field sensor device",  choices=['field sensor', 'none'],default = parameters_from_file["field_sensor"],group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
+
+    field_sensor_adress = ListParameter("Field_sensor",  choices=finded_instruments,group_by=['mode', 'field_sensor'], default = parameters_from_file["field_sensor_adress"] if parameters_from_file["field_sensor_adress"] in finded_instruments else 'none', group_condition=[lambda v: v =='Mean' or v=='Mean + Raw', lambda v: v != 'none'])
     channelA_coupling_type = ListParameter("Channel A Coupling Type",  default = parameters_from_file["channelA_coupling_type"], choices=['DC','AC'],group_by='mode',group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v =='Vbias calibration' or v == 'Vbias' )
     channelA_range = ListParameter("Channel A Range",  default = parameters_from_file["channelA_range"], choices=["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V"],group_condition=lambda v: v =='Mean' or v=='Mean + Raw' or v == 'V bias calibration' or v == 'Vbias')
     sample_name = Parameter("Sample Name", default = parameters_from_file["sample_name"],group_by='mode', group_condition=lambda v: v =='Mean' or v=='Mean + Raw')
@@ -105,12 +109,11 @@ class NoiseProcedure(Procedure):
                 self.header_columns = self.prepare_columns(self.DATA_COLUMNS)
             self.oscilloscope = PicoScope()
             
-            if self.voltage_device == 'none':
-                from hardware.sim928_dummy import SIM928 
-                self.voltage = SIM928()
+            if self.voltage_device == 'none' or self.voltage_adress == 'none':
+                from hardware.low_noise_ps_dummy import LowNoisePSDummy 
+                self.voltage = LowNoisePSDummy(self.voltage_adress)
                 log.warning("Use SIM928 Dummy")
             elif self.voltage_device == 'SIM928':
-               
                 from hardware.sim928 import SIM928 
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             else: 
@@ -123,12 +126,9 @@ class NoiseProcedure(Procedure):
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
                 self.no_samples = self.no_samples + 1
-          
-
-    ##Field Sensor:
-            
-            if self.field_sensor_adress == 'none':
-                self.field = DummyFieldSensor()
+            ##Field Sensor:    
+            if self.field_sensor == 'none' or self.field_sensor_adress == 'none':
+                self.field = DummyFieldSensor(self.field_sensor_adress)
                 log.warning("Use FieldSensor Dummy")
             
             else:
@@ -136,8 +136,8 @@ class NoiseProcedure(Procedure):
                 self.field.read_field_init()
                
 
-    ##Bias field:
-            if self.field_device == 'none':
+            ##Bias field:
+            if self.field_device == 'none' or field_adress == 'none':
                 self.field_coil = E3600aDummy()
                 log.warning("Use E3600 Dummy")
             elif self.field_device == "E3600A":
@@ -185,7 +185,7 @@ class NoiseProcedure(Procedure):
                     
 
         
-    ##Bias voltage:
+            ##Bias voltage:
 
             try:
                 if self.voltage_device != "LowNoise":
@@ -221,17 +221,17 @@ class NoiseProcedure(Procedure):
 #One shot mode:
         elif self.mode == 'One Shot':
             self.oscilloscope = PicoScope( )
-            if self.voltage_device == 'none':
+            if self.voltage_device == 'none' or self.voltage_adress == 'none':
                 from hardware.sim928_dummy import SIM928 
                 self.voltage = SIM928()
                 log.warning("Use SIM928 Dummy")
             elif self.voltage_device == 'SIM928':
-               
                 from hardware.sim928 import SIM928 
                 self.voltage = SIM928(self.voltage_adress,timeout = 25000, baud_rate = 9600) #connect to voltagemeter
             else: 
                 from hardware.low_noise_ps import LowNoisePS 
                 self.voltage = LowNoisePS(self.voltage_adress) #connect to voltagemeter
+            
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
                 self.no_samples = self.no_samples + 1
@@ -252,7 +252,7 @@ class NoiseProcedure(Procedure):
 #Vbias mode:
         else: 
             self.oscilloscope = PicoScope()
-            if self.voltage_device == 'none':
+            if self.voltage_device == 'none' or self.voltage_adress == 'none':
                 from hardware.sim928_dummy import SIM928 
                 self.voltage = SIM928()
                 log.warning("Use SIM928 Dummy")
@@ -344,6 +344,7 @@ class NoiseProcedure(Procedure):
                 self.oscilloscope.getValuesfromScope()
                 tmp_time_list = self.oscilloscope.create_time()
                 tmp_voltage_list = self.oscilloscope.convert_to_mV(self.channelA_range)
+                
 
                 
             
@@ -409,6 +410,7 @@ class NoiseProcedure(Procedure):
             tmp_data_voltage_average = tmp_data_voltage["average"].to_list()
             tmp_data_fft_average = tmp_fft["average"].to_list()
             tmp_data_frequency_average = tmp_frequency["average"].to_list()
+
            
         
     #Send results:
@@ -421,7 +423,7 @@ class NoiseProcedure(Procedure):
                             'log[FFT] (mV)':  math.log10(abs(tmp_data_fft_average[ele+1])) if ele < len(tmp_data_frequency_average)-1 else math.nan,
                             'time (s)': tmp_data_time_average[ele]*1e-9,
                             'Sense Voltage (mV)': tmp_data_voltage_average[ele],
-                            'Bias voltage (mV)': self.set_lownoise_voltage,
+                            'Bias voltage (mV)': self.set_lownoise_voltage if self.voltage_device != 'none' else math.nan,
                             'X field (Oe)': tmp_data_magnetic_field_x_mean,
                             'Y field (Oe)': tmp_data_magnetic_field_y_mean,
                             'Z field (Oe)': tmp_data_magnetic_field_z_mean,
@@ -431,10 +433,11 @@ class NoiseProcedure(Procedure):
                             'divide_voltage (mV)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
                             }
                     
-                
+                    print(data2)
 
                     self.emit('results', data2) 
-                except:
+                except Exception as e:
+                    print(e)
                     self.should_stop()
                 if self.should_stop():
                     log.warning("Caught the stop flag in the procedure")
@@ -654,8 +657,6 @@ class NoiseProcedure(Procedure):
                 self.voltage.disabled()
                 if self.field_device == "E3600A":
                     self.field_coil.disabled(abs(self.bias_field_current/1000))
-                else: 
-                    self.field_coil.disabled()
                     sleep(10)
                  
                 NoiseProcedure.licznik = 0
@@ -674,7 +675,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
+            inputs=['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
             displays=['bias_voltage', 'period_time', 'no_time','sampling_interval', 'sample_name'],
             x_axis='time (s)',
             y_axis='Sense Voltage (mV)',
@@ -684,7 +685,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.4 beta')
+        self.setWindowTitle('Noise Measurement System v.1.5 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 

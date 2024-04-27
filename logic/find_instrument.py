@@ -41,7 +41,12 @@ class FindInstrument():
 
     
     def show_instrument(self): 
-    	return list(self.rm.list_resources())
+        list_tmp = list(self.rm.list_resources())
+        list_tmp.extend(['none'])
 
-k = FindInstrument()
-print(k.show_instrument())
+
+        return list_tmp
+
+
+# k = FindInstrument()
+# print(k.show_instrument())

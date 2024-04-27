@@ -22,6 +22,10 @@ class LowNoisePSDummy(Instrument):
     def voltage_setpoint(self, vol = 0): 
        pass
     
+    
+    def read_voltage(self):
+        return 0.1
+
 
     voltage = 0
 

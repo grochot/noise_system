@@ -25,6 +25,30 @@ class GenerateHeader():
 #\tTreshold: {11} mV
 #\tSIM928 adress: {12}""".format(float(a),b,c,d,e,f,g,int(h),i,j,k,l,m,n,int(o),p,r,s)
 
+#   Bias Field Current: 10 mA
+#   Bias Field Voltage: 10 mV
+#   Bias Voltage: 50 mV
+#   Channel A Coupling Type: AC
+#   Channel A Range: 100mV
+#   Delay: 400 ms
+#   Divide number: 0 mV
+#   Field supply address: ASRL/dev/ttyACM0::INSTR
+#   Field supply device: none
+#   Field sensor device: none
+#   Field_sensor: ASRL/dev/ttyACM0::INSTR
+#   Mode: Mean
+#   No Points: 5
+#   Number of times: 1
+#   Period of Time: 1 s
+#   Reverse voltage: False
+#   Sample Name: PS-ACRange50mVDHCPA10-5-5kOhm
+#   Sampling frequency: 20000 Hz
+#   Start: 20 mV
+#   Stop: 150 mV
+#   Treshold: 0 mV
+#   Voltage supply address: ASRL/dev/ttyACM1::INSTR
+#   Voltage Device: none
+
         f = open('{}'.format(filename), 'w')
 
         f.write(self.PROCEDURE + '\n')
