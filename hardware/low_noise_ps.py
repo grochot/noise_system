@@ -6,6 +6,7 @@ import time
 import logging
 import re 
 import serial
+import math
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -28,16 +29,25 @@ class LowNoisePS():
         sleep(4)
     
     def read_voltage(self):
-        self.ser.write(b'GETV\r')
-        self.ser.read(36).decode()
-        sleep(1) 
-        self.ser.write(b'GETV\r')
-        data = self.ser.read(100).decode()
-        reg= 'MEASURED: \\d+ mV'
-        x = re.findall(reg, data)
-        splited = x[0].split()
-        print(data)
-        return splited[1]
+        for i in range(5):
+            try:
+                self.ser.write(b'GETV\r')
+                self.ser.read(36).decode()
+                sleep(1) 
+                self.ser.write(b'GETV\r')
+                data = self.ser.read(100).decode()
+                reg= 'MEASURED: \\d+ mV'
+                x = re.findall(reg, data)
+                splited = x[0].split()
+                data_final = float(splited[1])
+                print(data)
+                break
+            except:
+                data_final = math.nan
+            sleep(2)
+
+        
+        return data_final
 
 
 
@@ -77,9 +87,9 @@ class LowNoisePS():
 
 ################## TEST ################## 
 
-k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
-k.voltage_setpoint(50)
-sleep(1)
-print(k.read_voltage())
+# k = LowNoisePS('ASRL/dev/ttyACM1::INSTR') 
+# k.voltage_setpoint(50)
+# sleep(1)
+# print(k.read_voltage())
 
 # print(k.read_voltage())
