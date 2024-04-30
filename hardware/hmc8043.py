@@ -44,7 +44,7 @@ class HMC8043():
     def disable_channel(self): 
         # self.write("OUTP:CHAN OFF") 
         # sleep(0.2)
-        for i in range(4):
+        for i in range(1):
             self.inst.write("OUTP OFF") 
             sleep(0.1)
         

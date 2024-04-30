@@ -137,7 +137,7 @@ class NoiseProcedure(Procedure):
                
 
             ##Bias field:
-            if self.field_device == 'none' or field_adress == 'none':
+            if self.field_device == 'none' or self.field_adress == 'none':
                 self.field_coil = E3600aDummy()
                 log.warning("Use E3600 Dummy")
             elif self.field_device == "E3600A":
@@ -167,21 +167,19 @@ class NoiseProcedure(Procedure):
                 sleep(1)
                 log.info("Set bias field to {} mA".format(float(self.bias_field_current)/1000))
             else: 
-                flag1 = True
-                while flag1 == True:
-                    try:    
-                        self.field_coil = HMC8043(self.field_adress) #connction to field controller
-                        sleep(0.2)
-                        self.field_coil.inst_out(1)
-                        self.field_coil.set_voltage(10)
-                        self.field_coil.set_current(self.bias_field_current/1000)
-                        self.field_coil.enable_channel()
-                        sleep(5)
-                        flag1 = False
-                    except Exception as a: 
-                        log.error(a)
-                        sleep(15)
-                        flag1 = True
+                
+              
+                print("start field coil")
+                self.field_coil = HMC8043(self.field_adress) #connction to field controller
+                sleep(0.2)
+                print("init field coil")
+                self.field_coil.inst_out(1)
+                self.field_coil.set_voltage(10)
+                self.field_coil.set_current(self.bias_field_current/1000)
+                self.field_coil.enable_channel()
+                sleep(5)
+                flag1 = False
+                
                     
 
         
@@ -661,6 +659,7 @@ class NoiseProcedure(Procedure):
                  
                 NoiseProcedure.licznik = 0
             if self.field_device == "HMC8043":
+                self.field_coil.disable_channel()
                 self.field_coil.close_connection()    
             NoiseProcedure.licznik += 1
          
@@ -675,7 +674,7 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super().__init__(
             procedure_class= NoiseProcedure,
-            inputs=['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
+            inputs=['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'channelA_range', 'channelA_coupling_type', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay'],
             displays=['bias_voltage', 'period_time', 'no_time','sampling_interval', 'sample_name'],
             x_axis='time (s)',
             y_axis='Sense Voltage (mV)',
