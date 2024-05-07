@@ -636,7 +636,6 @@ class NoiseProcedure(Procedure):
                     log.warning("Caught the stop flag in the procedure")
                     break
 
-
 ######################################## End ########################################
 
     def stop_scope(self):
@@ -651,7 +650,24 @@ class NoiseProcedure(Procedure):
     def run_to_zero(self):
         
         print("run_to_zero")
+
     
+    def set_reference_voltage(self,value):
+        from hardware.low_noise_ps import LowNoisePS 
+        from logic.save_parameters import SaveParameters
+        voltage = LowNoisePS(self.inputs.voltage_adress.value())
+        voltage.set_reference(value)
+
+        save_parameter = SaveParameters()
+        parameters_from_file = save_parameter.ReadFile()
+        parameters_from_file["reference_voltage"] = value
+        save_parameter.WriteFile(parameters_from_file)
+
+    def get_reference(self):
+        from logic.save_parameters import SaveParameters
+        save_parameter = SaveParameters()
+        parameters_from_file = save_parameter.ReadFile()
+        return parameters_from_file["reference_voltage"]
 
     def voltage_disabled(self): 
         
@@ -704,7 +720,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.51 beta')
+        self.setWindowTitle('Noise Measurement System v.1.52 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 

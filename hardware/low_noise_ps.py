@@ -59,6 +59,9 @@ class LowNoisePS():
     def close(self): 
         self.ser.close()
 
+    def set_reference(self, vol): 
+        self.ser.write("SETREF {}\r".format(vol).encode())
+
 
 
     @property

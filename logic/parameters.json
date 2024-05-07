@@ -21,5 +21,6 @@
     "no_points": 5,
     "reverse_voltage": false,
     "delay": 400.0,
-    "field_sensor": "none"
+    "field_sensor": "none",
+    "reference_voltage": 5240.0
 }
