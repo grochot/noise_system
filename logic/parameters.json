@@ -3,8 +3,8 @@
     "sample_name": "PS-ACRange50mVDHCPA10-S-S3B-LowNCabKMGP3kOhm-All-On",
     "voltage_device": "LowNoise",
     "voltage_adress": "ASRL/dev/ttyACM1::INSTR",
-    "field_device": "HMC8043",
-    "field_adress": "USB0::2733::309::032163928::0::INSTR",
+    "field_device": "none",
+    "field_adress": "none",
     "field_sensor_adress": "ASRL/dev/ttyACM0::INSTR",
     "period_time": 1.0,
     "no_time": 1,
@@ -21,5 +21,5 @@
     "no_points": 5,
     "reverse_voltage": false,
     "delay": 400.0,
-    "field_sensor": "field sensor"
+    "field_sensor": "none"
 }

@@ -26,3 +26,5 @@ class DummyFieldSensor(Instrument):
     def set_dynamic_mode(self):
         pass
 
+    def close(self): 
+        pass

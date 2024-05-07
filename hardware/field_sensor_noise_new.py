@@ -51,6 +51,9 @@ class FieldSensor(Instrument):
         serial_port.write(b"SET_MODE MODE_DYNAMIC")
         sleep(0.5)
 
+    def close(self): 
+        serial_port.close()
+
 # test = FieldSensor('ASRL/dev/ttyACM0::INSTR')
 
 

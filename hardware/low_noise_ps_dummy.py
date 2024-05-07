@@ -32,6 +32,8 @@ class LowNoisePSDummy(Instrument):
     def run_to_zero(self): 
        pass
 
+    def close(self): 
+        pass
 
 
     @property

@@ -56,6 +56,9 @@ class LowNoisePS():
         sleep(0.3)
         self.disabled()
 
+    def close(self): 
+        self.ser.close()
+
 
 
     @property

@@ -126,14 +126,7 @@ class NoiseProcedure(Procedure):
             self.no_samples = int(self.period_time/(((1/self.sampling_interval))))
             if self.no_samples % 2 == 1:
                 self.no_samples = self.no_samples + 1
-            ##Field Sensor:    
-            if self.field_sensor == 'none' or self.field_sensor_adress == 'none':
-                self.field = DummyFieldSensor(self.field_sensor_adress)
-                log.warning("Use FieldSensor Dummy")
-            
-            else:
-                self.field = FieldSensor(self.field_sensor_adress)
-                self.field.read_field_init()
+           
                
 
             ##Bias field:
@@ -181,7 +174,49 @@ class NoiseProcedure(Procedure):
                 flag1 = False
                 
                     
+            ##Field Sensor:    
+            if self.field_sensor == 'none' or self.field_sensor_adress == 'none':
+                self.field = DummyFieldSensor(self.field_sensor_adress)
+                log.warning("Use FieldSensor Dummy")
+            
+            else:
+                self.field = FieldSensor(self.field_sensor_adress)
+                self.field.read_field_init()
+                sleep(1)
 
+            #Measure field: 
+            
+            try:
+                tmp_data_magnetic_field_x = []
+                tmp_data_magnetic_field_y = []
+                tmp_data_magnetic_field_z = []
+                tmp_field = self.field.read_field()
+                tmp_x = tmp_field[0]
+                tmp_y = tmp_field[1]
+                tmp_z = tmp_field[2]
+                
+            
+                tmp_data_magnetic_field_x.append(float(tmp_x))
+                tmp_data_magnetic_field_y.append(float(tmp_y))
+                tmp_data_magnetic_field_z.append(float(tmp_z))
+                
+                sleep(0.3)
+                self.field.set_dynamic_mode()
+            
+                self.tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
+                self.tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
+                self.tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
+                self.tmp_total_field = np.sqrt(self.tmp_data_magnetic_field_x_mean**2 +  self.tmp_data_magnetic_field_y_mean**2 + self.tmp_data_magnetic_field_z_mean**2)
+                sleep(0.5)
+                #Close communication with field sensor:
+                self.field.close()
+            except Exception as e:
+                print(e)
+                log.error("Field sensor wrong!")
+
+
+            
+                
         
             ##Bias voltage:
 
@@ -201,12 +236,21 @@ class NoiseProcedure(Procedure):
                 else:
                     self.voltage.voltage_setpoint(self.bias_voltage)
                     self.set_lownoise_voltage = float(self.voltage.read_voltage())
+                    sleep(1)
+                    #Close communication with voltage source:
+                    self.voltage.close()
                     
             except Exception:
-                traceback.print_exc()
+                self.should_stop()
                 log.error("Could not connect to bias voltage source")
 
-    ##Picoscope:
+
+            
+
+        
+
+
+        ##Picoscope:
             self.oscilloscope.setChannelA(self.channelA_coupling_type, self.channelA_range )
             #self.oscilloscope.setChannelB(self.channelB_coupling_type, self.channelB_range )
             self.oscilloscope.setTrigger()
@@ -243,6 +287,8 @@ class NoiseProcedure(Procedure):
                 else:
                     self.voltage.voltage_setpoint(self.bias_voltage) #set bias voltage
                     self.set_lownoise_voltage = float(self.voltage.read_voltage())
+                    sleep(1)
+                    self.voltage.close()
                 
             except Exception:
                 traceback.print_exc()
@@ -278,11 +324,6 @@ class NoiseProcedure(Procedure):
                 log.error("Vector set failed")
 
            
-
-
-
-
-
 ######################################## Procedure ########################################
     def execute(self):
 #Mean mode:
@@ -298,36 +339,9 @@ class NoiseProcedure(Procedure):
             tmp_data_voltage = pd.DataFrame(columns=['voltage'])
             tmp_frequency = pd.DataFrame(columns=['frequency'])
             tmp_fft = pd.DataFrame(columns=['fft'])
-            tmp_data_magnetic_field_x = []
-            tmp_data_magnetic_field_y = []
-            tmp_data_magnetic_field_z = []
+           
             fft_tmp_rms_noise = []
 
-
-    #Measure field: 
-            for i in range(1):
-                try:
-                    tmp_field = self.field.read_field()
-                    tmp_x = tmp_field[0]
-                    tmp_y = tmp_field[1]
-                    tmp_z = tmp_field[2]
-                    
-                
-                    tmp_data_magnetic_field_x.append(float(tmp_x))
-                    tmp_data_magnetic_field_y.append(float(tmp_y))
-                    tmp_data_magnetic_field_z.append(float(tmp_z))
-                    sleep(0.3)
-                    self.field.set_dynamic_mode()
-                
-                    tmp_data_magnetic_field_x_mean = float(sum(tmp_data_magnetic_field_x)/len(tmp_data_magnetic_field_x))/100
-                    tmp_data_magnetic_field_y_mean = float(sum(tmp_data_magnetic_field_y)/len(tmp_data_magnetic_field_y))/100
-                    tmp_data_magnetic_field_z_mean = float(sum(tmp_data_magnetic_field_z)/len(tmp_data_magnetic_field_z))/100
-                    tmp_total_field = np.sqrt(tmp_data_magnetic_field_x_mean**2 +  tmp_data_magnetic_field_y_mean**2 + tmp_data_magnetic_field_z_mean**2)
-               
-                except Exception as e:
-                    print(e)
-                    log.error("Field sensor adress wrong!")
-                    self.should_stop()
        
 
     #MAIN LOOP 
@@ -379,10 +393,10 @@ class NoiseProcedure(Procedure):
                             str(tmp_time_list[tmp_ele]*1e-9),
                             ','+str(math.nan),
                             ','+str(tmp_voltage_list[tmp_ele]),
-                            ','+str(tmp_data_magnetic_field_x_mean),
-                            ','+str(tmp_data_magnetic_field_y_mean),
-                            ','+str(tmp_data_magnetic_field_z_mean),
-                            ','+str(tmp_total_field),
+                            ','+str(self.tmp_data_magnetic_field_x_mean),
+                            ','+str(self.tmp_data_magnetic_field_y_mean),
+                            ','+str(self.tmp_data_magnetic_field_z_mean),
+                            ','+str(self.tmp_total_field),
                             ','+ str(freq_tmp[tmp_ele] if tmp_ele < len(freq_tmp) else math.nan), 
                             ','+str(abs(ft_tmp[tmp_ele]) if tmp_ele < len(freq_tmp) else math.nan), 
                             ',' + str(math.log10(freq_tmp[tmp_ele+1]) if tmp_ele < len(freq_tmp)-1 else math.nan),
@@ -422,10 +436,10 @@ class NoiseProcedure(Procedure):
                             'time (s)': tmp_data_time_average[ele]*1e-9,
                             'Sense Voltage (mV)': tmp_data_voltage_average[ele],
                             'Bias voltage (mV)': self.set_lownoise_voltage if self.voltage_device != 'none' else math.nan,
-                            'X field (Oe)': tmp_data_magnetic_field_x_mean,
-                            'Y field (Oe)': tmp_data_magnetic_field_y_mean,
-                            'Z field (Oe)': tmp_data_magnetic_field_z_mean,
-                            'Field (Oe)' : tmp_total_field,
+                            'X field (Oe)': self.tmp_data_magnetic_field_x_mean,
+                            'Y field (Oe)': self.tmp_data_magnetic_field_y_mean,
+                            'Z field (Oe)': self.tmp_data_magnetic_field_z_mean,
+                            'Field (Oe)' : self.tmp_total_field,
                             'treshold_time (s)': (math.nan, tmp_data_time_average[ele]*1e-9 if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold else math.nan)[self.treshold != 0],
                             'treshold_voltage (mV)': (math.nan, tmp_data_voltage_average[ele]  if tmp_data_voltage_average[ele] >= self.treshold or tmp_data_voltage_average[ele] <= -1*self.treshold  else math.nan)[self.treshold != 0],
                             'divide_voltage (mV)': math.nan if self.divide == 0 else tmp_data_voltage_average[ele]/self.divide
@@ -650,9 +664,15 @@ class NoiseProcedure(Procedure):
         self.oscilloscope.disconnect_scope()
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
             if MainWindow.last == True or NoiseProcedure.licznik == MainWindow.wynik: 
-                self.voltage.voltage_setpoint(1)
+                if self.voltage_device == 'none' or self.voltage_adress == 'none':
+                    from hardware.low_noise_ps_dummy import LowNoisePSDummy 
+                    self.voltage = LowNoisePSDummy(self.voltage_adress)
+                else: 
+                    from hardware.low_noise_ps import LowNoisePS 
+                    self.voltage = LowNoisePS(self.voltage_adress) #connect to voltagemeterr
+                    self.voltage.voltage_setpoint(1)
                 sleep(0.5)
-                self.voltage.disabled()
+                self.voltage.close()
                 if self.field_device == "E3600A":
                     self.field_coil.disabled(abs(self.bias_field_current/1000))
                     sleep(10)
@@ -684,7 +704,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
             
         )
-        self.setWindowTitle('Noise Measurement System v.1.5 beta')
+        self.setWindowTitle('Noise Measurement System v.1.51 beta')
         self.directory = self.procedure_class.path_file.ReadFile()
         
 
