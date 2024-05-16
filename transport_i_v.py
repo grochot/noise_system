@@ -1476,21 +1476,49 @@ class IVTransfer(Procedure):
 
             elif self.mode_lockin == "Sweep frequency":
                 self.field_value = measure_field(1, self.field_sensor, self.should_stop)
+                sleep(2)
+                self.factor_period = 5
+                self.time_first_loop = 3
                 self.counter = 0
                 for i in self.vector:
-                    self.lockin.set_lockin_freq(i)
-                    if i != 0:
-                        sleep(3)
-                    else:
-                        sleep(0.5)
-                    r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
-                    sleep(0.5)
-                    theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
-                    sleep(0.5)
-                    r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
-                    sleep(0.5)
-                    theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
-                    self.counter = self.counter + 1
+                    if self.counter ==0:
+                        self.iter = 2 
+                    else: 
+                        self.iter = 1
+                    for w in range(self.iter):
+                        self.lockin.set_lockin_freq(i)
+                        if self.counter == 0:
+                            sleep(self.time_first_loop)
+
+                        if i != 0:
+                            sleep(self.factor_period*(1/i))
+                        else:
+                            sleep(self.time_first_loop)
+                        r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
+                        if self.counter == 0:
+                            sleep(self.time_first_loop)
+                        if i != 0:
+                            sleep(self.factor_period*(1/i))
+                        else:
+                            sleep(self.time_first_loop)
+                        theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
+                        if self.counter == 0:
+                            sleep(self.time_first_loop)
+                        if i != 0:
+                            sleep(self.factor_period*(1/i))
+                        else:
+                            sleep(self.time_first_loop)
+                        r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                        if self.counter == 0:
+                            sleep(self.time_first_loop)
+                        if i != 0:
+                            sleep(self.factor_period*(1/i))
+                        else:
+                            sleep(self.time_first_loop)
+                        theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                        self.counter = self.counter + 1
+
+
                     self.emit("progress", 100 * self.counter / len(self.vector))
                     try:
                         data_lockin = {
