@@ -145,6 +145,7 @@ class IVTransfer(Procedure):
         default=parameters_from_file["acquire_type"],
         choices=[
             "I(Hdc) | set Vb",
+            "V(Hdc) | set Vb",
             "V(Hdc) |set Ib",
             "I(Vb) | set Hdc",
             "V(Ib) | set Hdc",
@@ -172,7 +173,7 @@ class IVTransfer(Procedure):
         units="A",
         default=parameters_from_file["keithley_compliance_current"],
         group_by={
-            "acquire_type": lambda v: v == "I(Hdc) | set Vb" or v == "I(Vb) | set Hdc",
+            "acquire_type": lambda v: v == "I(Hdc) | set Vb" or v == "I(Vb) | set Hdc" or v == "V(Hdc) | set Vb",
             "mode": lambda v: v == "HDCMode",
         },
     )
@@ -192,11 +193,11 @@ class IVTransfer(Procedure):
         group_by={"acquire_type": "V(Hdc) |set Ib", "mode": lambda v: v == "HDCMode"},
     )
     keithley_voltage_bias = FloatParameter(
-        "Volage bias",
+        "Voltage bias",
         units="V",
         default=parameters_from_file["keithley_voltage_bias"],
         group_by={
-            "acquire_type": "I(Hdc) | set Vb",
+            "acquire_type": lambda v: v == "I(Hdc) | set Vb" or v == "V(Hdc) | set Vb",
             "mode": lambda v: v == "HDCMode" or v == "Fast Resistance",
         },
     )
@@ -542,6 +543,7 @@ class IVTransfer(Procedure):
         except:
             return np.nan
 
+######################################################### INIT #################################################
     def startup(self):
         for i in self.used_parameters_list:
             self.param = eval("self." + i)
@@ -619,6 +621,18 @@ class IVTransfer(Procedure):
                     )  # Sets the source current to 0 mA
                     self.keithley.enable_source()  # Enables the source output
                     self.keithley.measure_current()
+
+                if self.acquire_type == "V(Hdc) | set Vb":
+                    self.keithley.apply_voltage()
+                    self.keithley.source_voltage_range = 20
+                    self.keithley.compliance_current = self.keithley_compliance_current
+                    self.keithley.source_voltage = (
+                        self.keithley_voltage_bias
+                    )  # Sets the source current to 0 mA
+                    self.keithley.enable_source()  # Enables the source output
+                    self.keithley.measure_current()
+
+
                 elif self.acquire_type == "V(Hdc) |set Ib":
                     self.keithley.apply_current()
                     self.keithley.source_current_range = 0.1
@@ -628,6 +642,7 @@ class IVTransfer(Procedure):
                     )  # Sets the source current to 0 mA
                     self.keithley.enable_source()  # Enables the source output
                     self.keithley.measure_voltage()
+                
                 elif self.acquire_type == "I(Vb) | set Hdc":
                     self.keithley.apply_voltage()
                     self.keithley.source_voltage_range = 20
@@ -642,6 +657,7 @@ class IVTransfer(Procedure):
                     self.set_field = self.field.set_field(
                         self.field_bias / self.field_const
                     )
+                
                 elif self.acquire_type == "V(Ib) | set Hdc":
                     self.keithley.apply_current()
                     self.keithley.source_current_range = 0.1
@@ -677,6 +693,7 @@ class IVTransfer(Procedure):
                 log.info("Config Agilent 34410A")
                 try:
                     self.agilent_34410 = Agilent34410A(self.agilent34401a_adress)
+
                     if self.coil == "Large":
                         self.field_const = 5
                     else:
@@ -926,7 +943,7 @@ class IVTransfer(Procedure):
             self.lockin.set_constant_vbias(self.bias_voltage)
             sleep(1)
 
-########################### PROCEDURE ############################
+############################################## RUN ###############################################
     def execute(self):
         diff = ComputeDiff()
         res = ComputerResistance()
@@ -1033,6 +1050,107 @@ class IVTransfer(Procedure):
                     data = {
                         "V (V)": self.value_function(tmp_voltage, l),
                         "I (A)": self.value_function(tmp_current, l),
+                        "R (ohm)": self.value_function(tmp_resistance, l),
+                        "G": self.value_function(tmp_conductance, l),
+                        "X field (Oe)": self.value_function(tmp_field_x, l),
+                        "Y field (Oe)": self.value_function(tmp_field_y, l),
+                        "Z field (Oe)": self.value_function(tmp_field_z, l),
+                        "Hset (Oe)": self.value_function(tmp_field_set, l),
+                        "dR/dH": self.value_function(tmp_dR_dH, l),
+                        "dG/dH": self.value_function(tmp_dG_dH, l),
+                        "dI": self.value_function(tmp_dI, l),
+                        "dI/dH": self.value_function(tmp_dI_dH, l),
+                        "NdI": self.value_function(tmp_NdI, l),
+                        "SPdI": self.value_function(tmp_SPdI, l),
+                        "HdIS": self.value_function(tmp_HdIS, l),
+                        "HdR": self.value_function(tmp_HdR, l),
+                        "HdG": self.value_function(tmp_HdG, l),
+                        "dR": self.value_function(tmp_dR, l),
+                        "dG": self.value_function(tmp_dG, l),
+                        "NdR": self.value_function(tmp_NdR, l),
+                        "NdG": self.value_function(tmp_NdG, l),
+                        "HdRS": self.value_function(tmp_HdRS, l),
+                        "HdGS": self.value_function(tmp_HdGS, l),
+                    }
+                    self.emit("results", data)
+
+            elif self.acquire_type == "V(Hdc) | set Vb":
+                log.info("Starting to sweep through field")
+                if self.coil == "Large":
+                    self.field_const = 5
+                else:
+                    self.field_const = 10
+                w = 0
+                for i in self.vector:
+                    self.last_value = i
+                    self.field.set_field(i / self.field_const)
+                    tmp_field_set.append(i)  # surowe pole
+                    sleep(self.delay * 0.001)
+                    print("DEBUG:set field: {}".format(i))
+                    self.tmp_field = self.field_sensor.read_field()
+                    tmp_field_x.append(self.tmp_field[0])
+                    tmp_field_y.append(self.tmp_field[1])
+                    tmp_field_z.append(self.tmp_field[2])
+                    sleep(self.delay * 0.001)
+                    print("DEBUG: field masured:  {}".format(self.tmp_field))
+                    try:
+                        if self.agilent == True:
+                            self.tmp_volatage = self.agilent_34410.voltage_dc
+                        else: 
+                            self.tmp_volatage = math.nan
+                        
+                        self.tmp_current = self.keithley.current
+                    except Exception as exception: 
+                        log.error(f"Measurement failed")
+                        break
+
+                    # surowe dane:
+                    tmp_current.append(self.tmp_current)  # surowy prąd
+                    tmp_voltage.append(self.tmp_volatage)  # surowe napiecie
+                    tmp_resistance.append(
+                        float(self.keithley_voltage_bias) / float(self.tmp_current)
+                        if self.tmp_current != 0
+                        else np.nan
+                    )  # surowa rezystancja
+                    tmp_conductance.append(
+                        1
+                        / (float(self.keithley_voltage_bias) / float(self.tmp_current))
+                        if self.tmp_current != 0
+                        else np.nan
+                    )  # surowa konduktancja
+
+                    self.emit("progress", 100 * w / len(self.vector))
+                    w = w + 1
+                    if self.should_stop():
+                        log.warning("Caught the stop flag in the procedure")
+                        break
+                print(
+                    "DEBUG:\n current: {} \n voltage: {} \n resistance: {} \n conductance: {}".format(
+                        tmp_current, tmp_voltage, tmp_resistance, tmp_conductance
+                    )
+                )
+                # opracowanie:
+                tmp_dI_dH = diff.diffs(tmp_field_set, tmp_current)
+                tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
+                tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
+                tmp_dI = diff.diffIV(tmp_current)
+                tmp_NdI = diff.NormalizedDiff(tmp_current)
+                tmp_SPdI = diff.SlopeDiff(tmp_current, self.vector)
+                tmp_HdIS = diff.HdIS(tmp_dI_dH, tmp_resistance)
+                tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
+                tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance)
+                tmp_dR = diff.diffIV(tmp_resistance)
+                tmp_dG = diff.diffIV(tmp_conductance)
+                tmp_NdR = diff.NormalizedDiff(tmp_resistance)
+                tmp_NdG = diff.NormalizedDiff(tmp_conductance)
+                tmp_HdRS = diff.HdIS(tmp_HdR, tmp_current)
+                tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
+
+                for l in range(len(tmp_voltage)):
+                    data = {
+                        "Vsense (V)": self.value_function(tmp_voltage, l),
+                        "I (A)": self.value_function(tmp_current, l),
+                        "Vbias (V)": self.keithley_voltage_bias,
                         "R (ohm)": self.value_function(tmp_resistance, l),
                         "G": self.value_function(tmp_conductance, l),
                         "X field (Oe)": self.value_function(tmp_field_x, l),
@@ -1481,7 +1599,7 @@ class IVTransfer(Procedure):
                 else:
                     if (
                         self.acquire_type == "I(Hdc) | set Vb"
-                        or self.acquire_type == "V(Hdc) |set Ib"):
+                        or self.acquire_type == "V(Hdc) |set Ib" or self.acquire_type == "V(Hdc) |set Vb" ):
                         self.field.shutdown(self.last_value / self.field_const)
                     else:
                         self.field.shutdown(self.field_bias / self.field_const)
@@ -1584,7 +1702,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
         )
 
-        self.setWindowTitle("IV Measurement System v.0.99.4")
+        self.setWindowTitle("IV Measurement System v.0.99.5")
         self.directory = self.procedure_class.path_file.ReadFile()
 
     def queue(self, procedure=None):
