@@ -1,16 +1,16 @@
 {
     "mode": "Mean",
-    "sample_name": "PS-ACRange50mVDHCPA10-S-S3B-LowNCabKMGP3kOhm-All-On",
+    "sample_name": "PS-ACRange50mVDHCPA10-S-S3A-LowNCabKMGP1_6kOhm-All-On",
     "voltage_device": "LowNoise",
     "voltage_adress": "ASRL/dev/ttyACM1::INSTR",
-    "field_device": "none",
-    "field_adress": "none",
+    "field_device": "HMC8043",
+    "field_adress": "USB0::2733::309::032163928::0::INSTR",
     "field_sensor_adress": "ASRL/dev/ttyACM0::INSTR",
     "period_time": 1.0,
     "no_time": 1,
     "sampling_interval": 20000.0,
-    "bias_voltage": 50.0,
-    "bias_field_current": 100.0,
+    "bias_voltage": 40.0,
+    "bias_field_current": 150.0,
     "bias_field_voltage": 10.0,
     "channelA_range": "50mV",
     "channelA_coupling_type": "AC",
@@ -21,6 +21,6 @@
     "no_points": 5,
     "reverse_voltage": false,
     "delay": 400.0,
-    "field_sensor": "none",
-    "reference_voltage": 5240.0
+    "field_sensor": "field sensor",
+    "reference_voltage": 0.0
 }

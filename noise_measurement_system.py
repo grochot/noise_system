@@ -45,7 +45,7 @@ class NoiseProcedure(Procedure):
     parameters = {}
     save_parameter = SaveParameters()
     parameters_from_file = save_parameter.ReadFile()
-    used_parameters_list= ['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'bias_field_voltage', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay', 'field_sensor']
+    used_parameters_list= ['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'bias_field_voltage', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay', 'field_sensor', 'reference_voltage']
     
     licznik = 0
     find_instruments = FindInstrument()
