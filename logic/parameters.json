@@ -22,5 +22,5 @@
     "reverse_voltage": false,
     "delay": 400.0,
     "field_sensor": "field sensor",
-    "reference_voltage": 0.0
+    "reference_voltage": 123.0
 }

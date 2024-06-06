@@ -45,7 +45,7 @@ class NoiseProcedure(Procedure):
     parameters = {}
     save_parameter = SaveParameters()
     parameters_from_file = save_parameter.ReadFile()
-    used_parameters_list= ['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'bias_field_voltage', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay', 'field_sensor', 'reference_voltage']
+    used_parameters_list= ['mode','sample_name','voltage_device', 'voltage_adress','field_device','field_adress', 'field_sensor_adress', 'period_time', 'no_time', 'sampling_interval','bias_voltage', 'bias_field_current', 'bias_field_voltage', 'channelA_range', 'channelA_coupling_type', 'treshold', 'divide', 'start', 'stop', 'no_points', 'reverse_voltage', 'delay', 'field_sensor']
     
     licznik = 0
     find_instruments = FindInstrument()
@@ -99,11 +99,14 @@ class NoiseProcedure(Procedure):
 ######################################## Startup ########################################
     def startup(self):
         for par in self.used_parameters_list:
+            if par == "reference_voltage":
+                continue
             self.param = eval("self."+par)
             self.parameters[par] = self.param
         self.save_parameter.WriteFile(self.parameters)
 #Mean mode:       
         if self.mode == 'Mean' or self.mode == 'Mean + Raw':
+            print("FLAG1")
             if self.mode == 'Mean + Raw':
                 self.header = GenerateHeader()
                 self.header_columns = self.prepare_columns(self.DATA_COLUMNS)
