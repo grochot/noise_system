@@ -1580,7 +1580,7 @@ class IVTransfer(Procedure):
                             "Vsense (V)": (
                                 self.ac_voltage_amplitude
                             ),
-                            "Vbias (V)": self.bias_voltage / 1000,
+                            "Vbias (V)": i,
                             "X field (Oe)": (
                                 i + self.dc_field
                                 if self.amplitude_vec == True

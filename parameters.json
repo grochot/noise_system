@@ -3,7 +3,7 @@
     "mode_lockin": "Sweep voltage",
     "sample_name": "SigInAuto_V+_50Ohm",
     "vector_param": "-30,1,30",
-    "lockin_vector": "4, 2, 20,",
+    "lockin_vector": "1,0.2,5",
     "coil": "Small",
     "coil_constant": 21.2,
     "acquire_type": "V(Hdc) | set Vb",
@@ -30,7 +30,7 @@
     "sigin_ac": true,
     "differential_signal": false,
     "kepco": true,
-    "dc_field": 0.0,
+    "dc_field": 1.0,
     "dc_field_time": 2.0,
     "bias_voltage": 50.0,
     "ac_field_amplitude": 40.0,
@@ -48,5 +48,5 @@
     "timeconstant": 1.0,
     "order": 4,
     "ac_voltage_frequency": 10.0,
-    "ac_voltage_amplitude": 10.0
+    "ac_voltage_amplitude": 1.0
 }
