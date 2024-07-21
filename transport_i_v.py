@@ -104,7 +104,9 @@ class IVTransfer(Procedure):
                 "sigin_float", 
                 "currin_float", 
                 "timeconstant", 
-                "order"
+                "order",
+                "ac_voltage_frequency",
+                "ac_voltage_amplitude",
     ]
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
@@ -119,7 +121,7 @@ class IVTransfer(Procedure):
     mode_lockin = ListParameter(
         "Lockin mode",
         default=parameters_from_file["mode_lockin"],
-        choices=["Sweep field", "Sweep frequency"],
+        choices=["Sweep field", "Sweep frequency", "Sweep voltage"],
         group_by="mode",
         group_condition=lambda v: v == "HDC-ACModeLockin",
     )
@@ -209,8 +211,14 @@ class IVTransfer(Procedure):
             else "None"
         ),
         choices=finded_instruments,
-        group_by={"field_device": lambda v: v == "Agilent E3648A"},
+        group_by=[
+        "mode", 
+        "field_device"
+                 ],
+
+        group_condition=[ lambda v: v == "HDCMode", lambda v: v == "Agilent E3648A"],
     )
+    
     field_device = ListParameter(
         "Field device",
         choices=["DAQ", "Agilent E3648A"],
@@ -260,8 +268,8 @@ class IVTransfer(Procedure):
         "Bias Voltage",
         units="mV",
         default=parameters_from_file["bias_voltage"],
-        group_by="mode",
-        group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+        group_by=["mode", "mode_lockin"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", lambda v: v != "Sweep voltage",],
     )
 
     # Lockin mode:
@@ -275,8 +283,8 @@ class IVTransfer(Procedure):
         "Signal input",
         default=parameters_from_file["input_type"],
         choices=["Voltage input", "Current input"],
-        group_by="mode",
-        group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+        group_by=["mode", "mode_lockin"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", "Sweep field"],
     )
     dc_field = FloatParameter(
         "DC Field",
@@ -306,6 +314,20 @@ class IVTransfer(Procedure):
         group_by=["mode", "amplitude_vec", "mode_lockin"],
         group_condition=[lambda v: v == "HDC-ACModeLockin", True, "Sweep field"],
     )
+    ac_voltage_amplitude = FloatParameter(
+        "AC Voltage Amplitude",
+        units="V",
+        default=parameters_from_file["ac_voltage_amplitude"],
+        group_by=["mode", "mode_lockin" ],
+        group_condition=[lambda v: v == "HDC-ACModeLockin", "Sweep voltage"],
+    )
+    ac_voltage_frequency = FloatParameter(
+        "AC Voltage Frequency",
+        units="Hz",
+        default=parameters_from_file["ac_voltage_frequency"],
+        group_by=["mode",  "mode_lockin"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin", "Sweep voltage"],
+    )
     ac_field_amplitude_time = FloatParameter(
         "AC Field Amplitude",
         units="Oe",
@@ -323,18 +345,20 @@ class IVTransfer(Procedure):
     differential_signal = BooleanParameter(
         "Differential voltage input",
         default=parameters_from_file["differential_signal"],
-        group_by=["mode", "input_type"],
+        group_by=["mode", "input_type", "mode_lockin"],
         group_condition=[
             lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
             lambda v: v == "Voltage input",
+            lambda v: v != "Sweep voltage",
         ],
     )
     sigin_float = BooleanParameter(
         "Signal Input Float",
         default=parameters_from_file["sigin_float"],
-        group_by=["mode"],
+        group_by=["mode", "mode_lockin"],
         group_condition=[
             lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+            lambda v: v != "Sweep voltage",
         ],
     )
     currin_float = BooleanParameter(
@@ -438,19 +462,21 @@ class IVTransfer(Procedure):
     sigin_imp = BooleanParameter(
         "50 Ohm",
         default=parameters_from_file["sigin_imp"],
-        group_by=["mode", "input_type"],
+        group_by=["mode", "input_type", "mode_lockin"],
         group_condition=[
             lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
             lambda v: v == "Voltage input",
+            lambda v: v != "Sweep voltage",
         ],
     )
     sigin_ac = BooleanParameter(
         "AC ON",
         default=parameters_from_file["sigin_ac"],
-        group_by=["mode", "input_type"],
+        group_by=["mode", "input_type", "mode_lockin"],
         group_condition=[
             lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
             lambda v: v == "Voltage input",
+            lambda v: v != "Sweep voltage",
         ],
     )
 
@@ -466,8 +492,8 @@ class IVTransfer(Procedure):
     sigin_autorange = BooleanParameter(
         "SigIN Autorange ON",
         default=parameters_from_file["sigin_autorange"],
-        group_by=["mode"],
-        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode"],
+        group_by=["mode", "mode_lockin"],
+        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", lambda v: v != "Sweep voltage",],
     )
     currins_range = FloatParameter(
         "CurrIN Range",
@@ -796,6 +822,44 @@ class IVTransfer(Procedure):
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
 
                 self.lockin.set_constant_vbias(self.bias_voltage)
+                sleep(1)
+
+            elif self.mode_lockin == "Sweep voltage":
+                try:
+                    self.field_sensor = FieldSensor(self.field_sensor_adress)
+                    self.field_sensor.read_field_init()
+                    log.info("Config FieldSensor done")
+                except:
+                    log.error("Config FieldSensor failed")
+                    self.field_sensor = DummyFieldSensor()
+                    log.info("Use DummyFieldSensor")
+                try:
+                    self.lockin = LockinField(self.lockin_adress)
+                    
+                    self.lockin.init(
+                        1,
+                        False,
+                        float(self.sigin_range),
+                        self.sigin_imp,
+                        self.sigin_ac,
+                        self.sigin_autorange,
+                        self.currins_range,
+                        self.currins_autorange,
+                        self.sigin_float, 
+                        self.currin_float, 
+                        self.timeconstant, 
+                        self.order
+                    )
+
+                    log.info("Lockin initialized")
+                    print("Lockin initialized")
+
+                except Exception as a:
+                    log.error("Lockin init failed: {}".format(a))
+
+                self.vector = self.vector_obj.generate_vector(self.lockin_vector)
+
+                self.lockin.set_constant_vbias(self.dc_field/(1/self.coil_constant))  ##AUX1 - SET CONSTANT FIELD
                 sleep(1)
 
             elif self.mode_lockin == "Sweep frequency":
@@ -1474,6 +1538,68 @@ class IVTransfer(Procedure):
                         log.warning("Caught the stop flag in the procedure")
                         break
 
+            elif self.mode_lockin == "Sweep voltage":
+                # if self.kepco == False:
+                #     # self.calibration_field = LockinCalibration(
+                #     #     self.lockin,
+                #     #     self.ac_field_frequency,
+                #     #     self.dc_field,
+                #     #     self.coil_constant,
+                #     # )
+                #     # self.cal_field_const = self.calibration_field.calibrate()
+                #     self.lockin.set_dc_field(self.bias_voltage)                     # OUTPUT: SET DC VOLTAGE
+                # else:
+                #     self.lockin.set_dc_field(self.bias_voltage)
+
+                # self.lockin.set_lockin_freq(self.lockin_frequency)
+                self.lockin.set_ac_field(self.ac_voltage_amplitude , self.ac_voltage_frequency)
+                self.counter = 0
+
+                for i in self.vector:
+                    self.lockin.set_dc_field(i)  # OUTPUT: SET DC VOLTAGE
+                    if i != 0:
+                        sleep(2 / i)
+                    else:
+                        sleep(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+
+                    r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
+                    theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
+                    r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                    theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                    self.counter = self.counter + 1
+
+                    self.emit("progress", 100 * self.counter / len(self.vector))
+
+                    try:
+
+                        data_lockin = {
+                            "f (Hz)": (
+                               self.ac_voltage_frequency
+                            ),
+
+                            "Vsense (V)": (
+                                self.ac_voltage_amplitude
+                            ),
+                            "Vbias (V)": self.bias_voltage / 1000,
+                            "X field (Oe)": (
+                                i + self.dc_field
+                                if self.amplitude_vec == True
+                                else self.ac_field_amplitude + self.dc_field
+                            ),
+                            "Y field (Oe)": 0,
+                            "Z field (Oe)": 0,
+                            "I (A)": r if self.input_type == "Current input" else r2,
+                            "Phase": theta,
+                        }
+
+                        self.emit("results", data_lockin)
+                    except Exception as e:
+                        print(e)
+                        self.should_stop()
+                    if self.should_stop():
+                        log.warning("Caught the stop flag in the procedure")
+                        break
+
             elif self.mode_lockin == "Sweep frequency":
                 self.field_value = measure_field(1, self.field_sensor, self.should_stop)
                 sleep(2)
@@ -1698,6 +1824,8 @@ class MainWindow(ManagedWindow):
                 "bias_voltage",
                 "ac_field_amplitude",
                 "ac_field_frequency",
+                "ac_voltage_frequency",
+                "ac_voltage_amplitude",
                 "ac_field_amplitude_time",
                 "ac_field_frequency_time",
                 "external_ref",

@@ -1,6 +1,6 @@
 {
     "mode": "HDC-ACModeLockin",
-    "mode_lockin": "Sweep frequency",
+    "mode_lockin": "Sweep voltage",
     "sample_name": "SigInAuto_V+_50Ohm",
     "vector_param": "-30,1,30",
     "lockin_vector": "4, 2, 20,",
@@ -46,5 +46,7 @@
     "sigin_float": false,
     "currin_float": false,
     "timeconstant": 1.0,
-    "order": 4
+    "order": 4,
+    "ac_voltage_frequency": 10.0,
+    "ac_voltage_amplitude": 10.0
 }
