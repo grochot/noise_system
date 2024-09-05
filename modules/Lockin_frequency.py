@@ -118,11 +118,23 @@ class LockinFrequency:
         self.lockin.setorder(0,order)
         self.lockin.setorder(2,order)
 
+
+        #set Vbias output: 
+        self.lockin.setosc(1, 3)
+        self.lockin.oscillatorfreq(3, 0)
+        self.lockin.enableoutput(1, 1)
+        self.lockin.outputamplitude(1,0)
+        self.lockin.outputoffset(0, 0)
+        self.lockin.outputon(0, 1)
+
+
     def set_constant_field(self, value=0):
         self.lockin.auxout(0, value)
 
     def set_constant_vbias(self, value=0):
-        self.lockin.auxout(1, value / 1000)
+        self.lockin.outputoffset(0, value)
+
+        # self.lockin.auxout(1, value / 1000)
 
     def set_lockin_freq(self, freq):
         self.lockin.oscillatorfreq(0, freq)
@@ -148,3 +160,4 @@ class LockinFrequency:
     def shutdown(self):
         self.lockin.auxout(1, 0)
         self.lockin.auxout(0, 0)
+        self.lockin.outputon(0, 0)
