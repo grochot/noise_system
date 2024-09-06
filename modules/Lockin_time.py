@@ -46,17 +46,17 @@ class LockinTime:
         timeconstat = 1, 
         order = 1
     ):
-        if input_type == 0:
-            if autorange == True:
-                self.lockin_device.siginautorange(2, autorange)
-            else:
-                self.lockin_device.siginrange(2, siginrange_value)
-            self.lockin_device.siginac(2, ac)
+        
+        if autorange == True:
+            self.lockin_device.siginautorange(0, autorange)
         else:
-            if currins_autorange == True:
-                self.lockin_device.currinautorange(2, currins_autorange)
-            else:
-                self.lockin_device.currinrange(2, currins_range)
+            self.lockin_device.siginrange(0, siginrange_value)
+            self.lockin_device.siginac(0, ac)
+        
+        if currins_autorange == True:
+            self.lockin_device.currinautorange(1, currins_autorange)
+        else:
+            self.lockin_device.currinrange(1, currins_range)
         #-------------------------------------------------------
         self.lockin_device.extrefsoff()
         self.lockin_device.oscillatorfreq(0, 0)  
@@ -64,46 +64,60 @@ class LockinTime:
         self.lockin_device.oscillatorfreq(2, 0) 
         self.lockin_device.oscillatorfreq(3, 0) 
         #-------------------------------------------------------
-        if input_type ==0:
-            self.lockin_device.siginscaling(2, 1)
-            self.lockin_device.siginfloat(2, 1)
-            self.lockin_device.siginimp50(2, imp50)
-            self.lockin_device.sigindiff(2, differential)
+        
+        self.lockin_device.siginscaling(0, 1)
+        self.lockin_device.siginfloat(1)
+        self.lockin_device.currinfloat(1)
+        self.lockin_device.siginimp50(0, imp50)
+        self.lockin_device.sigindiff(0, differential)
         ## oscyl = 0 -- lockin oscyl 1 -- field 
         # -------------------------------------------------------
-        self.lockin_device.setosc(1, 1)
-        if external_ref==True:
-            self.lockin_device.setextrefs(2,1,1)
-        else:
-            self.lockin_device.extrefsoff()
-            self.lockin_device.setosc(2,0)
+        self.lockin_device.setosc(0, 0)
+        self.lockin_device.setosc(1, 0)
+        self.lockin_device.setosc(2, 1)
+        self.lockin_device.setosc(3, 2)
+      
+        self.lockin_device.setextrefs(0,0,1)
+        self.lockin_device.setextrefs(1,0,1)
+     
 
         # -------------------------------------------------------
-        self.lockin_device.setadc(2, input_type)  # 0 - voltage, 1 - current
-        self.lockin_device.setadc(1, 174) 
-        self.lockin_device.setadc(0, 174) 
+        self.lockin_device.setadc(0, 0)  # 0 - voltage, 1 - current
+        self.lockin_device.setadc(1, 1) 
+        self.lockin_device.setadc(2, 174) 
         self.lockin_device.setadc(3, 174) 
 
         #--------------------------------------------- 
-        self.lockin_device.settimeconst(2, 0.3)
-        self.lockin_device.setorder(2, 2)
-        self.lockin_device.setharmonic(2, 1)
+        self.lockin_device.settimeconst(0, 0.3)
+        self.lockin_device.settimeconst(1, 0.3)
+
+        self.lockin_device.setorder(0, 2)
+        self.lockin_device.setorder(1, 2)
+
+        self.lockin_device.setharmonic(0, 1)
+        self.lockin_device.setharmonic(1, 1)
+
+        self.lockin_device.outputamplitude(0, 0)
         self.lockin_device.outputamplitude(1, 0)
-        self.lockin_device.enableoutput(1, 1)
-        self.lockin_device.outputoffset(1, 0)
+        self.lockin_device.outputamplitude(2, 0)  #USED
+        self.lockin_device.outputamplitude(3, 0)
+
+        #-------------------------------------------------------
+        self.lockin_device.enableoutput(2, 1)
+        self.lockin_device.outputoffset(0, 0)
         self.lockin_device.outputon(0, 1)
-        self.lockin_device.enabledemod(2, 1)
-        self.lockin_device.enabledemod(1, 0)
-        self.lockin_device.enabledemod(0, 0)
+
+        #-------------------------------------------------------
+        self.lockin_device.enabledemod(0, 1)
+        self.lockin_device.enabledemod(1, 1)
+        self.lockin_device.enabledemod(2, 0)
+        self.lockin_device.enabledemod(3, 0)
+
+
+        #-------------------------------------------------------
         self.lockin_device.aux_set_manual(1)
         self.lockin_device.auxout(1, 0)
 
-        self.lockin.siginfloat(1 if sigin_float==True else 0) 
-        self.lockin.currinfloat(1 if currin_float==True else 0)
-        self.lockin.settimeconst(0,timeconstat)
-        self.lockin.settimeconst(2,timeconstat)
-        self.lockin.setorder(0,order)
-        self.lockin.setorder(2,order)
 
     def get_wave(self):
         value = self.lockin_device.get_wave()
