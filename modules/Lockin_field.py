@@ -118,7 +118,7 @@ class LockinField:
         self.lockin.oscillatorfreq(0, freq)  # oscilator 0
         self.lockin.outputamplitude(1, value) #demodulator 1
 
-    def set_dc_field(self, value=0):
+    def set_dc_field(self, value=0.0):
         self.lockin.outputoffset(0, value)   #offset na wyjsciu 
 
     def set_constant_vbias(self, value=0):

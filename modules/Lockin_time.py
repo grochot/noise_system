@@ -119,17 +119,22 @@ class LockinTime:
         self.lockin_device.auxout(1, 0)
 
 
+        #-------------------------------------------------------
+        #SET scope 
+
+
+
     def get_wave(self):
         value = self.lockin_device.get_wave()
         time = self.lockin_device.to_timestamp(value)
 
         return time, value[0]["wave"][0]
 
-    def set_ac_field(self, value=0, freq=1):  # TO DO
+    def set_ac_field(self, value=0.0, freq=1.0):  # TO DO
         self.lockin_device.oscillatorfreq(1, freq)
         self.lockin_device.outputamplitude(1, value)
 
-    def set_dc_field(self, value=0):
+    def set_dc_field(self, value=0.0):
         self.lockin_device.outputoffset(1, value)
 
     def lockin_measure_R(self, demod, averaging_rate):

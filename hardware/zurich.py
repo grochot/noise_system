@@ -149,9 +149,10 @@ class Zurich(Instrument):
     def scope_init(self, av: int, input_sel: int, rate: float, length: float):
         with self.device_loc.set_transaction():
             self.device_loc.scopes[0].length(length)
-            self.device_loc.scopes[0].channel(1)
+            self.device_loc.scopes[0].channel(3)
             self.device_loc.scopes[0].channels[0].bwlimit(1)
-            self.device_loc.scopes[0].channels[0].inputselect(input_sel)
+            self.device_loc.scopes[0].channels[0].inputselect(0)
+            self.device_loc.scopes[0].channels[1].inputselect(1)
             self.device_loc.scopes[0].time(rate)
             self.device_loc.scopes[0].single(True)
             self.device_loc.scopes[0].trigenable(False)

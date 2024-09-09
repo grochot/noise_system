@@ -279,13 +279,13 @@ class IVTransfer(Procedure):
         group_by="mode",
         group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
     )
-    input_type = ListParameter(
-        "Signal input",
-        default=parameters_from_file["input_type"],
-        choices=["Voltage input", "Current input"],
-        group_by=["mode", "mode_lockin"],
-        group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", "Sweep field"],
-    )
+    # input_type = ListParameter(
+    #     "Signal input",
+    #     default=parameters_from_file["input_type"],
+    #     choices=["Voltage input", "Current input"],
+    #     group_by=["mode", "mode_lockin"],
+    #     group_condition=[lambda v: v == "HDC-ACModeLockin" or v == "TimeMode", "Sweep field"],
+    # )
     dc_field = FloatParameter(
         "DC Field",
         units="Oe",
@@ -767,10 +767,11 @@ class IVTransfer(Procedure):
                     log.info("Use DummyFieldSensor")
                 try:
                     self.lockin = LockinField(self.lockin_adress)
-                    if self.input_type == "Current input":
+                  
+                    if self.differential_signal == True:
                         self.lockin.init(
-                            1,
-                            False,
+                            0,
+                            True,
                             float(self.sigin_range),
                             self.sigin_imp,
                             self.sigin_ac,
@@ -783,36 +784,20 @@ class IVTransfer(Procedure):
                             self.order
                         )
                     else:
-                        if self.differential_signal == True:
-                            self.lockin.init(
-                                0,
-                                True,
-                                float(self.sigin_range),
-                                self.sigin_imp,
-                                self.sigin_ac,
-                                self.sigin_autorange,
-                                self.currins_range,
-                                self.currins_autorange,
-                                self.sigin_float, 
-                                self.currin_float, 
-                                self.timeconstant, 
-                                self.order
-                            )
-                        else:
-                            self.lockin.init(
-                                0,
-                                False,
-                                float(self.sigin_range),
-                                self.sigin_imp,
-                                self.sigin_ac,
-                                self.sigin_autorange,
-                                self.currins_range,
-                                self.currins_autorange,
-                                self.sigin_float, 
-                                self.currin_float, 
-                                self.timeconstant, 
-                                self.order
-                            )
+                        self.lockin.init(
+                            0,
+                            False,
+                            float(self.sigin_range),
+                            self.sigin_imp,
+                            self.sigin_ac,
+                            self.sigin_autorange,
+                            self.currins_range,
+                            self.currins_autorange,
+                            self.sigin_float, 
+                            self.currin_float, 
+                            self.timeconstant, 
+                            self.order
+                        )
 
                     log.info("Lockin initialized")
 
@@ -874,9 +859,26 @@ class IVTransfer(Procedure):
                     log.info("Use DummyFieldSensor")
 
                 self.lockin = LockinFrequency(self.lockin_adress)
-                if self.input_type == "Current input":
+           
+             
+                if self.differential_signal == True:
                     self.lockin.init(
-                        1,
+                        0,
+                        True,
+                        float(self.sigin_range),
+                        self.sigin_imp,
+                        self.sigin_ac,
+                        self.sigin_autorange,
+                        self.currins_range,
+                        self.currins_autorange,
+                        self.sigin_float, 
+                        self.currin_float, 
+                        self.timeconstant, 
+                        self.order
+                    )
+                else:
+                    self.lockin.init(
+                        0,
                         False,
                         float(self.sigin_range),
                         self.sigin_imp,
@@ -885,41 +887,10 @@ class IVTransfer(Procedure):
                         self.currins_range,
                         self.currins_autorange,
                         self.sigin_float, 
-                            self.currin_float, 
-                            self.timeconstant, 
-                            self.order
+                        self.currin_float, 
+                        self.timeconstant, 
+                        self.order
                     )
-                else:
-                    if self.differential_signal == True:
-                        self.lockin.init(
-                            0,
-                            True,
-                            float(self.sigin_range),
-                            self.sigin_imp,
-                            self.sigin_ac,
-                            self.sigin_autorange,
-                            self.currins_range,
-                            self.currins_autorange,
-                            self.sigin_float, 
-                            self.currin_float, 
-                            self.timeconstant, 
-                            self.order
-                        )
-                    else:
-                        self.lockin.init(
-                            0,
-                            False,
-                            float(self.sigin_range),
-                            self.sigin_imp,
-                            self.sigin_ac,
-                            self.sigin_autorange,
-                            self.currins_range,
-                            self.currins_autorange,
-                            self.sigin_float, 
-                            self.currin_float, 
-                            self.timeconstant, 
-                            self.order
-                        )
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
                 self.lockin.set_constant_field(self.dc_field / 0.6)
                 sleep(1)
@@ -943,9 +914,27 @@ class IVTransfer(Procedure):
             ########### Lockin #############
             try:
                 self.lockin = LockinTime(self.lockin_adress)
-                if self.input_type == "Current input":
+               
+               
+                if self.differential_signal == True:
                     self.lockin.init_lockin(
-                        1,
+                        0,
+                        True,
+                        float(self.sigin_range),
+                        self.sigin_imp,
+                        self.sigin_ac,
+                        self.sigin_autorange,
+                        self.currins_range,
+                        self.currins_autorange,
+                        self.external_ref,
+                        self.sigin_float, 
+                        self.currin_float, 
+                        self.timeconstant, 
+                        self.order
+                    )
+                else:
+                    self.lockin.init_lockin(
+                        0,
                         False,
                         float(self.sigin_range),
                         self.sigin_imp,
@@ -955,49 +944,13 @@ class IVTransfer(Procedure):
                         self.currins_autorange,
                         self.external_ref,
                         self.sigin_float, 
-                            self.currin_float, 
-                            self.timeconstant, 
-                            self.order
+                        self.currin_float, 
+                        self.timeconstant, 
+                        self.order
                     )
-                    self.lockin.init_scope(
-                        self.avergaging_rate, 1, self.rate_index, self.scope_time
-                    )
-                else:
-                    if self.differential_signal == True:
-                        self.lockin.init_lockin(
-                            0,
-                            True,
-                            float(self.sigin_range),
-                            self.sigin_imp,
-                            self.sigin_ac,
-                            self.sigin_autorange,
-                            self.currins_range,
-                            self.currins_autorange,
-                            self.external_ref,
-                            self.sigin_float, 
-                            self.currin_float, 
-                            self.timeconstant, 
-                            self.order
-                        )
-                    else:
-                        self.lockin.init_lockin(
-                            0,
-                            False,
-                            float(self.sigin_range),
-                            self.sigin_imp,
-                            self.sigin_ac,
-                            self.sigin_autorange,
-                            self.currins_range,
-                            self.currins_autorange,
-                            self.external_ref,
-                            self.sigin_float, 
-                            self.currin_float, 
-                            self.timeconstant, 
-                            self.order
-                        )
-                    self.lockin.init_scope(
-                        self.avergaging_rate, 0, self.rate_index, self.scope_time
-                    )
+                self.lockin.init_scope(
+                    self.avergaging_rate, 0, self.rate_index, self.scope_time
+                )
 
                 log.info("Lockin initialized")
             except Exception as a:
@@ -1499,9 +1452,7 @@ class IVTransfer(Procedure):
                                 if self.amplitude_vec == True
                                 else self.ac_field_amplitude
                             ),
-                            "Vsense (V)": (
-                                r if self.input_type == "Voltage input" else r2
-                            ),
+                            "Vsense (V)": r,
                             "Vbias (V)": self.bias_voltage / 1000,
                             "X field (Oe)": (
                                 i + self.dc_field
@@ -1510,23 +1461,13 @@ class IVTransfer(Procedure):
                             ),
                             "Y field (Oe)": 0,
                             "Z field (Oe)": 0,
-                            "I (A)": r if self.input_type == "Current input" else r2,
+                            "I (A)": r2,
                             "Phase": theta,
-                            "I/Phase": (
-                                r / theta
-                                if self.input_type == "Current input"
-                                else math.nan
-                            ),
-                            "V/Phase": (
-                                r / theta
-                                if self.input_type == "Voltage input"
-                                else math.nan
-                            ),
+                            "I/Phase": r2 / theta,
+                            "V/Phase": r / theta,
                             "I/Ax": (
-                                r / self.ac_field_amplitude
-                                if self.input_type == "Current input"
-                                and self.amplitude_vec == True
-                                else math.nan
+                                r2 / self.ac_field_amplitude
+                               
                             ),
                         }
 
@@ -1588,7 +1529,7 @@ class IVTransfer(Procedure):
                             ),
                             "Y field (Oe)": 0,
                             "Z field (Oe)": 0,
-                            "I (A)": r if self.input_type == "Current input" else r2,
+                            "I (A)": r2,
                             "Phase": theta,
                         }
 
@@ -1650,29 +1591,18 @@ class IVTransfer(Procedure):
                         data_lockin = {
                             "f (Hz)": i,
                             "Vsense (V)": (
-                                r if self.input_type == "Voltage input" else r2
+                                r 
                             ),
                             "Vbias (V)": self.bias_voltage,
                             "X field (Oe)": self.field_value[0],
                             "Y field (Oe)": self.field_value[1],
                             "Z field (Oe)": self.field_value[2],
-                            "I (A)": r if self.input_type == "Current input" else r2,
+                            "I (A)": r2,
                             "Phase": theta,
-                            "I/Phase": (
-                                r / theta
-                                if self.input_type == "Current input"
-                                else math.nan
-                            ),
-                            "V/Phase": (
-                                r / theta
-                                if self.input_type == "Voltage input"
-                                else math.nan
-                            ),
+                            "I/Phase": r2 / theta,
+                            "V/Phase": r/theta,
                             "I/Ax": (
-                                r / self.ac_field_amplitude
-                                if self.input_type == "Current input"
-                                and self.amplitude_vec == True
-                                else math.nan
+                                r2 / self.ac_field_amplitude
                             ),
                         }
 
@@ -1711,8 +1641,6 @@ class IVTransfer(Procedure):
                         "AHac (Oe)": self.ac_field_amplitude_time,
                         "Vsense (V)": (
                             float(scope_signal[1][w])
-                            if self.input_type == "Voltage input"
-                            else math.nan
                         ),
                         "Vbias (V)": self.bias_voltage,
                         "X field (Oe)": 0,
@@ -1720,19 +1648,16 @@ class IVTransfer(Procedure):
                         "Z field (Oe)": 0,
                         "I (A)": (
                             float(scope_signal[1][w])
-                            if self.input_type == "Current input"
-                            else math.nan
+                           
                         ),
                         "Hset (Oe)": self.ac_field_amplitude_time + self.dc_field_time,
                         "G(t)": (
                             float(scope_signal[1][w]) / self.bias_voltage
-                            if self.input_type == "Current input"
-                            else math.nan
+                            
                         ),
                         "R(t)": (
                             self.bias_voltage / float(scope_signal[1][w])
-                            if self.input_type == "Current input"
-                            else math.nan
+                            
                         ),
                     }
 
