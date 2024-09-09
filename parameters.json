@@ -1,8 +1,8 @@
 {
-    "mode": "HDC-ACModeLockin",
+    "mode": "HDCMode",
     "mode_lockin": "Sweep frequency",
     "sample_name": "test1",
-    "vector_param": "-30,1,30",
+    "vector_param": "0,1,Hr",
     "lockin_vector": "1,1,5",
     "coil": "Small",
     "coil_constant": 21.2,
@@ -19,7 +19,7 @@
     "field_bias": 10.0,
     "agilent_adress": "ASRL1::INSTR",
     "delay": 300.0,
-    "reverse_field": true,
+    "reverse_field": false,
     "lockin_adress": "192.168.66.202",
     "sigin_imp": false,
     "currins_range": 0.001,
@@ -47,5 +47,6 @@
     "timeconstant": 1.0,
     "order": 4,
     "ac_voltage_frequency": 10.0,
-    "ac_voltage_amplitude": 1.0
+    "ac_voltage_amplitude": 1.0,
+    "Hr": 10.0
 }

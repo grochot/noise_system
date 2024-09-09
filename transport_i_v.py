@@ -106,6 +106,7 @@ class IVTransfer(Procedure):
                 "order",
                 "ac_voltage_frequency",
                 "ac_voltage_amplitude",
+                "Hr"
     ]
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
@@ -512,6 +513,8 @@ class IVTransfer(Procedure):
         group_by="mode",
         group_condition=lambda v: v == "HDC-ACModeLockin",
     )
+
+    Hr = FloatParameter("Hr", default = parameters_from_file["Hr"])
     ##############################################################################################################################################################
 
     DEBUG = 1
@@ -592,12 +595,12 @@ class IVTransfer(Procedure):
                 try:
                     if self.reverse_field == True:
                         self.vector_to = self.vector_obj.generate_vector(
-                            self.vector_param
+                            self.vector_param, self.Hr
                         )
                         self.vector_rev = self.vector_to[::-1]
                         self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
                     else:
-                        self.vector = self.vector_obj.generate_vector(self.vector_param)
+                        self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
                 except Exception as e:
                     print(e)
                     log.error("Vector set failed")
@@ -619,12 +622,12 @@ class IVTransfer(Procedure):
                 try:
                     if self.reverse_field == True:
                         self.vector_to = self.vector_obj.generate_vector(
-                            self.vector_param
+                            self.vector_param,self.Hr
                         )
                         self.vector_rev = self.vector_to[::-1]
                         self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
                     else:
-                        self.vector = self.vector_obj.generate_vector(self.vector_param)
+                        self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
                 except Exception as e:
                     print(e)
                     log.error("Vector set failed")
@@ -634,70 +637,72 @@ class IVTransfer(Procedure):
             try:
 
                 self.keithley = Keithley2400(self.keithley_adress)
-                if self.acquire_type == "I(Hdc) | set Vb":
-                    self.keithley.apply_voltage()
-                    self.keithley.source_voltage_range = 20
-                    self.keithley.compliance_current = self.keithley_compliance_current
-                    self.keithley.source_voltage = (
-                        self.keithley_voltage_bias
-                    )  # Sets the source current to 0 mA
-                    self.keithley.enable_source()  # Enables the source output
-                    self.keithley.measure_current()
-
-                if self.acquire_type == "V(Hdc) | set Vb":
-                    self.keithley.apply_voltage()
-                    self.keithley.source_voltage_range = 20
-                    self.keithley.compliance_current = self.keithley_compliance_current
-                    self.keithley.source_voltage = (
-                        self.keithley_voltage_bias
-                    )  # Sets the source current to 0 mA
-                    self.keithley.enable_source()  # Enables the source output
-                    self.keithley.measure_current()
-
-
-                elif self.acquire_type == "V(Hdc) |set Ib":
-                    self.keithley.apply_current()
-                    self.keithley.source_current_range = 0.1
-                    self.keithley.compliance_voltage = self.keithley_compliance_voltage
-                    self.keithley.source_current = (
-                        self.keithley_current_bias
-                    )  # Sets the source current to 0 mA
-                    self.keithley.enable_source()  # Enables the source output
-                    self.keithley.measure_voltage()
-                
-                elif self.acquire_type == "I(Vb) | set Hdc":
-                    self.keithley.apply_voltage()
-                    self.keithley.source_voltage_range = 20
-                    self.keithley.compliance_current = self.keithley_compliance_current
-                    self.keithley.source_voltage = 0  # Sets the source current to 0 mA
-                    self.keithley.enable_source()  # Enables the source output
-                    self.keithley.measure_current()
-                    if self.coil == "Large":
-                        self.field_const = 5
-                    else:
-                        self.field_const = 10
-                    self.set_field = self.field.set_field(
-                        self.field_bias / self.field_const
-                    )
-                
-                elif self.acquire_type == "V(Ib) | set Hdc":
-                    self.keithley.apply_current()
-                    self.keithley.source_current_range = 0.1
-                    self.keithley.compliance_voltage = self.keithley_compliance_voltage
-                    self.keithley.source_current = 0  # Sets the source current to 0 mA
-                    self.keithley.enable_source()  # Enables the source output
-                    self.keithley.measure_voltage()
-                    if self.coil == "Large":
-                        self.field_const = 5
-                    else:
-                        self.field_const = 10
-                    self.set_field = self.field.set_field(
-                        self.field_bias / self.field_const
-                    )
-                log.info("Config Keithley done")
-
             except:
-                log.error("Config Keithley failed")
+                raise RuntimeError("Eksperyment został zatrzymany w startup()")
+            if self.acquire_type == "I(Hdc) | set Vb":
+                self.keithley.apply_voltage()
+                self.keithley.source_voltage_range = 20
+                self.keithley.compliance_current = self.keithley_compliance_current
+                self.keithley.source_voltage = (
+                    self.keithley_voltage_bias
+                )  # Sets the source current to 0 mA
+                self.keithley.enable_source()  # Enables the source output
+                self.keithley.measure_current()
+
+            if self.acquire_type == "V(Hdc) | set Vb":
+                self.keithley.apply_voltage()
+                self.keithley.source_voltage_range = 20
+                self.keithley.compliance_current = self.keithley_compliance_current
+                self.keithley.source_voltage = (
+                    self.keithley_voltage_bias
+                )  # Sets the source current to 0 mA
+                self.keithley.enable_source()  # Enables the source output
+                self.keithley.measure_current()
+
+
+            elif self.acquire_type == "V(Hdc) |set Ib":
+                self.keithley.apply_current()
+                self.keithley.source_current_range = 0.1
+                self.keithley.compliance_voltage = self.keithley_compliance_voltage
+                self.keithley.source_current = (
+                    self.keithley_current_bias
+                )  # Sets the source current to 0 mA
+                self.keithley.enable_source()  # Enables the source output
+                self.keithley.measure_voltage()
+            
+            elif self.acquire_type == "I(Vb) | set Hdc":
+                self.keithley.apply_voltage()
+                self.keithley.source_voltage_range = 20
+                self.keithley.compliance_current = self.keithley_compliance_current
+                self.keithley.source_voltage = 0  # Sets the source current to 0 mA
+                self.keithley.enable_source()  # Enables the source output
+                self.keithley.measure_current()
+                if self.coil == "Large":
+                    self.field_const = 5
+                else:
+                    self.field_const = 10
+                self.set_field = self.field.set_field(
+                    self.field_bias / self.field_const
+                )
+            
+            elif self.acquire_type == "V(Ib) | set Hdc":
+                self.keithley.apply_current()
+                self.keithley.source_current_range = 0.1
+                self.keithley.compliance_voltage = self.keithley_compliance_voltage
+                self.keithley.source_current = 0  # Sets the source current to 0 mA
+                self.keithley.enable_source()  # Enables the source output
+                self.keithley.measure_voltage()
+                if self.coil == "Large":
+                    self.field_const = 5
+                else:
+                    self.field_const = 10
+                self.set_field = self.field.set_field(
+                    self.field_bias / self.field_const
+                )
+            log.info("Config Keithley done")
+
+          
+
 
             ####### Config FieldSensor ########
             log.info("Config Field Sensor")
@@ -1679,7 +1684,7 @@ class IVTransfer(Procedure):
                     else:
                         self.field.shutdown(self.field_bias / self.field_const)
                 sleep(0.2)
-
+                
                 self.keithley.shutdown()
                 print("keithley shutdown done")
                 IVTransfer.licznik = 0
@@ -1769,6 +1774,7 @@ class MainWindow(ManagedWindow):
             directory_input=True,
             sequencer=True,
             sequencer_inputs=[
+                "Hr",
                 "field_bias",
                 "keithley_current_bias",
                 "keithley_voltage_bias",
