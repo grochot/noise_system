@@ -888,9 +888,9 @@ class IVTransfer(Procedure):
                         self.order
                     )
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
-                self.lockin.set_constant_field(self.dc_field / 0.6)
+                self.dc_field = self.lockin.set_constant_field(self.dc_field / 0.6)
                 sleep(1)
-                self.lockin.set_constant_vbias(self.bias_voltage)
+                self.vbias = self.lockin.set_constant_vbias(self.bias_voltage)
                 sleep(1)
 
             elif self.mode == "Lockin calibration":
@@ -1427,10 +1427,11 @@ class IVTransfer(Procedure):
                     else:
                         sleep(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 
-                    r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
-                    theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
-                    r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
-                    theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                    r = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                    theta = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                    r2 = self.lockin.lockin_measure_R(1, self.avergaging_rate)
+                    theta2 = self.lockin.lockin_measure_phase(1, self.avergaging_rate)
+            
                     self.counter = self.counter + 1
 
                     self.emit("progress", 100 * self.counter / len(self.vector))
@@ -1450,13 +1451,11 @@ class IVTransfer(Procedure):
                             ),
                             "Vsense (V)": r,
                             "Vbias (V)": self.bias_voltage / 1000,
-                            "X field (Oe)": (
+                            "Hset (Oe)": (
                                 i + self.dc_field
                                 if self.amplitude_vec == True
                                 else self.ac_field_amplitude + self.dc_field
                             ),
-                            "Y field (Oe)": 0,
-                            "Z field (Oe)": 0,
                             "I (A)": r2,
                             "Phase": theta,
                             "I/Phase": r2 / theta,
@@ -1557,31 +1556,31 @@ class IVTransfer(Procedure):
                             sleep(self.factor_period*(1/i))
                         else:
                             sleep(self.time_first_loop)
-                        r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
+                        r = self.lockin.lockin_measure_R(0, self.avergaging_rate)
                         if self.counter == 0:
                             sleep(self.time_first_loop)
                         if i != 0:
                             sleep(self.factor_period*(1/i))
                         else:
                             sleep(self.time_first_loop)
-                        theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
+                        theta = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
                         if self.counter == 0:
                             sleep(self.time_first_loop)
                         if i != 0:
                             sleep(self.factor_period*(1/i))
                         else:
                             sleep(self.time_first_loop)
-                        r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                        r2 = self.lockin.lockin_measure_R(1, self.avergaging_rate)
                         if self.counter == 0:
                             sleep(self.time_first_loop)
                         if i != 0:
                             sleep(self.factor_period*(1/i))
                         else:
                             sleep(self.time_first_loop)
-                        theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                        theta2 = self.lockin.lockin_measure_phase(1, self.avergaging_rate)
                         self.counter = self.counter + 1
 
-
+ 
                     self.emit("progress", 100 * self.counter / len(self.vector))
                     try:
                         data_lockin = {
@@ -1590,6 +1589,7 @@ class IVTransfer(Procedure):
                                 r 
                             ),
                             "Vbias (V)": self.bias_voltage,
+                            "Hset (Oe)": self.dc_field,
                             "X field (Oe)": self.field_value[0],
                             "Y field (Oe)": self.field_value[1],
                             "Z field (Oe)": self.field_value[2],

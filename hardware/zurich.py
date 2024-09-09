@@ -77,8 +77,8 @@ class Zurich(Instrument):
     def outputrange(self, output, range):
         self.device_loc.sigouts[output].range(range)
 
-    def outputautorange(self, output, auto):
-        self.device_loc.sigouts[output].autorange(auto)
+    def outputautorange(self, auto):
+        self.device_loc.sigouts[0].autorange(auto)
 
     def outputoffset(self, output, offset):
         self.device_loc.sigouts[0].offset(offset)
@@ -141,8 +141,18 @@ class Zurich(Instrument):
     ##### GET SAMPLE ########
 
     def getsample(self, demod):
-        sample = self.device_loc.demods[demod].sample()
-        return sample
+        sample = False
+        try:
+            sample = self.device_loc.demods[demod].sample()
+            return sample
+        except: 
+            while sample == False:
+                sleep(0.5)
+                sample = self.device_loc.demods[demod].sample()
+            return sample
+
+
+        
 
     ####### LOCKIN SCOPE ######
 

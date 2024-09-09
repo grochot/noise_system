@@ -36,24 +36,19 @@ class LockinFrequency:
         order = 1
     ):
 
-        if input_type == 0: #voltage 
-            VOLTAGE_DEMOD = 0 
-            CURRENT_DEMOD = 2
-        else: 
-            VOLTAGE_DEMOD = 2 
-            CURRENT_DEMOD = 0
+
 
         if autorange == True:
-            self.lockin.siginautorange(VOLTAGE_DEMOD, autorange)
+            self.lockin.siginautorange(0, autorange)
         else:
-            self.lockin.siginrange(VOLTAGE_DEMOD, siginrange_value)
+            self.lockin.siginrange(0, siginrange_value)
         
-        self.lockin.siginac(VOLTAGE_DEMOD, ac)
+        self.lockin.siginac(0, ac)
         
         if currins_autorange == True:
-            self.lockin.currinautorange(CURRENT_DEMOD, currins_autorange)
+            self.lockin.currinautorange(2, currins_autorange)
         else:
-            self.lockin.currinrange(CURRENT_DEMOD, currins_range)
+            self.lockin.currinrange(2, currins_range)
         
         #Set oscillators freq to 0
         self.lockin.oscillatorfreq(0, 0)
@@ -62,17 +57,17 @@ class LockinFrequency:
         self.lockin.oscillatorfreq(3, 0)
 
         #set sigin voltage\current parametes
-        self.lockin.siginscaling(VOLTAGE_DEMOD, 1)
+        self.lockin.siginscaling(0, 1)
        
-        self.lockin.currinscaling(CURRENT_DEMOD, 1)
+        self.lockin.currinscaling(1, 1)
       
-        self.lockin.sigindiff(VOLTAGE_DEMOD, differential)
-        self.lockin.siginimp50(VOLTAGE_DEMOD, imp50)
+        self.lockin.sigindiff(0, differential)
+        self.lockin.siginimp50(0, imp50)
 
         #set input type to demodulators
-        self.lockin.setadc(2, input_type)  #0 demodulators to voltage/current
-        self.lockin.setadc(0, 0 if input_type == 1 else 1)  #1 demodulators to current/voltage 
-        self.lockin.setadc(1,174)  #2 demodulators to constant
+        self.lockin.setadc(1, 1)  #0 demodulators to voltage/current
+        self.lockin.setadc(0, 0)  #1 demodulators to current/voltage 
+        self.lockin.setadc(2,174)  #2 demodulators to constant
         self.lockin.setadc(3,174)  #2 demodulators to constant
         self.lockin.extrefsoff()
         
@@ -86,14 +81,14 @@ class LockinFrequency:
 
         # set sigin parameters
         self.lockin.settimeconst(0, 0.3)
-        self.lockin.settimeconst(2, 0.3)
+        self.lockin.settimeconst(1, 0.3)
         self.lockin.setorder(0, 2)
-        self.lockin.setorder(2, 2)
+        self.lockin.setorder(1, 2)
         self.lockin.setharmonic(0, 1)
-        self.lockin.setharmonic(2, 1)
+        self.lockin.setharmonic(1, 1)
         self.lockin.enabledemod(0, 1)
-        self.lockin.enabledemod(2, 1)
-        self.lockin.enabledemod(1, 0)
+        self.lockin.enabledemod(1, 1)
+        self.lockin.enabledemod(2, 0)
         self.lockin.enabledemod(3, 0)
 
         #set output
@@ -114,16 +109,16 @@ class LockinFrequency:
         self.lockin.siginfloat(1 if sigin_float==True else 0) 
         self.lockin.currinfloat(1 if currin_float==True else 0)
         self.lockin.settimeconst(0,timeconstat)
-        self.lockin.settimeconst(2,timeconstat)
+        self.lockin.settimeconst(1,timeconstat)
         self.lockin.setorder(0,order)
-        self.lockin.setorder(2,order)
+        self.lockin.setorder(1,order)
 
 
         #set Vbias output: 
-        self.lockin.setosc(1, 3)
+        self.lockin.setosc(2, 3)
         self.lockin.oscillatorfreq(3, 0)
-        self.lockin.enableoutput(1, 1)
-        self.lockin.outputamplitude(1,0)
+        self.lockin.enableoutput(2, 1)
+        self.lockin.outputamplitude(2,0)
         self.lockin.outputoffset(0, 0)
         self.lockin.outputon(0, 1)
 
@@ -132,7 +127,7 @@ class LockinFrequency:
         self.lockin.auxout(0, value)
 
     def set_constant_vbias(self, value=0):
-        self.lockin.outputoffset(0, value)
+        self.lockin.outputoffset(2, value)
 
         # self.lockin.auxout(1, value / 1000)
 
@@ -161,3 +156,13 @@ class LockinFrequency:
         self.lockin.auxout(1, 0)
         self.lockin.auxout(0, 0)
         self.lockin.outputon(0, 0)
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt 
+    lockin = LockinFrequency('192.168.66.202')
+    lockin.init_lockin()
+    sample = lockin.getsample()
+    plt.plot(sample[0], sample[1], sample[0],  sample[2])
+    plt.show()
+    # print(sample)
+    
