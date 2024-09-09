@@ -78,7 +78,6 @@ class IVTransfer(Procedure):
                 "delay",
                 "reverse_field",
                 "lockin_adress",
-                "input_type",
                 "sigin_imp",
                 
                 "currins_range",
@@ -345,10 +344,9 @@ class IVTransfer(Procedure):
     differential_signal = BooleanParameter(
         "Differential voltage input",
         default=parameters_from_file["differential_signal"],
-        group_by=["mode", "input_type", "mode_lockin"],
+        group_by=["mode", "mode_lockin"],
         group_condition=[
             lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
-            lambda v: v == "Voltage input",
             lambda v: v != "Sweep voltage",
         ],
     )
@@ -462,20 +460,18 @@ class IVTransfer(Procedure):
     sigin_imp = BooleanParameter(
         "50 Ohm",
         default=parameters_from_file["sigin_imp"],
-        group_by=["mode", "input_type", "mode_lockin"],
+        group_by=["mode", "mode_lockin"],
         group_condition=[
             lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
-            lambda v: v == "Voltage input",
             lambda v: v != "Sweep voltage",
         ],
     )
     sigin_ac = BooleanParameter(
         "AC ON",
         default=parameters_from_file["sigin_ac"],
-        group_by=["mode", "input_type", "mode_lockin"],
+        group_by=["mode", "mode_lockin"],
         group_condition=[
             lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
-            lambda v: v == "Voltage input",
             lambda v: v != "Sweep voltage",
         ],
     )
@@ -1647,7 +1643,7 @@ class IVTransfer(Procedure):
                         "Y field (Oe)": 0,
                         "Z field (Oe)": 0,
                         "I (A)": (
-                            float(scope_signal[1][w])
+                            float(scope_signal[2][w])
                            
                         ),
                         "Hset (Oe)": self.ac_field_amplitude_time + self.dc_field_time,
@@ -1731,7 +1727,6 @@ class MainWindow(ManagedWindow):
                 "delay",
                 "reverse_field",
                 "lockin_adress",
-                "input_type",
                 "sigin_imp",
                 "timeconstant", 
                 "order", 
@@ -1783,7 +1778,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
         )
 
-        self.setWindowTitle("IV Measurement System v.0.99.5")
+        self.setWindowTitle("IV Measurement System v.0.99.8")
         self.directory = self.procedure_class.path_file.ReadFile()
 
     def queue(self, procedure=None):

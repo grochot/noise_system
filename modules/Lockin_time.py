@@ -93,6 +93,9 @@ class LockinTime:
 
         self.lockin_device.setorder(0, 2)
         self.lockin_device.setorder(1, 2)
+        self.lockin_device.setorder(2, 2)
+        self.lockin_device.setorder(3, 2)
+
 
         self.lockin_device.setharmonic(0, 1)
         self.lockin_device.setharmonic(1, 1)
@@ -103,8 +106,16 @@ class LockinTime:
         self.lockin_device.outputamplitude(3, 0)
 
         #-------------------------------------------------------
+        self.lockin_device.enableoutput(0, 0)
+        self.lockin_device.enableoutput(1, 0)
         self.lockin_device.enableoutput(2, 1)
+        self.lockin_device.enableoutput(3, 0)
+
         self.lockin_device.outputoffset(0, 0)
+        self.lockin_device.outputoffset(0, 0)
+        self.lockin_device.outputoffset(0, 0)
+        self.lockin_device.outputoffset(0, 0)
+
         self.lockin_device.outputon(0, 1)
 
         #-------------------------------------------------------
@@ -128,7 +139,7 @@ class LockinTime:
         value = self.lockin_device.get_wave()
         time = self.lockin_device.to_timestamp(value)
 
-        return time, value[0]["wave"][0]
+        return time, value[0]["wave"][0], value[0]["wave"][1]  #, value["wave"][1]
 
     def set_ac_field(self, value=0.0, freq=1.0):  # TO DO
         self.lockin_device.oscillatorfreq(1, freq)
@@ -164,5 +175,15 @@ class LockinTime:
         self.ac_value = (value_ac * 50) / calib_ac
         self.set_ac_field(self.ac_value, freq)
 
-
+# Test:
  
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt 
+    lockin = LockinTime('192.168.66.202')
+    lockin.init_lockin()
+    lockin.init_scope()
+    sample = lockin.get_wave()
+    plt.plot(sample[0], sample[1], sample[0],  sample[2])
+    plt.show()
+    # print(sample)
+    

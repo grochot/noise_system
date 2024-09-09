@@ -1,5 +1,5 @@
 {
-    "mode": "HDC-ACModeLockin",
+    "mode": "TimeMode",
     "mode_lockin": "Sweep voltage",
     "sample_name": "SigInAuto_V+_50Ohm",
     "vector_param": "-30,1,30",
@@ -21,7 +21,6 @@
     "delay": 300.0,
     "reverse_field": true,
     "lockin_adress": "192.168.66.202",
-    "input_type": "Voltage input",
     "sigin_imp": false,
     "currins_range": 0.001,
     "currins_autorange": true,
