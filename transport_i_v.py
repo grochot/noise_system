@@ -51,6 +51,7 @@ log.addHandler(logging.NullHandler())
 
 class IVTransfer(Procedure):
     licznik = 1  # licznik
+    stop_flag = False
     find_instruments = FindInstrument()
     finded_instruments = list(find_instruments.show_instrument())
     finded_instruments.append("None")
@@ -577,21 +578,18 @@ class IVTransfer(Procedure):
         self.save_parameter.WriteFile(self.parameters)
         self.vector_obj = Vector()
         if self.mode == "HDCMode":
-            log.info("Finding instruments...")
             sleep(0.1)
-            log.info("Finded: {}".format(self.finded_instruments))
+
 
             ### Init field device
             if self.field_device == "DAQ":
-                log.info("Start config DAQ")
                 try:
                     from hardware.daq import DAQ
 
                     self.field = DAQ("6124/ao0")
-                    log.info("Config DAQ done")
                 except Exception as e:
-                    print(e)
                     log.error("Config DAQ failed")
+                    self.stop_flag = True
                 try:
                     if self.reverse_field == True:
                         self.vector_to = self.vector_obj.generate_vector(
@@ -602,11 +600,10 @@ class IVTransfer(Procedure):
                     else:
                         self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
                 except Exception as e:
-                    print(e)
                     log.error("Vector set failed")
-                print(self.vector)
+                    self.stop_flag = True
+                
             else:
-                log.info("Start config Keisight E3648A")
                 ##Bias field:
                 try:
                     from hardware.keisight_e3600a import E3600a
@@ -617,8 +614,8 @@ class IVTransfer(Procedure):
                     self.field.remote()
                     sleep(1)
                 except Exception as e:
-                    print(e)
                     log.error("Config Keisight E3648A failed")
+                    self.stop_flag = True
                 try:
                     if self.reverse_field == True:
                         self.vector_to = self.vector_obj.generate_vector(
@@ -629,87 +626,88 @@ class IVTransfer(Procedure):
                     else:
                         self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
                 except Exception as e:
-                    print(e)
                     log.error("Vector set failed")
+                    self.stop_flag = True
 
             ############## KEITHLEY CONFIG ###############
-            log.info("Start config Keithley")
             try:
 
                 self.keithley = Keithley2400(self.keithley_adress)
+                if self.acquire_type == "I(Hdc) | set Vb":
+                    self.keithley.apply_voltage()
+                    self.keithley.source_voltage_range = 20
+                    self.keithley.compliance_current = self.keithley_compliance_current
+                    self.keithley.source_voltage = (
+                        self.keithley_voltage_bias
+                    )  # Sets the source current to 0 mA
+                    self.keithley.enable_source()  # Enables the source output
+                    self.keithley.measure_current()
+
+                if self.acquire_type == "V(Hdc) | set Vb":
+                    self.keithley.apply_voltage()
+                    self.keithley.source_voltage_range = 20
+                    self.keithley.compliance_current = self.keithley_compliance_current
+                    self.keithley.source_voltage = (
+                        self.keithley_voltage_bias
+                    )  # Sets the source current to 0 mA
+                    self.keithley.enable_source()  # Enables the source output
+                    self.keithley.measure_current()
+
+
+                elif self.acquire_type == "V(Hdc) |set Ib":
+                    self.keithley.apply_current()
+                    self.keithley.source_current_range = 0.1
+                    self.keithley.compliance_voltage = self.keithley_compliance_voltage
+                    self.keithley.source_current = (
+                        self.keithley_current_bias
+                    )  # Sets the source current to 0 mA
+                    self.keithley.enable_source()  # Enables the source output
+                    self.keithley.measure_voltage()
+                
+                elif self.acquire_type == "I(Vb) | set Hdc":
+                    self.keithley.apply_voltage()
+                    self.keithley.source_voltage_range = 20
+                    self.keithley.compliance_current = self.keithley_compliance_current
+                    self.keithley.source_voltage = 0  # Sets the source current to 0 mA
+                    self.keithley.enable_source()  # Enables the source output
+                    self.keithley.measure_current()
+                    if self.coil == "Large":
+                        self.field_const = 5
+                    else:
+                        self.field_const = 10
+                    self.set_field = self.field.set_field(
+                        self.field_bias / self.field_const
+                    )
+                
+                elif self.acquire_type == "V(Ib) | set Hdc":
+                    self.keithley.apply_current()
+                    self.keithley.source_current_range = 0.1
+                    self.keithley.compliance_voltage = self.keithley_compliance_voltage
+                    self.keithley.source_current = 0  # Sets the source current to 0 mA
+                    self.keithley.enable_source()  # Enables the source output
+                    self.keithley.measure_voltage()
+                    if self.coil == "Large":
+                        self.field_const = 5
+                    else:
+                        self.field_const = 10
+                    self.set_field = self.field.set_field(
+                        self.field_bias / self.field_const
+                    )
+             
             except:
-                raise RuntimeError("Eksperyment został zatrzymany w startup()")
-            if self.acquire_type == "I(Hdc) | set Vb":
-                self.keithley.apply_voltage()
-                self.keithley.source_voltage_range = 20
-                self.keithley.compliance_current = self.keithley_compliance_current
-                self.keithley.source_voltage = (
-                    self.keithley_voltage_bias
-                )  # Sets the source current to 0 mA
-                self.keithley.enable_source()  # Enables the source output
-                self.keithley.measure_current()
-
-            if self.acquire_type == "V(Hdc) | set Vb":
-                self.keithley.apply_voltage()
-                self.keithley.source_voltage_range = 20
-                self.keithley.compliance_current = self.keithley_compliance_current
-                self.keithley.source_voltage = (
-                    self.keithley_voltage_bias
-                )  # Sets the source current to 0 mA
-                self.keithley.enable_source()  # Enables the source output
-                self.keithley.measure_current()
-
-
-            elif self.acquire_type == "V(Hdc) |set Ib":
-                self.keithley.apply_current()
-                self.keithley.source_current_range = 0.1
-                self.keithley.compliance_voltage = self.keithley_compliance_voltage
-                self.keithley.source_current = (
-                    self.keithley_current_bias
-                )  # Sets the source current to 0 mA
-                self.keithley.enable_source()  # Enables the source output
-                self.keithley.measure_voltage()
-            
-            elif self.acquire_type == "I(Vb) | set Hdc":
-                self.keithley.apply_voltage()
-                self.keithley.source_voltage_range = 20
-                self.keithley.compliance_current = self.keithley_compliance_current
-                self.keithley.source_voltage = 0  # Sets the source current to 0 mA
-                self.keithley.enable_source()  # Enables the source output
-                self.keithley.measure_current()
-                if self.coil == "Large":
-                    self.field_const = 5
-                else:
-                    self.field_const = 10
-                self.set_field = self.field.set_field(
-                    self.field_bias / self.field_const
-                )
-            
-            elif self.acquire_type == "V(Ib) | set Hdc":
-                self.keithley.apply_current()
-                self.keithley.source_current_range = 0.1
-                self.keithley.compliance_voltage = self.keithley_compliance_voltage
-                self.keithley.source_current = 0  # Sets the source current to 0 mA
-                self.keithley.enable_source()  # Enables the source output
-                self.keithley.measure_voltage()
-                if self.coil == "Large":
-                    self.field_const = 5
-                else:
-                    self.field_const = 10
-                self.set_field = self.field.set_field(
-                    self.field_bias / self.field_const
-                )
-            log.info("Config Keithley done")
+                log.error("Config Keithley 2400 failed")
+                self.stop_flag = True
+          
 
           
 
 
             ####### Config FieldSensor ########
-            log.info("Config Field Sensor")
+           
             try:
                 self.field_sensor = FieldSensor(self.field_sensor_adress)
                 self.field_sensor.read_field_init()
-                log.info("Config FieldSensor done")
+
             except:
                 log.error("Config FieldSensor failed")
                 self.field_sensor = DummyFieldSensor()
@@ -717,7 +715,6 @@ class IVTransfer(Procedure):
 
             ####### Config Agilent 34410A ########
             if self.agilent == True:
-                log.info("Config Agilent 34410A")
                 try:
                     self.agilent_34410 = Agilent34410A(self.agilent34401a_adress)
 
@@ -733,9 +730,10 @@ class IVTransfer(Procedure):
                         self.set_field = self.field.set_field(
                             self.field_bias / self.field_const
                         )
-                    log.info("Config Agilent 34410A done")
+                  
                 except:
                     log.error("Config Agilent 34410A failed")
+                    self.stop_flag = True
 
         elif self.mode == "Fast Resistance":
 
@@ -753,7 +751,8 @@ class IVTransfer(Procedure):
                 self.keithley.measure_resistance()
 
             except:
-                log.error("Config Keithley failed")
+                log.error("Config Keithley 2400 failed")
+                self.stop_flag = True
 
         elif self.mode == "HDC-ACModeLockin":
 
@@ -761,7 +760,6 @@ class IVTransfer(Procedure):
                 try:
                     self.field_sensor = FieldSensor(self.field_sensor_adress)
                     self.field_sensor.read_field_init()
-                    log.info("Config FieldSensor done")
                 except:
                     log.error("Config FieldSensor failed")
                     self.field_sensor = DummyFieldSensor()
@@ -800,10 +798,11 @@ class IVTransfer(Procedure):
                             self.order
                         )
 
-                    log.info("Lockin initialized")
+                  
 
                 except Exception as a:
                     log.error("Lockin init failed: {}".format(a))
+                    self.stop_flag = True
 
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
 
@@ -814,7 +813,6 @@ class IVTransfer(Procedure):
                 try:
                     self.field_sensor = FieldSensor(self.field_sensor_adress)
                     self.field_sensor.read_field_init()
-                    log.info("Config FieldSensor done")
                 except:
                     log.error("Config FieldSensor failed")
                     self.field_sensor = DummyFieldSensor()
@@ -837,11 +835,9 @@ class IVTransfer(Procedure):
                         self.order
                     )
 
-                    log.info("Lockin initialized")
-                    print("Lockin initialized")
-
                 except Exception as a:
                     log.error("Lockin init failed: {}".format(a))
+                    self.stop_flag = True
 
                 self.vector = self.vector_obj.generate_vector(self.lockin_vector)
 
@@ -853,7 +849,7 @@ class IVTransfer(Procedure):
                 try:
                     self.field_sensor = FieldSensor(self.field_sensor_adress)
                     self.field_sensor.read_field_init()
-                    log.info("Config FieldSensor done")
+             
                 except:
                     log.error("Config FieldSensor failed")
                     self.field_sensor = DummyFieldSensor()
@@ -907,7 +903,6 @@ class IVTransfer(Procedure):
             try:
                 self.field_sensor = FieldSensor(self.field_sensor_adress)
                 self.field_sensor.read_field_init()
-                log.info("Config FieldSensor done")
             except:
                 log.error("Config FieldSensor failed.")
                 self.field_sensor = DummyFieldSensor()
@@ -953,752 +948,759 @@ class IVTransfer(Procedure):
                     self.avergaging_rate, 0, self.rate_index, self.scope_time
                 )
 
-                log.info("Lockin initialized")
             except Exception as a:
-                log.error(a)
                 log.error("Lockin init failed")
+                self.stop_flag = True
 
             self.lockin.set_constant_vbias(self.bias_voltage)
             sleep(1)
 
 ############################################## RUN ###############################################
     def execute(self):
-        diff = ComputeDiff()
-        res = ComputerResistance()
-        tmp_voltage = []
-        tmp_current = []
-        tmp_field_x = []
-        tmp_field_y = []
-        tmp_field_z = []
-        tmp_resistance = []
-        tmp_conductance = []
-        tmp_field_set = []
-        tmp_diff_x = []
-        tmp_dR = []
-        tmp_dI = []
-        tmp_dV = []
-        tmp_dI_dH = []
-        tmp_dV_dH = []
-        tmp_dR_dH = []
-        tmp_dG_dH = []
-        tmp_NdI = []
-        tmp_SPdI = []
-        tmp_HdIS = []
-        tmp_HdR = []
-        tmp_HdG = []
-        tmp_dR = []
-        tmp_dG = []
-        tmp_NdR = []
-        tmp_NdG = []
-        tmp_HdRS = []
-        tmp_HdGS = []
-        tmp_NdV = []
-        tmp_SPdV = []
-        tmp_HdVS = []
-        tmp_dI_dV = []
-        tmp_dV_dI = []
+        if self.stop_flag == False:    
+            diff = ComputeDiff()
+            res = ComputerResistance()
+            tmp_voltage = []
+            tmp_current = []
+            tmp_field_x = []
+            tmp_field_y = []
+            tmp_field_z = []
+            tmp_resistance = []
+            tmp_conductance = []
+            tmp_field_set = []
+            tmp_diff_x = []
+            tmp_dR = []
+            tmp_dI = []
+            tmp_dV = []
+            tmp_dI_dH = []
+            tmp_dV_dH = []
+            tmp_dR_dH = []
+            tmp_dG_dH = []
+            tmp_NdI = []
+            tmp_SPdI = []
+            tmp_HdIS = []
+            tmp_HdR = []
+            tmp_HdG = []
+            tmp_dR = []
+            tmp_dG = []
+            tmp_NdR = []
+            tmp_NdG = []
+            tmp_HdRS = []
+            tmp_HdGS = []
+            tmp_NdV = []
+            tmp_SPdV = []
+            tmp_HdVS = []
+            tmp_dI_dV = []
+            tmp_dV_dI = []
 
-        if self.mode == "HDCMode":
-            if self.acquire_type == "I(Hdc) | set Vb":
-                log.info("Starting to sweep through field")
-                if self.coil == "Large":
-                    self.field_const = 5
-                else:
-                    self.field_const = 10
-                w = 0
-                for i in self.vector:
-                    self.last_value = i
-                    self.field.set_field(i / self.field_const)
-                    tmp_field_set.append(i)  # surowe pole
-                    sleep(self.delay * 0.001)
-                    print("DEBUG:set field: {}".format(i))
-                    self.tmp_field = self.field_sensor.read_field()
-                    tmp_field_x.append(self.tmp_field[0])
-                    tmp_field_y.append(self.tmp_field[1])
-                    tmp_field_z.append(self.tmp_field[2])
-                    sleep(self.delay * 0.001)
-                    print("DEBUG: field masured:  {}".format(self.tmp_field))
-                    if self.agilent == True:
-                        self.tmp_current = self.agilent_34410.current_dc
+            if self.mode == "HDCMode":
+                if self.acquire_type == "I(Hdc) | set Vb":
+                    if self.coil == "Large":
+                        self.field_const = 5
                     else:
-                        self.tmp_current = self.keithley.current
-                    # surowe dane:
-                    tmp_current.append(self.tmp_current)  # surowy prąd
-                    tmp_voltage.append(self.keithley_voltage_bias)  # surowe napiecie
-                    tmp_resistance.append(
-                        float(self.keithley_voltage_bias) / float(self.tmp_current)
-                        if self.tmp_current != 0
-                        else np.nan
-                    )  # surowa rezystancja
-                    tmp_conductance.append(
-                        1
-                        / (float(self.keithley_voltage_bias) / float(self.tmp_current))
-                        if self.tmp_current != 0
-                        else np.nan
-                    )  # surowa konduktancja
+                        self.field_const = 10
+                    w = 0
+                    for i in self.vector:
+                        self.last_value = i
+                        self.field.set_field(i / self.field_const)
+                        tmp_field_set.append(i)  # surowe pole
+                        sleep(self.delay * 0.001)
+                        print("DEBUG:set field: {}".format(i))
+                        self.tmp_field = self.field_sensor.read_field()
+                        tmp_field_x.append(self.tmp_field[0])
+                        tmp_field_y.append(self.tmp_field[1])
+                        tmp_field_z.append(self.tmp_field[2])
+                        sleep(self.delay * 0.001)
+                        print("DEBUG: field masured:  {}".format(self.tmp_field))
+                        if self.agilent == True:
+                            self.tmp_current = self.agilent_34410.current_dc
+                        else:
+                            self.tmp_current = self.keithley.current
+                        # surowe dane:
+                        tmp_current.append(self.tmp_current)  # surowy prąd
+                        tmp_voltage.append(self.keithley_voltage_bias)  # surowe napiecie
+                        tmp_resistance.append(
+                            float(self.keithley_voltage_bias) / float(self.tmp_current)
+                            if self.tmp_current != 0
+                            else np.nan
+                        )  # surowa rezystancja
+                        tmp_conductance.append(
+                            1
+                            / (float(self.keithley_voltage_bias) / float(self.tmp_current))
+                            if self.tmp_current != 0
+                            else np.nan
+                        )  # surowa konduktancja
 
-                    self.emit("progress", 100 * w / len(self.vector))
-                    w = w + 1
-                    if self.should_stop():
-                        log.warning("Caught the stop flag in the procedure")
-                        break
-                print(
-                    "DEBUG:\n current: {} \n voltage: {} \n resistance: {} \n conductance: {}".format(
-                        tmp_current, tmp_voltage, tmp_resistance, tmp_conductance
+                        self.emit("progress", 100 * w / len(self.vector))
+                        w = w + 1
+                        if self.should_stop():
+                            log.warning("USER STOP")
+                            break
+                    print(
+                        "DEBUG:\n current: {} \n voltage: {} \n resistance: {} \n conductance: {}".format(
+                            tmp_current, tmp_voltage, tmp_resistance, tmp_conductance
+                        )
                     )
-                )
-                # opracowanie:
-                tmp_dI_dH = diff.diffs(tmp_field_set, tmp_current)
-                tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
-                tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
-                tmp_dI = diff.diffIV(tmp_current)
-                tmp_NdI = diff.NormalizedDiff(tmp_current)
-                tmp_SPdI = diff.SlopeDiff(tmp_current, self.vector)
-                tmp_HdIS = diff.HdIS(tmp_dI_dH, tmp_resistance)
-                tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
-                tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance)
-                tmp_dR = diff.diffIV(tmp_resistance)
-                tmp_dG = diff.diffIV(tmp_conductance)
-                tmp_NdR = diff.NormalizedDiff(tmp_resistance)
-                tmp_NdG = diff.NormalizedDiff(tmp_conductance)
-                tmp_HdRS = diff.HdIS(tmp_HdR, tmp_current)
-                tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
+                    # opracowanie:
+                    tmp_dI_dH = diff.diffs(tmp_field_set, tmp_current)
+                    tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
+                    tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
+                    tmp_dI = diff.diffIV(tmp_current)
+                    tmp_NdI = diff.NormalizedDiff(tmp_current)
+                    tmp_SPdI = diff.SlopeDiff(tmp_current, self.vector)
+                    tmp_HdIS = diff.HdIS(tmp_dI_dH, tmp_resistance)
+                    tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
+                    tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance)
+                    tmp_dR = diff.diffIV(tmp_resistance)
+                    tmp_dG = diff.diffIV(tmp_conductance)
+                    tmp_NdR = diff.NormalizedDiff(tmp_resistance)
+                    tmp_NdG = diff.NormalizedDiff(tmp_conductance)
+                    tmp_HdRS = diff.HdIS(tmp_HdR, tmp_current)
+                    tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
 
-                for l in range(len(tmp_voltage)):
-                    data = {
-                        "V (V)": self.value_function(tmp_voltage, l),
-                        "I (A)": self.value_function(tmp_current, l),
-                        "R (ohm)": self.value_function(tmp_resistance, l),
-                        "G": self.value_function(tmp_conductance, l),
-                        "X field (Oe)": self.value_function(tmp_field_x, l),
-                        "Y field (Oe)": self.value_function(tmp_field_y, l),
-                        "Z field (Oe)": self.value_function(tmp_field_z, l),
-                        "Hset (Oe)": self.value_function(tmp_field_set, l),
-                        "dR/dH": self.value_function(tmp_dR_dH, l),
-                        "dG/dH": self.value_function(tmp_dG_dH, l),
-                        "dI": self.value_function(tmp_dI, l),
-                        "dI/dH": self.value_function(tmp_dI_dH, l),
-                        "NdI": self.value_function(tmp_NdI, l),
-                        "SPdI": self.value_function(tmp_SPdI, l),
-                        "HdIS": self.value_function(tmp_HdIS, l),
-                        "HdR": self.value_function(tmp_HdR, l),
-                        "HdG": self.value_function(tmp_HdG, l),
-                        "dR": self.value_function(tmp_dR, l),
-                        "dG": self.value_function(tmp_dG, l),
-                        "NdR": self.value_function(tmp_NdR, l),
-                        "NdG": self.value_function(tmp_NdG, l),
-                        "HdRS": self.value_function(tmp_HdRS, l),
-                        "HdGS": self.value_function(tmp_HdGS, l),
-                    }
-                    self.emit("results", data)
+                    for l in range(len(tmp_voltage)):
+                        data = {
+                            "V (V)": self.value_function(tmp_voltage, l),
+                            "I (A)": self.value_function(tmp_current, l),
+                            "R (ohm)": self.value_function(tmp_resistance, l),
+                            "G": self.value_function(tmp_conductance, l),
+                            "X field (Oe)": self.value_function(tmp_field_x, l),
+                            "Y field (Oe)": self.value_function(tmp_field_y, l),
+                            "Z field (Oe)": self.value_function(tmp_field_z, l),
+                            "Hset (Oe)": self.value_function(tmp_field_set, l),
+                            "dR/dH": self.value_function(tmp_dR_dH, l),
+                            "dG/dH": self.value_function(tmp_dG_dH, l),
+                            "dI": self.value_function(tmp_dI, l),
+                            "dI/dH": self.value_function(tmp_dI_dH, l),
+                            "NdI": self.value_function(tmp_NdI, l),
+                            "SPdI": self.value_function(tmp_SPdI, l),
+                            "HdIS": self.value_function(tmp_HdIS, l),
+                            "HdR": self.value_function(tmp_HdR, l),
+                            "HdG": self.value_function(tmp_HdG, l),
+                            "dR": self.value_function(tmp_dR, l),
+                            "dG": self.value_function(tmp_dG, l),
+                            "NdR": self.value_function(tmp_NdR, l),
+                            "NdG": self.value_function(tmp_NdG, l),
+                            "HdRS": self.value_function(tmp_HdRS, l),
+                            "HdGS": self.value_function(tmp_HdGS, l),
+                        }
+                        self.emit("results", data)
+                        self.stop_flag = False
 
-            elif self.acquire_type == "V(Hdc) | set Vb":
-                log.info("Starting to sweep through field")
-                if self.coil == "Large":
-                    self.field_const = 5
-                else:
-                    self.field_const = 10
-                w = 0
-                for i in self.vector:
-                    self.last_value = i
-                    self.field.set_field(i / self.field_const)
-                    tmp_field_set.append(i)  # surowe pole
-                    sleep(self.delay * 0.001)
-                    print("DEBUG:set field: {}".format(i))
-                    self.tmp_field = self.field_sensor.read_field()
-                    tmp_field_x.append(self.tmp_field[0])
-                    tmp_field_y.append(self.tmp_field[1])
-                    tmp_field_z.append(self.tmp_field[2])
-                    sleep(self.delay * 0.001)
-                    print("DEBUG: field masured:  {}".format(self.tmp_field))
-                    try:
+                elif self.acquire_type == "V(Hdc) | set Vb":
+         
+                    if self.coil == "Large":
+                        self.field_const = 5
+                    else:
+                        self.field_const = 10
+                    w = 0
+                    for i in self.vector:
+                        self.last_value = i
+                        self.field.set_field(i / self.field_const)
+                        tmp_field_set.append(i)  # surowe pole
+                        sleep(self.delay * 0.001)
+                        print("DEBUG:set field: {}".format(i))
+                        self.tmp_field = self.field_sensor.read_field()
+                        tmp_field_x.append(self.tmp_field[0])
+                        tmp_field_y.append(self.tmp_field[1])
+                        tmp_field_z.append(self.tmp_field[2])
+                        sleep(self.delay * 0.001)
+                        print("DEBUG: field masured:  {}".format(self.tmp_field))
+                        try:
+                            if self.agilent == True:
+                                self.tmp_volatage = self.agilent_34410.voltage_dc
+                            else: 
+                                self.tmp_volatage = math.nan
+                            
+                            self.tmp_current = self.keithley.current
+                        except Exception as exception: 
+                            log.error(f"Measurement failed")
+                            break
+
+                        # surowe dane:
+                        tmp_current.append(self.tmp_current)  # surowy prąd
+                        tmp_voltage.append(self.tmp_volatage)  # surowe napiecie
+                        tmp_resistance.append(
+                            float(self.keithley_voltage_bias) / float(self.tmp_current)
+                            if self.tmp_current != 0
+                            else np.nan
+                        )  # surowa rezystancja
+                        tmp_conductance.append(
+                            1
+                            / (float(self.keithley_voltage_bias) / float(self.tmp_current))
+                            if self.tmp_current != 0
+                            else np.nan
+                        )  # surowa konduktancja
+
+                        self.emit("progress", 100 * w / len(self.vector))
+                        w = w + 1
+                        if self.should_stop():
+                            log.warning("USER STOP")
+                            break
+                    print(
+                        "DEBUG:\n current: {} \n voltage: {} \n resistance: {} \n conductance: {}".format(
+                            tmp_current, tmp_voltage, tmp_resistance, tmp_conductance
+                        )
+                    )
+                    # opracowanie:
+                    tmp_dI_dH = diff.diffs(tmp_field_set, tmp_current)
+                    tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
+                    tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
+                    tmp_dI = diff.diffIV(tmp_current)
+                    tmp_NdI = diff.NormalizedDiff(tmp_current)
+                    tmp_SPdI = diff.SlopeDiff(tmp_current, self.vector)
+                    tmp_HdIS = diff.HdIS(tmp_dI_dH, tmp_resistance)
+                    tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
+                    tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance)
+                    tmp_dR = diff.diffIV(tmp_resistance)
+                    tmp_dG = diff.diffIV(tmp_conductance)
+                    tmp_NdR = diff.NormalizedDiff(tmp_resistance)
+                    tmp_NdG = diff.NormalizedDiff(tmp_conductance)
+                    tmp_HdRS = diff.HdIS(tmp_HdR, tmp_current)
+                    tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
+
+                    for l in range(len(tmp_voltage)):
+                        data = {
+                            "Vsense (V)": self.value_function(tmp_voltage, l),
+                            "I (A)": self.value_function(tmp_current, l),
+                            "Vbias (V)": self.keithley_voltage_bias,
+                            "R (ohm)": self.value_function(tmp_resistance, l),
+                            "G": self.value_function(tmp_conductance, l),
+                            "X field (Oe)": self.value_function(tmp_field_x, l),
+                            "Y field (Oe)": self.value_function(tmp_field_y, l),
+                            "Z field (Oe)": self.value_function(tmp_field_z, l),
+                            "Hset (Oe)": self.value_function(tmp_field_set, l),
+                            "dR/dH": self.value_function(tmp_dR_dH, l),
+                            "dG/dH": self.value_function(tmp_dG_dH, l),
+                            "dI": self.value_function(tmp_dI, l),
+                            "dI/dH": self.value_function(tmp_dI_dH, l),
+                            "NdI": self.value_function(tmp_NdI, l),
+                            "SPdI": self.value_function(tmp_SPdI, l),
+                            "HdIS": self.value_function(tmp_HdIS, l),
+                            "HdR": self.value_function(tmp_HdR, l),
+                            "HdG": self.value_function(tmp_HdG, l),
+                            "dR": self.value_function(tmp_dR, l),
+                            "dG": self.value_function(tmp_dG, l),
+                            "NdR": self.value_function(tmp_NdR, l),
+                            "NdG": self.value_function(tmp_NdG, l),
+                            "HdRS": self.value_function(tmp_HdRS, l),
+                            "HdGS": self.value_function(tmp_HdGS, l),
+                        }
+                        self.emit("results", data)
+                        stop_flag = False
+                elif self.acquire_type == "V(Hdc) |set Ib":
+                    if self.coil == "Large":
+                        self.field_const = 5
+                    else:
+                        self.field_const = 10
+                    w = 0
+                   
+                    for i in self.vector:
+                        self.last_value = i
+                        self.set_field = self.field.set_field(i / self.field_const)
+                        tmp_field_set.append(i)
+                        sleep(self.delay * 0.001)
+                        self.tmp_field = self.field_sensor.read_field()
+                        tmp_field_x.append(self.tmp_field[0])
+                        tmp_field_y.append(self.tmp_field[1])
+                        tmp_field_z.append(self.tmp_field[2])
+                        sleep(self.delay * 0.001)
                         if self.agilent == True:
                             self.tmp_volatage = self.agilent_34410.voltage_dc
+                        else:
+                            self.tmp_volatage = self.keithley.voltage
+                        # surowe dane:
+
+                        tmp_current.append(self.keithley_current_bias)
+                        tmp_voltage.append(self.tmp_volatage)
+                        tmp_resistance.append(
+                            float(self.tmp_volatage) / float(self.keithley_current_bias)
+                            if self.keithley_current_bias != 0
+                            else np.nan
+                        )
+                        tmp_conductance.append(
+                            1
+                            / (float(self.tmp_volatage) / float(self.keithley_current_bias))
+                            if self.keithley_current_bias != 0
+                            else np.nan
+                        )  # surowa konduktancja
+                        self.emit("progress", 100 * w / len(self.vector))
+                        w = w + 1
+                        if self.should_stop():
+                            log.warning("USER STOP")
+                            break
+
+                    # opracowanie:
+                    tmp_dV_dH = diff.diffs(tmp_field_set, tmp_voltage)
+                    tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
+                    tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
+                    tmp_dV = diff.diffIV(tmp_voltage)
+                    tmp_NdV = diff.NormalizedDiff(tmp_voltage)
+                    tmp_SPdV = diff.SlopeDiff(tmp_voltage, self.vector)
+                    tmp_HdVS = diff.HdIS(tmp_dV_dH, tmp_resistance)
+                    tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
+                    tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance)
+                    tmp_dR = diff.diffIV(tmp_resistance)
+                    tmp_dG = diff.diffIV(tmp_conductance)
+                    tmp_NdR = diff.NormalizedDiff(tmp_resistance)
+                    tmp_NdG = diff.NormalizedDiff(tmp_conductance)
+                    tmp_HdRS = diff.HdIS(tmp_HdR, tmp_current)
+                    tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
+
+                    for l in range(len(tmp_voltage)):
+                        data = {
+                            "V (V)": self.value_function(tmp_voltage, l),
+                            "R (ohm)": self.value_function(tmp_resistance, l),
+                            "G": self.value_function(tmp_conductance, l),
+                            "X field (Oe)": self.value_function(tmp_field_x, l),
+                            "Y field (Oe)": self.value_function(tmp_field_y, l),
+                            "Z field (Oe)": self.value_function(tmp_field_z, l),
+                            "Hset (Oe)": self.value_function(tmp_field_set, l),
+                            "dR/dH": self.value_function(tmp_dR_dH, l),
+                            "dG/dH": self.value_function(tmp_dG_dH, l),
+                            "dV": self.value_function(tmp_dV, l),
+                            "dV/dH": self.value_function(tmp_dV_dH, l),
+                            "NdV": self.value_function(tmp_NdV, l),
+                            "SPdV": self.value_function(tmp_SPdV, l),
+                            "HdVS": self.value_function(tmp_HdVS, l),
+                            "HdR": self.value_function(tmp_HdR, l),
+                            "HdG": self.value_function(tmp_HdG, l),
+                            "dR": self.value_function(tmp_dR, l),
+                            "dG": self.value_function(tmp_dG, l),
+                            "NdR": self.value_function(tmp_NdR, l),
+                            "NdG": self.value_function(tmp_NdG, l),
+                            "HdRS": self.value_function(tmp_HdRS, l),
+                            "HdGS": self.value_function(tmp_HdGS, l),
+                        }
+                        self.emit("results", data)
+                        stop_flag = False
+
+                elif self.acquire_type == "I(Vb) | set Hdc":
+                  
+                    w = 0
+
+                    for i in self.vector:
+                        tmp_field_set.append(self.field_bias)
+
+                        self.keithley.source_voltage = i
+                        sleep(self.delay * 0.001)
+                        if self.agilent == True:
+                            self.tmp_current = self.agilent_34410.current_dc
+                        else:
+                            self.tmp_current = self.keithley.current
+                        sleep(self.delay * 0.001)
+                        self.tmp_field = self.field_sensor.read_field()
+                        tmp_field_x.append(self.tmp_field[0])
+                        tmp_field_y.append(self.tmp_field[1])
+                        tmp_field_z.append(self.tmp_field[2])
+                        # surowe
+                        tmp_current.append(self.tmp_current)
+                        tmp_voltage.append(i)
+                        tmp_resistance.append(
+                            float(i) / float(self.tmp_current)
+                            if self.tmp_current != 0
+                            else math.nan
+                        )
+                        tmp_conductance.append(
+                            1 / (float(i) / float(self.tmp_current))
+                            if self.tmp_current != 0 and i != 0
+                            else math.nan
+                        )
+
+                        self.emit("progress", 100 * w / len(self.vector))
+                        w = w + 1
+                        if self.should_stop():
+                            log.warning("USER STOP")
+                            break
+
+                    # opracowanie:
+                    tmp_dI_dV = diff.diffs(tmp_voltage, tmp_current)
+                    tmp_dI = diff.diffIV(tmp_current)
+                    tmp_dR = diff.diffIV(tmp_resistance)
+                    tmp_dG = diff.diffIV(tmp_conductance)
+
+                    for l in range(len(tmp_voltage)):
+                        data = {
+                            "V (V)": self.value_function(tmp_voltage, l),
+                            "I (A)": self.value_function(tmp_current, l),
+                            "R (ohm)": self.value_function(tmp_resistance, l),
+                            "G": self.value_function(tmp_conductance, l),
+                            "X field (Oe)": self.value_function(tmp_field_x, l),
+                            "Y field (Oe)": self.value_function(tmp_field_y, l),
+                            "Z field (Oe)": self.value_function(tmp_field_z, l),
+                            "Hset (Oe)": self.value_function(tmp_field_set, l),
+                            "dI": self.value_function(tmp_dI, l),
+                            "dI/dV": self.value_function(tmp_dI_dV, l),
+                            "dR": self.value_function(tmp_dR, l),
+                            "dG": self.value_function(tmp_dG, l),
+                        }
+                        self.emit("results", data)
+                        stop_flag = False
+
+                elif self.acquire_type == "V(Ib) | set Hdc":
+               
+                    w = 0
+                    for i in self.vector:
+                        tmp_field_set.append(self.field_bias)
+                        self.keithley.source_current = i
+                        sleep(self.delay * 0.001)
+                        if self.agilent == True:
+                            self.tmp_volatage = self.agilent_34410.voltage_dc
+                        else:
+                            self.tmp_volatage = self.keithley.voltage
+                        sleep(self.delay * 0.001)
+                        self.tmp_field = self.field_sensor.read_field()
+                        tmp_field_x.append(self.tmp_field[0])
+                        tmp_field_y.append(self.tmp_field[1])
+                        tmp_field_z.append(self.tmp_field[2])
+
+                        tmp_current.append(i)
+                        tmp_voltage.append(self.tmp_volatage)
+                        tmp_resistance.append(
+                            float(self.tmp_volatage) / (i if i != 0 else 1e-9)
+                        )
+                        tmp_conductance.append((float(i) / float(self.tmp_volatage)))
+                        self.emit("progress", 100 * w / len(self.vector))
+                        w = w + 1
+                        if self.should_stop():
+                            log.warning("USER STOP")
+                            break
+
+                    # opracowanie:
+                    tmp_dV_dI = diff.diffs(tmp_current, tmp_voltage)
+                    tmp_dV = diff.diffIV(tmp_voltage)
+                    tmp_dR = diff.diffIV(tmp_resistance)
+                    tmp_dG = diff.diffIV(tmp_conductance)
+
+                    for l in range(len(tmp_voltage)):
+                        data = {
+                            "V (V)": self.value_function(tmp_voltage, l),
+                            "I (A)": self.value_function(tmp_current, l),
+                            "R (ohm)": self.value_function(tmp_resistance, l),
+                            "G": self.value_function(tmp_conductance, l),
+                            "X field (Oe)": self.value_function(tmp_field_x, l),
+                            "Y field (Oe)": self.value_function(tmp_field_y, l),
+                            "Z field (Oe)": self.value_function(tmp_field_z, l),
+                            "Hset (Oe)": self.value_function(tmp_field_set, l),
+                            "dV": self.value_function(tmp_dV, l),
+                            "dV/dI": self.value_function(tmp_dV_dI, l),
+                            "dR": self.value_function(tmp_dR, l),
+                            "dG": self.value_function(tmp_dG, l),
+                        }
+                        self.emit("results", data)
+                        stop_flag = False
+
+            elif self.mode == "Fast Resistance":
+                self.tmp_resistance = self.keithley.resistance
+                log.info(self.tmp_resistance)
+                # self.emit('results',  data = {
+                #             'V (V)':  0,
+                #             'I (A)':  0,
+                #             'X field (Oe)': 0,
+                #             'Y field (Oe)': 0,
+                #             'Z field (Oe)': 0,
+                #             'Hset (Oe)': 0,
+
+            elif self.mode == "HDC-ACModeLockin":
+                if self.mode_lockin == "Sweep field":
+                    if self.kepco == False:
+                        # self.calibration_field = LockinCalibration(
+                        #     self.lockin,
+                        #     self.ac_field_frequency,
+                        #     self.dc_field,
+                        #     self.coil_constant,
+                        # )
+                        # self.cal_field_const = self.calibration_field.calibrate()
+                        self.lockin.set_dc_field(self.dc_field / (1/self.coil_constant))
+                    else:
+                        self.lockin.set_dc_field(self.dc_field / (1/self.coil_constant))
+
+                    # self.lockin.set_lockin_freq(self.lockin_frequency)
+                    self.counter = 0
+
+                    for i in self.vector:
+                        if self.amplitude_vec == True:
+                            self.lockin.set_ac_field( 
+                                i / (1/self.coil_constant), self.ac_field_frequency)
+                        else:
+                            self.lockin.set_ac_field(
+                                self.ac_field_amplitude / (1/self.coil_constant), i)
+                        if i != 0:
+                            sleep(2 / i)
+                        else:
+                            sleep(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+
+                        r = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                        theta = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                        r2 = self.lockin.lockin_measure_R(1, self.avergaging_rate)
+                        theta2 = self.lockin.lockin_measure_phase(1, self.avergaging_rate)
+                
+                        self.counter = self.counter + 1
+
+                        self.emit("progress", 100 * self.counter / len(self.vector))
+
+                        try:
+
+                            data_lockin = {
+                                "f (Hz)": (
+                                    i
+                                    if self.amplitude_vec == False
+                                    else self.ac_field_frequency
+                                ),
+                                "AHac (Oe)": (
+                                    i
+                                    if self.amplitude_vec == True
+                                    else self.ac_field_amplitude
+                                ),
+                                "Vsense (V)": r,
+                                "Vbias (V)": self.bias_voltage / 1000,
+                                "Hset (Oe)": (
+                                    i + self.dc_field
+                                    if self.amplitude_vec == True
+                                    else self.ac_field_amplitude + self.dc_field
+                                ),
+                                "I (A)": r2,
+                                "Phase": theta,
+                                "I/Phase": r2 / theta,
+                                "V/Phase": r / theta,
+                                "I/Ax": (
+                                    r2 / self.ac_field_amplitude
+                                   
+                                ),
+                            }
+
+                            self.emit("results", data_lockin)
+                        except Exception as e:
+                            print(e)
+                            self.should_stop()
+                        if self.should_stop():
+                            log.warning("USER STOP")
+                            break
+
+                elif self.mode_lockin == "Sweep voltage":
+                    # if self.kepco == False:
+                    #     # self.calibration_field = LockinCalibration(
+                    #     #     self.lockin,
+                    #     #     self.ac_field_frequency,
+                    #     #     self.dc_field,
+                    #     #     self.coil_constant,
+                    #     # )
+                    #     # self.cal_field_const = self.calibration_field.calibrate()
+                    #     self.lockin.set_dc_field(self.bias_voltage)                     # OUTPUT: SET DC VOLTAGE
+                    # else:
+                    #     self.lockin.set_dc_field(self.bias_voltage)
+
+                    # self.lockin.set_lockin_freq(self.lockin_frequency)
+                    self.lockin.set_ac_field(self.ac_voltage_amplitude , self.ac_voltage_frequency)
+                    self.counter = 0
+
+                    for i in self.vector:
+                        self.lockin.set_dc_field(i)  # OUTPUT: SET DC VOLTAGE
+                        if i != 0:
+                            sleep(2 / i)
+                        else:
+                            sleep(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+
+                        r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
+                        theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
+                        r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                        theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                        self.counter = self.counter + 1
+
+                        self.emit("progress", 100 * self.counter / len(self.vector))
+
+                        try:
+
+                            data_lockin = {
+                                "f (Hz)": (
+                                   self.ac_voltage_frequency
+                                ),
+
+                                "Vsense (V)": (
+                                    self.ac_voltage_amplitude
+                                ),
+                                "Vbias (V)": i,
+                                "X field (Oe)": (
+                                    i + self.dc_field
+                                    if self.amplitude_vec == True
+                                    else self.ac_field_amplitude + self.dc_field
+                                ),
+                                "Y field (Oe)": 0,
+                                "Z field (Oe)": 0,
+                                "I (A)": r2,
+                                "Phase": theta,
+                            }
+
+                            self.emit("results", data_lockin)
+                        except Exception as e:
+                            print(e)
+                            self.should_stop()
+                        if self.should_stop():
+                            log.warning("USER STOP")
+                            break
+
+                elif self.mode_lockin == "Sweep frequency":
+                    self.field_value = measure_field(1, self.field_sensor, self.should_stop)
+                    sleep(2)
+                    self.factor_period = 5
+                    self.time_first_loop = 3
+                    self.counter = 0
+                    for i in self.vector:
+                        if self.counter ==0:
+                            self.iter = 2 
                         else: 
-                            self.tmp_volatage = math.nan
-                        
-                        self.tmp_current = self.keithley.current
-                    except Exception as exception: 
-                        log.error(f"Measurement failed")
-                        break
+                            self.iter = 1
+                        for w in range(self.iter):
+                            self.lockin.set_lockin_freq(i)
+                            if self.counter == 0:
+                                sleep(self.time_first_loop)
 
-                    # surowe dane:
-                    tmp_current.append(self.tmp_current)  # surowy prąd
-                    tmp_voltage.append(self.tmp_volatage)  # surowe napiecie
-                    tmp_resistance.append(
-                        float(self.keithley_voltage_bias) / float(self.tmp_current)
-                        if self.tmp_current != 0
-                        else np.nan
-                    )  # surowa rezystancja
-                    tmp_conductance.append(
-                        1
-                        / (float(self.keithley_voltage_bias) / float(self.tmp_current))
-                        if self.tmp_current != 0
-                        else np.nan
-                    )  # surowa konduktancja
+                            if i != 0:
+                                sleep(self.factor_period*(1/i))
+                            else:
+                                sleep(self.time_first_loop)
+                            r = self.lockin.lockin_measure_R(0, self.avergaging_rate)
+                            if self.counter == 0:
+                                sleep(self.time_first_loop)
+                            if i != 0:
+                                sleep(self.factor_period*(1/i))
+                            else:
+                                sleep(self.time_first_loop)
+                            theta = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
+                            if self.counter == 0:
+                                sleep(self.time_first_loop)
+                            if i != 0:
+                                sleep(self.factor_period*(1/i))
+                            else:
+                                sleep(self.time_first_loop)
+                            r2 = self.lockin.lockin_measure_R(1, self.avergaging_rate)
+                            if self.counter == 0:
+                                sleep(self.time_first_loop)
+                            if i != 0:
+                                sleep(self.factor_period*(1/i))
+                            else:
+                                sleep(self.time_first_loop)
+                            theta2 = self.lockin.lockin_measure_phase(1, self.avergaging_rate)
+                            self.counter = self.counter + 1
 
-                    self.emit("progress", 100 * w / len(self.vector))
-                    w = w + 1
-                    if self.should_stop():
-                        log.warning("Caught the stop flag in the procedure")
-                        break
-                print(
-                    "DEBUG:\n current: {} \n voltage: {} \n resistance: {} \n conductance: {}".format(
-                        tmp_current, tmp_voltage, tmp_resistance, tmp_conductance
-                    )
-                )
-                # opracowanie:
-                tmp_dI_dH = diff.diffs(tmp_field_set, tmp_current)
-                tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
-                tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
-                tmp_dI = diff.diffIV(tmp_current)
-                tmp_NdI = diff.NormalizedDiff(tmp_current)
-                tmp_SPdI = diff.SlopeDiff(tmp_current, self.vector)
-                tmp_HdIS = diff.HdIS(tmp_dI_dH, tmp_resistance)
-                tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
-                tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance)
-                tmp_dR = diff.diffIV(tmp_resistance)
-                tmp_dG = diff.diffIV(tmp_conductance)
-                tmp_NdR = diff.NormalizedDiff(tmp_resistance)
-                tmp_NdG = diff.NormalizedDiff(tmp_conductance)
-                tmp_HdRS = diff.HdIS(tmp_HdR, tmp_current)
-                tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
+     
+                        self.emit("progress", 100 * self.counter / len(self.vector))
+                        try:
+                            data_lockin = {
+                                "f (Hz)": i,
+                                "Vsense (V)": (
+                                    r 
+                                ),
+                                "Vbias (V)": self.bias_voltage,
+                                "Hset (Oe)": self.dc_field,
+                                "X field (Oe)": self.field_value[0],
+                                "Y field (Oe)": self.field_value[1],
+                                "Z field (Oe)": self.field_value[2],
+                                "I (A)": r2,
+                                "Phase": theta,
+                                "I/Phase": r2 / theta,
+                                "V/Phase": r/theta,
+                                "I/Ax": (
+                                    r2 / self.ac_field_amplitude
+                                ),
+                            }
 
-                for l in range(len(tmp_voltage)):
-                    data = {
-                        "Vsense (V)": self.value_function(tmp_voltage, l),
-                        "I (A)": self.value_function(tmp_current, l),
-                        "Vbias (V)": self.keithley_voltage_bias,
-                        "R (ohm)": self.value_function(tmp_resistance, l),
-                        "G": self.value_function(tmp_conductance, l),
-                        "X field (Oe)": self.value_function(tmp_field_x, l),
-                        "Y field (Oe)": self.value_function(tmp_field_y, l),
-                        "Z field (Oe)": self.value_function(tmp_field_z, l),
-                        "Hset (Oe)": self.value_function(tmp_field_set, l),
-                        "dR/dH": self.value_function(tmp_dR_dH, l),
-                        "dG/dH": self.value_function(tmp_dG_dH, l),
-                        "dI": self.value_function(tmp_dI, l),
-                        "dI/dH": self.value_function(tmp_dI_dH, l),
-                        "NdI": self.value_function(tmp_NdI, l),
-                        "SPdI": self.value_function(tmp_SPdI, l),
-                        "HdIS": self.value_function(tmp_HdIS, l),
-                        "HdR": self.value_function(tmp_HdR, l),
-                        "HdG": self.value_function(tmp_HdG, l),
-                        "dR": self.value_function(tmp_dR, l),
-                        "dG": self.value_function(tmp_dG, l),
-                        "NdR": self.value_function(tmp_NdR, l),
-                        "NdG": self.value_function(tmp_NdG, l),
-                        "HdRS": self.value_function(tmp_HdRS, l),
-                        "HdGS": self.value_function(tmp_HdGS, l),
-                    }
-                    self.emit("results", data)
+                            self.emit("results", data_lockin)
+                        except:
+                            self.should_stop()
+                        if self.should_stop():
+                            log.warning("USER STOP")
+                            break
 
-            elif self.acquire_type == "V(Hdc) |set Ib":
-                if self.coil == "Large":
-                    self.field_const = 5
-                else:
-                    self.field_const = 10
-                w = 0
-                log.info("Starting to sweep through field")
-                for i in self.vector:
-                    self.last_value = i
-                    self.set_field = self.field.set_field(i / self.field_const)
-                    tmp_field_set.append(i)
-                    sleep(self.delay * 0.001)
-                    self.tmp_field = self.field_sensor.read_field()
-                    tmp_field_x.append(self.tmp_field[0])
-                    tmp_field_y.append(self.tmp_field[1])
-                    tmp_field_z.append(self.tmp_field[2])
-                    sleep(self.delay * 0.001)
-                    if self.agilent == True:
-                        self.tmp_volatage = self.agilent_34410.voltage_dc
-                    else:
-                        self.tmp_volatage = self.keithley.voltage
-                    # surowe dane:
-
-                    tmp_current.append(self.keithley_current_bias)
-                    tmp_voltage.append(self.tmp_volatage)
-                    tmp_resistance.append(
-                        float(self.tmp_volatage) / float(self.keithley_current_bias)
-                        if self.keithley_current_bias != 0
-                        else np.nan
-                    )
-                    tmp_conductance.append(
-                        1
-                        / (float(self.tmp_volatage) / float(self.keithley_current_bias))
-                        if self.keithley_current_bias != 0
-                        else np.nan
-                    )  # surowa konduktancja
-                    self.emit("progress", 100 * w / len(self.vector))
-                    w = w + 1
-                    if self.should_stop():
-                        log.warning("Caught the stop flag in the procedure")
-                        break
-
-                # opracowanie:
-                tmp_dV_dH = diff.diffs(tmp_field_set, tmp_voltage)
-                tmp_dR_dH = diff.diffs(tmp_field_set, tmp_resistance)
-                tmp_dG_dH = diff.diffs(tmp_field_set, tmp_conductance)
-                tmp_dV = diff.diffIV(tmp_voltage)
-                tmp_NdV = diff.NormalizedDiff(tmp_voltage)
-                tmp_SPdV = diff.SlopeDiff(tmp_voltage, self.vector)
-                tmp_HdVS = diff.HdIS(tmp_dV_dH, tmp_resistance)
-                tmp_HdR = diff.diffs(tmp_field_set, tmp_resistance)
-                tmp_HdG = diff.diffs(tmp_field_set, tmp_conductance)
-                tmp_dR = diff.diffIV(tmp_resistance)
-                tmp_dG = diff.diffIV(tmp_conductance)
-                tmp_NdR = diff.NormalizedDiff(tmp_resistance)
-                tmp_NdG = diff.NormalizedDiff(tmp_conductance)
-                tmp_HdRS = diff.HdIS(tmp_HdR, tmp_current)
-                tmp_HdGS = diff.HdIS(tmp_HdG, tmp_voltage)
-
-                for l in range(len(tmp_voltage)):
-                    data = {
-                        "V (V)": self.value_function(tmp_voltage, l),
-                        "R (ohm)": self.value_function(tmp_resistance, l),
-                        "G": self.value_function(tmp_conductance, l),
-                        "X field (Oe)": self.value_function(tmp_field_x, l),
-                        "Y field (Oe)": self.value_function(tmp_field_y, l),
-                        "Z field (Oe)": self.value_function(tmp_field_z, l),
-                        "Hset (Oe)": self.value_function(tmp_field_set, l),
-                        "dR/dH": self.value_function(tmp_dR_dH, l),
-                        "dG/dH": self.value_function(tmp_dG_dH, l),
-                        "dV": self.value_function(tmp_dV, l),
-                        "dV/dH": self.value_function(tmp_dV_dH, l),
-                        "NdV": self.value_function(tmp_NdV, l),
-                        "SPdV": self.value_function(tmp_SPdV, l),
-                        "HdVS": self.value_function(tmp_HdVS, l),
-                        "HdR": self.value_function(tmp_HdR, l),
-                        "HdG": self.value_function(tmp_HdG, l),
-                        "dR": self.value_function(tmp_dR, l),
-                        "dG": self.value_function(tmp_dG, l),
-                        "NdR": self.value_function(tmp_NdR, l),
-                        "NdG": self.value_function(tmp_NdG, l),
-                        "HdRS": self.value_function(tmp_HdRS, l),
-                        "HdGS": self.value_function(tmp_HdGS, l),
-                    }
-                    self.emit("results", data)
-
-            elif self.acquire_type == "I(Vb) | set Hdc":
-                log.info("Starting to sweep through voltage")
-                w = 0
-
-                for i in self.vector:
-                    tmp_field_set.append(self.field_bias)
-
-                    self.keithley.source_voltage = i
-                    sleep(self.delay * 0.001)
-                    if self.agilent == True:
-                        self.tmp_current = self.agilent_34410.current_dc
-                    else:
-                        self.tmp_current = self.keithley.current
-                    sleep(self.delay * 0.001)
-                    self.tmp_field = self.field_sensor.read_field()
-                    tmp_field_x.append(self.tmp_field[0])
-                    tmp_field_y.append(self.tmp_field[1])
-                    tmp_field_z.append(self.tmp_field[2])
-                    # surowe
-                    tmp_current.append(self.tmp_current)
-                    tmp_voltage.append(i)
-                    tmp_resistance.append(
-                        float(i) / float(self.tmp_current)
-                        if self.tmp_current != 0
-                        else math.nan
-                    )
-                    tmp_conductance.append(
-                        1 / (float(i) / float(self.tmp_current))
-                        if self.tmp_current != 0 and i != 0
-                        else math.nan
-                    )
-
-                    self.emit("progress", 100 * w / len(self.vector))
-                    w = w + 1
-                    if self.should_stop():
-                        log.warning("Caught the stop flag in the procedure")
-                        break
-
-                # opracowanie:
-                tmp_dI_dV = diff.diffs(tmp_voltage, tmp_current)
-                tmp_dI = diff.diffIV(tmp_current)
-                tmp_dR = diff.diffIV(tmp_resistance)
-                tmp_dG = diff.diffIV(tmp_conductance)
-
-                for l in range(len(tmp_voltage)):
-                    data = {
-                        "V (V)": self.value_function(tmp_voltage, l),
-                        "I (A)": self.value_function(tmp_current, l),
-                        "R (ohm)": self.value_function(tmp_resistance, l),
-                        "G": self.value_function(tmp_conductance, l),
-                        "X field (Oe)": self.value_function(tmp_field_x, l),
-                        "Y field (Oe)": self.value_function(tmp_field_y, l),
-                        "Z field (Oe)": self.value_function(tmp_field_z, l),
-                        "Hset (Oe)": self.value_function(tmp_field_set, l),
-                        "dI": self.value_function(tmp_dI, l),
-                        "dI/dV": self.value_function(tmp_dI_dV, l),
-                        "dR": self.value_function(tmp_dR, l),
-                        "dG": self.value_function(tmp_dG, l),
-                    }
-                    self.emit("results", data)
-
-            elif self.acquire_type == "V(Ib) | set Hdc":
-                log.info("Starting to sweep through current")
-                w = 0
-                for i in self.vector:
-                    tmp_field_set.append(self.field_bias)
-                    self.keithley.source_current = i
-                    sleep(self.delay * 0.001)
-                    if self.agilent == True:
-                        self.tmp_volatage = self.agilent_34410.voltage_dc
-                    else:
-                        self.tmp_volatage = self.keithley.voltage
-                    sleep(self.delay * 0.001)
-                    self.tmp_field = self.field_sensor.read_field()
-                    tmp_field_x.append(self.tmp_field[0])
-                    tmp_field_y.append(self.tmp_field[1])
-                    tmp_field_z.append(self.tmp_field[2])
-
-                    tmp_current.append(i)
-                    tmp_voltage.append(self.tmp_volatage)
-                    tmp_resistance.append(
-                        float(self.tmp_volatage) / (i if i != 0 else 1e-9)
-                    )
-                    tmp_conductance.append((float(i) / float(self.tmp_volatage)))
-                    self.emit("progress", 100 * w / len(self.vector))
-                    w = w + 1
-                    if self.should_stop():
-                        log.warning("Caught the stop flag in the procedure")
-                        break
-
-                # opracowanie:
-                tmp_dV_dI = diff.diffs(tmp_current, tmp_voltage)
-                tmp_dV = diff.diffIV(tmp_voltage)
-                tmp_dR = diff.diffIV(tmp_resistance)
-                tmp_dG = diff.diffIV(tmp_conductance)
-
-                for l in range(len(tmp_voltage)):
-                    data = {
-                        "V (V)": self.value_function(tmp_voltage, l),
-                        "I (A)": self.value_function(tmp_current, l),
-                        "R (ohm)": self.value_function(tmp_resistance, l),
-                        "G": self.value_function(tmp_conductance, l),
-                        "X field (Oe)": self.value_function(tmp_field_x, l),
-                        "Y field (Oe)": self.value_function(tmp_field_y, l),
-                        "Z field (Oe)": self.value_function(tmp_field_z, l),
-                        "Hset (Oe)": self.value_function(tmp_field_set, l),
-                        "dV": self.value_function(tmp_dV, l),
-                        "dV/dI": self.value_function(tmp_dV_dI, l),
-                        "dR": self.value_function(tmp_dR, l),
-                        "dG": self.value_function(tmp_dG, l),
-                    }
-                    self.emit("results", data)
-
-        elif self.mode == "Fast Resistance":
-            self.tmp_resistance = self.keithley.resistance
-            log.info(self.tmp_resistance)
-            # self.emit('results',  data = {
-            #             'V (V)':  0,
-            #             'I (A)':  0,
-            #             'X field (Oe)': 0,
-            #             'Y field (Oe)': 0,
-            #             'Z field (Oe)': 0,
-            #             'Hset (Oe)': 0,
-
-        elif self.mode == "HDC-ACModeLockin":
-            if self.mode_lockin == "Sweep field":
+            elif self.mode == "TimeMode":
                 if self.kepco == False:
                     # self.calibration_field = LockinCalibration(
                     #     self.lockin,
-                    #     self.ac_field_frequency,
-                    #     self.dc_field,
+                    #     self.ac_field_frequency_time,
+                    #     self.dc_field_time,
                     #     self.coil_constant,
                     # )
                     # self.cal_field_const = self.calibration_field.calibrate()
-                    self.lockin.set_dc_field(self.dc_field / (1/self.coil_constant))
+                    self.lockin.set_dc_field(self.dc_field_time / (1/self.coil_constant))
                 else:
-                    self.lockin.set_dc_field(self.dc_field / (1/self.coil_constant))
+                    self.lockin.set_dc_field(self.dc_field_time / (1/self.coil_constant))
 
-                # self.lockin.set_lockin_freq(self.lockin_frequency)
-                self.counter = 0
-
-                for i in self.vector:
-                    if self.amplitude_vec == True:
-                        self.lockin.set_ac_field( 
-                            i / (1/self.coil_constant), self.ac_field_frequency)
-                    else:
-                        self.lockin.set_ac_field(
-                            self.ac_field_amplitude / (1/self.coil_constant), i)
-                    if i != 0:
-                        sleep(2 / i)
-                    else:
-                        sleep(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
-
-                    r = self.lockin.lockin_measure_R(0, self.avergaging_rate)
-                    theta = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
-                    r2 = self.lockin.lockin_measure_R(1, self.avergaging_rate)
-                    theta2 = self.lockin.lockin_measure_phase(1, self.avergaging_rate)
-            
-                    self.counter = self.counter + 1
-
-                    self.emit("progress", 100 * self.counter / len(self.vector))
-
-                    try:
-
-                        data_lockin = {
-                            "f (Hz)": (
-                                i
-                                if self.amplitude_vec == False
-                                else self.ac_field_frequency
-                            ),
-                            "AHac (Oe)": (
-                                i
-                                if self.amplitude_vec == True
-                                else self.ac_field_amplitude
-                            ),
-                            "Vsense (V)": r,
-                            "Vbias (V)": self.bias_voltage / 1000,
-                            "Hset (Oe)": (
-                                i + self.dc_field
-                                if self.amplitude_vec == True
-                                else self.ac_field_amplitude + self.dc_field
-                            ),
-                            "I (A)": r2,
-                            "Phase": theta,
-                            "I/Phase": r2 / theta,
-                            "V/Phase": r / theta,
-                            "I/Ax": (
-                                r2 / self.ac_field_amplitude
-                               
-                            ),
-                        }
-
-                        self.emit("results", data_lockin)
-                    except Exception as e:
-                        print(e)
-                        self.should_stop()
-                    if self.should_stop():
-                        log.warning("Caught the stop flag in the procedure")
-                        break
-
-            elif self.mode_lockin == "Sweep voltage":
-                # if self.kepco == False:
-                #     # self.calibration_field = LockinCalibration(
-                #     #     self.lockin,
-                #     #     self.ac_field_frequency,
-                #     #     self.dc_field,
-                #     #     self.coil_constant,
-                #     # )
-                #     # self.cal_field_const = self.calibration_field.calibrate()
-                #     self.lockin.set_dc_field(self.bias_voltage)                     # OUTPUT: SET DC VOLTAGE
-                # else:
-                #     self.lockin.set_dc_field(self.bias_voltage)
-
-                # self.lockin.set_lockin_freq(self.lockin_frequency)
-                self.lockin.set_ac_field(self.ac_voltage_amplitude , self.ac_voltage_frequency)
-                self.counter = 0
-
-                for i in self.vector:
-                    self.lockin.set_dc_field(i)  # OUTPUT: SET DC VOLTAGE
-                    if i != 0:
-                        sleep(2 / i)
-                    else:
-                        sleep(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
-
-                    r = self.lockin.lockin_measure_R(2, self.avergaging_rate)
-                    theta = self.lockin.lockin_measure_phase(2, self.avergaging_rate)
-                    r2 = self.lockin.lockin_measure_R(0, self.avergaging_rate)
-                    theta2 = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
-                    self.counter = self.counter + 1
-
-                    self.emit("progress", 100 * self.counter / len(self.vector))
-
-                    try:
-
-                        data_lockin = {
-                            "f (Hz)": (
-                               self.ac_voltage_frequency
-                            ),
-
-                            "Vsense (V)": (
-                                self.ac_voltage_amplitude
-                            ),
-                            "Vbias (V)": i,
-                            "X field (Oe)": (
-                                i + self.dc_field
-                                if self.amplitude_vec == True
-                                else self.ac_field_amplitude + self.dc_field
-                            ),
-                            "Y field (Oe)": 0,
-                            "Z field (Oe)": 0,
-                            "I (A)": r2,
-                            "Phase": theta,
-                        }
-
-                        self.emit("results", data_lockin)
-                    except Exception as e:
-                        print(e)
-                        self.should_stop()
-                    if self.should_stop():
-                        log.warning("Caught the stop flag in the procedure")
-                        break
-
-            elif self.mode_lockin == "Sweep frequency":
-                self.field_value = measure_field(1, self.field_sensor, self.should_stop)
+                self.lockin.set_lockin_freq(self.lockin_frequency)
+                self.lockin.set_ac_field(
+                    self.ac_field_amplitude_time / (1/self.coil_constant), self.ac_field_frequency_time
+                )
                 sleep(2)
-                self.factor_period = 5
-                self.time_first_loop = 3
-                self.counter = 0
-                for i in self.vector:
-                    if self.counter ==0:
-                        self.iter = 2 
-                    else: 
-                        self.iter = 1
-                    for w in range(self.iter):
-                        self.lockin.set_lockin_freq(i)
-                        if self.counter == 0:
-                            sleep(self.time_first_loop)
-
-                        if i != 0:
-                            sleep(self.factor_period*(1/i))
-                        else:
-                            sleep(self.time_first_loop)
-                        r = self.lockin.lockin_measure_R(0, self.avergaging_rate)
-                        if self.counter == 0:
-                            sleep(self.time_first_loop)
-                        if i != 0:
-                            sleep(self.factor_period*(1/i))
-                        else:
-                            sleep(self.time_first_loop)
-                        theta = self.lockin.lockin_measure_phase(0, self.avergaging_rate)
-                        if self.counter == 0:
-                            sleep(self.time_first_loop)
-                        if i != 0:
-                            sleep(self.factor_period*(1/i))
-                        else:
-                            sleep(self.time_first_loop)
-                        r2 = self.lockin.lockin_measure_R(1, self.avergaging_rate)
-                        if self.counter == 0:
-                            sleep(self.time_first_loop)
-                        if i != 0:
-                            sleep(self.factor_period*(1/i))
-                        else:
-                            sleep(self.time_first_loop)
-                        theta2 = self.lockin.lockin_measure_phase(1, self.avergaging_rate)
-                        self.counter = self.counter + 1
-
- 
-                    self.emit("progress", 100 * self.counter / len(self.vector))
-                    try:
+                scope_signal = self.lockin.get_wave()
+                self.emit("progress", 100)
+                try:
+                    for w in range(len(scope_signal[0])):
                         data_lockin = {
-                            "f (Hz)": i,
+                            "time (s)": scope_signal[0][w],
+                            "f (Hz)": self.ac_field_frequency_time,
+                            "AHac (Oe)": self.ac_field_amplitude_time,
                             "Vsense (V)": (
-                                r 
+                                float(scope_signal[1][w])
                             ),
                             "Vbias (V)": self.bias_voltage,
-                            "Hset (Oe)": self.dc_field,
-                            "X field (Oe)": self.field_value[0],
-                            "Y field (Oe)": self.field_value[1],
-                            "Z field (Oe)": self.field_value[2],
-                            "I (A)": r2,
-                            "Phase": theta,
-                            "I/Phase": r2 / theta,
-                            "V/Phase": r/theta,
-                            "I/Ax": (
-                                r2 / self.ac_field_amplitude
+                            "X field (Oe)": 0,
+                            "Y field (Oe)": 0,
+                            "Z field (Oe)": 0,
+                            "I (A)": (
+                                float(scope_signal[2][w])
+                               
+                            ),
+                            "Hset (Oe)": self.ac_field_amplitude_time + self.dc_field_time,
+                            "G(t)": (
+                                float(scope_signal[1][w]) / self.bias_voltage
+                                
+                            ),
+                            "R(t)": (
+                                self.bias_voltage / float(scope_signal[1][w])
+                                
                             ),
                         }
 
                         self.emit("results", data_lockin)
-                    except:
-                        self.should_stop()
-                    if self.should_stop():
-                        log.warning("Caught the stop flag in the procedure")
-                        break
-
-        elif self.mode == "TimeMode":
-            if self.kepco == False:
-                # self.calibration_field = LockinCalibration(
-                #     self.lockin,
-                #     self.ac_field_frequency_time,
-                #     self.dc_field_time,
-                #     self.coil_constant,
-                # )
-                # self.cal_field_const = self.calibration_field.calibrate()
-                self.lockin.set_dc_field(self.dc_field_time / (1/self.coil_constant))
-            else:
-                self.lockin.set_dc_field(self.dc_field_time / (1/self.coil_constant))
-
-            self.lockin.set_lockin_freq(self.lockin_frequency)
-            self.lockin.set_ac_field(
-                self.ac_field_amplitude_time / (1/self.coil_constant), self.ac_field_frequency_time
-            )
-            sleep(2)
-            scope_signal = self.lockin.get_wave()
-            self.emit("progress", 100)
-            try:
-                for w in range(len(scope_signal[0])):
-                    data_lockin = {
-                        "time (s)": scope_signal[0][w],
-                        "f (Hz)": self.ac_field_frequency_time,
-                        "AHac (Oe)": self.ac_field_amplitude_time,
-                        "Vsense (V)": (
-                            float(scope_signal[1][w])
-                        ),
-                        "Vbias (V)": self.bias_voltage,
-                        "X field (Oe)": 0,
-                        "Y field (Oe)": 0,
-                        "Z field (Oe)": 0,
-                        "I (A)": (
-                            float(scope_signal[2][w])
-                           
-                        ),
-                        "Hset (Oe)": self.ac_field_amplitude_time + self.dc_field_time,
-                        "G(t)": (
-                            float(scope_signal[1][w]) / self.bias_voltage
-                            
-                        ),
-                        "R(t)": (
-                            self.bias_voltage / float(scope_signal[1][w])
-                            
-                        ),
-                    }
-
-                    self.emit("results", data_lockin)
-            except Exception as e:
-                print(e)
-                self.should_stop()
-            if self.should_stop():
-                log.warning("Caught the stop flag in the procedure")
+                except Exception as e:
+                    print(e)
+                    self.should_stop()
+                if self.should_stop():
+                    log.warning("USER STOP")
+        else: 
+            raise Exception("Device error, please check connections")
 
     def shutdown(self):
-
-        if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
-            if self.mode == "HDCMode":
-                if self.field_device == "DAQ":
-                    self.field.shutdown()
-                    pass
-                else:
-                    if (
-                        self.acquire_type == "I(Hdc) | set Vb"
-                        or self.acquire_type == "V(Hdc) |set Ib" or self.acquire_type == "V(Hdc) |set Vb" ):
-                        self.field.shutdown(self.last_value / self.field_const)
+        if self.stop_flag == False:
+            if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
+                if self.mode == "HDCMode":
+                    if self.field_device == "DAQ":
+                        self.field.shutdown()
+                        pass
                     else:
-                        self.field.shutdown(self.field_bias / self.field_const)
-                sleep(0.2)
-                
-                self.keithley.shutdown()
-                print("keithley shutdown done")
-                IVTransfer.licznik = 0
-            elif self.mode == "HDC-ACModeLockin":
-                self.lockin.shutdown()
-            elif self.mode == "TimeMode":
-                self.lockin.shutdown()
-        else:
-            if self.mode == "HDCMode":
-                self.keithley.shutdown()
-                print("keithley shutdown done")
-                print("go next loop...")
-        IVTransfer.licznik += 1
-        print(IVTransfer.licznik)
+                        if (
+                            self.acquire_type == "I(Hdc) | set Vb"
+                            or self.acquire_type == "V(Hdc) |set Ib" or self.acquire_type == "V(Hdc) |set Vb" ):
+                            self.field.shutdown(self.last_value / self.field_const)
+                        else:
+                            self.field.shutdown(self.field_bias / self.field_const)
+                    sleep(0.2)
+                    
+                    self.keithley.shutdown()
+                    print("keithley shutdown done")
+                    IVTransfer.licznik = 0
+                elif self.mode == "HDC-ACModeLockin":
+                    self.lockin.shutdown()
+                elif self.mode == "TimeMode":
+                    self.lockin.shutdown()
+            else:
+                if self.mode == "HDCMode":
+                    self.keithley.shutdown()
+                    print("keithley shutdown done")
+                    print("go next loop...")
+            IVTransfer.licznik += 1
+            print(IVTransfer.licznik)
+        else: 
+            pass
 
 
 class MainWindow(ManagedWindow):

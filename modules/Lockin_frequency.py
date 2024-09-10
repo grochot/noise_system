@@ -101,10 +101,9 @@ class LockinFrequency:
 
         #set AUX
         self.lockin.aux_set_manual(0)
-        self.lockin.aux_set_manual(1)
 
         self.lockin.auxout(0, 0)
-        self.lockin.auxout(1, 0)
+       
 
         self.lockin.siginfloat(1 if sigin_float==True else 0) 
         self.lockin.currinfloat(1 if currin_float==True else 0)
