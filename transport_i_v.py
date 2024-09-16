@@ -994,12 +994,22 @@ class IVTransfer(Procedure):
             tmp_dV_dI = []
 
             if self.mode == "HDCMode":
+                if IVTransfer.licznik == 0: 
+                    vector_to_saturation = self.vector_obj.generate_vector_input(self.vector_param)
+                    vector_to_saturation_list = list(np.linspace(0, vector_to_saturation[0], 5)) + list(np.linspace(vector_to_saturation[0], vector_to_saturation[2], 5))
+                    print("DEBUG: vector to saturation: {}".format(vector_to_saturation_list))
                 if self.acquire_type == "I(Hdc) | set Vb":
                     if self.coil == "Large":
                         self.field_const = 5
                     else:
                         self.field_const = 10
                     w = 0
+                    if IVTransfer.licznik == 0: 
+                        for k in vector_to_saturation_list:
+                            self.field.set_field(k / self.field_const)
+                            sleep(self.delay * 0.001)
+                            print("DEBUG:set field: {}".format(k))
+
                     for i in self.vector:
                         self.last_value = i
                         self.field.set_field(i / self.field_const)
@@ -1094,6 +1104,11 @@ class IVTransfer(Procedure):
                     else:
                         self.field_const = 10
                     w = 0
+                    if IVTransfer.licznik == 0: 
+                        for k in vector_to_saturation_list:
+                            self.field.set_field(k / self.field_const)
+                            sleep(self.delay * 0.001)
+                            print("DEBUG:set field: {}".format(k))
                     for i in self.vector:
                         self.last_value = i
                         self.field.set_field(i / self.field_const)
@@ -1194,7 +1209,11 @@ class IVTransfer(Procedure):
                     else:
                         self.field_const = 10
                     w = 0
-                   
+                    if IVTransfer.licznik == 0: 
+                        for k in vector_to_saturation_list:
+                            self.field.set_field(k / self.field_const)
+                            sleep(self.delay * 0.001)
+                            print("DEBUG:set field: {}".format(k))
                     for i in self.vector:
                         self.last_value = i
                         self.set_field = self.field.set_field(i / self.field_const)
@@ -1670,6 +1689,8 @@ class IVTransfer(Procedure):
             raise Exception("Device error, please check connections")
 
     def shutdown(self):
+        print(IVTransfer.sequencer.results_ready)
+
         if self.stop_flag == False:
             if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
                 if self.mode == "HDCMode":
@@ -1786,7 +1807,7 @@ class MainWindow(ManagedWindow):
             inputs_in_scrollarea=True,
         )
 
-        self.setWindowTitle("IV Measurement System v.0.99.8")
+        self.setWindowTitle("IV Measurement System v.0.99.9")
         self.directory = self.procedure_class.path_file.ReadFile()
 
     def queue(self, procedure=None):
@@ -1804,9 +1825,7 @@ class MainWindow(ManagedWindow):
 
         try:
 
-            MainWindow.wynik = procedure.seq
-            MainWindow.wynik_list.append(procedure.seq)
-            MainWindow.wynik = max(MainWindow.wynik_list)
+            MainWindow.wynik = MainWindow.wynik + 1
             MainWindow.last = False
 
         except:
