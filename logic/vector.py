@@ -9,9 +9,11 @@ class Vector():
 			numbers = []
 			if len(ranges) == 3:
 				start = float(ranges[0])
-				stop = Hr
-				step = float(ranges[1]) if stop < start else -1*float(ranges[1])
-				numbers = list(np.arange(stop, start, step))+list(np.linspace(start, stop, 5))
+				stop = float(Hr)
+				step = int(ranges[1]) if stop < start else -1*int(ranges[1])
+
+				numbers = list(np.arange(stop, start, step))
+				
 			
 			
 			return numbers
@@ -50,6 +52,6 @@ class Vector():
 if __name__ == "__main__":
 	test = Vector()
 
-	vector = "-60,1,Hr"
+	vector = "10,12,Hr"
 
-	print(list(test.generate_vector(vector, 99)))
+	print(list(test.generate_vector(vector, 5)))

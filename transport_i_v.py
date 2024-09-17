@@ -50,7 +50,7 @@ log.addHandler(logging.NullHandler())
 
 
 class IVTransfer(Procedure):
-    licznik = 1  # licznik
+    licznik = 0  # licznik
     stop_flag = False
     find_instruments = FindInstrument()
     finded_instruments = list(find_instruments.show_instrument())
@@ -994,9 +994,18 @@ class IVTransfer(Procedure):
             tmp_dV_dI = []
 
             if self.mode == "HDCMode":
+             
                 if IVTransfer.licznik == 0: 
+
                     vector_to_saturation = self.vector_obj.generate_vector_input(self.vector_param)
-                    vector_to_saturation_list = list(np.linspace(0, vector_to_saturation[0], 5)) + list(np.linspace(vector_to_saturation[0], vector_to_saturation[2], 5))
+                    print(vector_to_saturation)
+                    vector_to_saturation_list = list(np.linspace(0.0, float(vector_to_saturation[0]), 5))
+                    print(vector_to_saturation_list)
+                    vector_to_saturation_list_2 = list(np.linspace(float(vector_to_saturation[0]), self.Hr, 5))
+                    print(vector_to_saturation_list_2)
+                    vector_to_saturation_list.extend(vector_to_saturation_list_2)
+
+                   
                     print("DEBUG: vector to saturation: {}".format(vector_to_saturation_list))
                 if self.acquire_type == "I(Hdc) | set Vb":
                     if self.coil == "Large":
@@ -1008,14 +1017,15 @@ class IVTransfer(Procedure):
                         for k in vector_to_saturation_list:
                             self.field.set_field(k / self.field_const)
                             sleep(self.delay * 0.001)
-                            print("DEBUG:set field: {}".format(k))
+                            print("DEBUG:set field to saturation: {}".format(k))
+                    print(self.vector)
 
                     for i in self.vector:
                         self.last_value = i
                         self.field.set_field(i / self.field_const)
                         tmp_field_set.append(i)  # surowe pole
                         sleep(self.delay * 0.001)
-                        print("DEBUG:set field: {}".format(i))
+                        print("DEBUG:set field measure: {}".format(i))
                         self.tmp_field = self.field_sensor.read_field()
                         tmp_field_x.append(self.tmp_field[0])
                         tmp_field_y.append(self.tmp_field[1])
@@ -1096,6 +1106,15 @@ class IVTransfer(Procedure):
                         }
                         self.emit("results", data)
                         self.stop_flag = False
+                    if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
+                        vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                        for p in vector_to_zero_list:
+                            self.field.set_field(p / self.field_const)
+                            sleep(self.delay * 0.001)
+                            print("DEBUG:set field to zero: {}".format(p))
+
+
+                        
 
                 elif self.acquire_type == "V(Hdc) | set Vb":
          
@@ -1203,6 +1222,13 @@ class IVTransfer(Procedure):
                         }
                         self.emit("results", data)
                         stop_flag = False
+                    if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
+                        vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                        for p in vector_to_zero_list:
+                            self.field.set_field(p / self.field_const)
+                            sleep(self.delay * 0.001)
+                            print("DEBUG:set field to zero: {}".format(p))
+                
                 elif self.acquire_type == "V(Hdc) |set Ib":
                     if self.coil == "Large":
                         self.field_const = 5
@@ -1293,6 +1319,12 @@ class IVTransfer(Procedure):
                         }
                         self.emit("results", data)
                         stop_flag = False
+                    if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
+                        vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                        for p in vector_to_zero_list:
+                            self.field.set_field(p / self.field_const)
+                            sleep(self.delay * 0.001)
+                            print("DEBUG:set field to zero: {}".format(p))
 
                 elif self.acquire_type == "I(Vb) | set Hdc":
                   
@@ -1689,10 +1721,11 @@ class IVTransfer(Procedure):
             raise Exception("Device error, please check connections")
 
     def shutdown(self):
-        print(IVTransfer.sequencer.results_ready)
 
         if self.stop_flag == False:
-            if MainWindow.last == True or IVTransfer.licznik == MainWindow.wynik:
+            print("LICZNIK:{}".format(IVTransfer.licznik))
+            if window.get_sequencer_len() == 0 or window.get_sequencer_len() == IVTransfer.licznik+1:
+                print("last loop")
                 if self.mode == "HDCMode":
                     if self.field_device == "DAQ":
                         self.field.shutdown()
@@ -1716,18 +1749,15 @@ class IVTransfer(Procedure):
             else:
                 if self.mode == "HDCMode":
                     self.keithley.shutdown()
-                    print("keithley shutdown done")
                     print("go next loop...")
-            IVTransfer.licznik += 1
-            print(IVTransfer.licznik)
+                    IVTransfer.licznik += 1
+            
         else: 
             pass
 
 
 class MainWindow(ManagedWindow):
     last = False
-    wynik = 0
-    wynik_list = []
 
     def __init__(self):
         super().__init__(
@@ -1810,6 +1840,9 @@ class MainWindow(ManagedWindow):
         self.setWindowTitle("IV Measurement System v.0.99.9")
         self.directory = self.procedure_class.path_file.ReadFile()
 
+    def get_sequencer_len(self):
+        return self.sequencer.get_sequence_lenght()
+
     def queue(self, procedure=None):
         directory = self.directory  # Change this to the desired directory
         self.procedure_class.path_file.WriteFile(directory)
@@ -1823,19 +1856,6 @@ class MainWindow(ManagedWindow):
         experiment = self.new_experiment(results)
         self.manager.queue(experiment)
 
-        try:
-
-            MainWindow.wynik = MainWindow.wynik + 1
-            MainWindow.last = False
-
-        except:
-            print("No procedure")
-            MainWindow.last = True
-
-            # while run:
-            #     sleep(0.2)
-            #     run = self.manager.is_running()
-            # procedure.shutdown_definetly()
 
 
 if __name__ == "__main__":

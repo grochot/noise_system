@@ -2,12 +2,12 @@
     "mode": "HDCMode",
     "mode_lockin": "Sweep frequency",
     "sample_name": "test1",
-    "vector_param": "0,1,Hr",
+    "vector_param": "10,1,Hr",
     "lockin_vector": "1,1,5",
     "coil": "Small",
     "coil_constant": 21.2,
-    "acquire_type": "V(Hdc) | set Vb",
-    "keithley_adress": "None",
+    "acquire_type": "I(Hdc) | set Vb",
+    "keithley_adress": "GPIB1::24::INSTR",
     "agilent": false,
     "agilent34401a_adress": "None",
     "field_sensor_adress": "COM3",
@@ -48,5 +48,5 @@
     "order": 4,
     "ac_voltage_frequency": 10.0,
     "ac_voltage_amplitude": 1.0,
-    "Hr": 10.0
+    "Hr": 7.0
 }
