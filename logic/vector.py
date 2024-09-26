@@ -12,7 +12,7 @@ class Vector():
 				stop = float(Hr)
 				step = int(ranges[1]) if stop < start else -1*int(ranges[1])
 
-				numbers = list(np.arange(stop, start, step))
+				numbers = list(np.arange(stop, start+step, step))
 				
 			
 			
@@ -52,6 +52,6 @@ class Vector():
 if __name__ == "__main__":
 	test = Vector()
 
-	vector = "10,12,Hr"
+	vector = "-5,2,Hr"
 
-	print(list(test.generate_vector(vector, 5)))
+	print(list(test.generate_vector(vector, 9)))

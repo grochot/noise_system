@@ -591,14 +591,21 @@ class IVTransfer(Procedure):
                     log.error("Config DAQ failed")
                     self.stop_flag = True
                 try:
-                    if self.reverse_field == True:
+                    if self.reverse_field == True and 'Hr' not in self.vector_obj.generate_vector_input(self.vector_param):
                         self.vector_to = self.vector_obj.generate_vector(
-                            self.vector_param, self.Hr
+                            self.vector_param
                         )
                         self.vector_rev = self.vector_to[::-1]
                         self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+                        
                     else:
-                        self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
+                        if 'Hr' not in self.vector_obj.generate_vector_input(self.vector_param):
+                            self.vector = self.vector_obj.generate_vector(self.vector_param)
+                            
+                        else: 
+                            self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
+                           
+                        print(self.vector)
                 except Exception as e:
                     log.error("Vector set failed")
                     self.stop_flag = True
@@ -995,14 +1002,14 @@ class IVTransfer(Procedure):
 
             if self.mode == "HDCMode":
              
-                if IVTransfer.licznik == 0: 
+                if IVTransfer.licznik == 0 and 'Hr' in self.vector_obj.generate_vector_input(self.vector_param): 
 
                     vector_to_saturation = self.vector_obj.generate_vector_input(self.vector_param)
-                    print(vector_to_saturation)
+                 
                     vector_to_saturation_list = list(np.linspace(0.0, float(vector_to_saturation[0]), 5))
-                    print(vector_to_saturation_list)
+                   
                     vector_to_saturation_list_2 = list(np.linspace(float(vector_to_saturation[0]), self.Hr, 5))
-                    print(vector_to_saturation_list_2)
+                    
                     vector_to_saturation_list.extend(vector_to_saturation_list_2)
 
                    
@@ -1013,12 +1020,12 @@ class IVTransfer(Procedure):
                     else:
                         self.field_const = 10
                     w = 0
-                    if IVTransfer.licznik == 0: 
+                    if IVTransfer.licznik == 0 and 'Hr' in self.vector_obj.generate_vector_input(self.vector_param): 
                         for k in vector_to_saturation_list:
                             self.field.set_field(k / self.field_const)
                             sleep(self.delay * 0.001)
                             print("DEBUG:set field to saturation: {}".format(k))
-                    print(self.vector)
+                    print("Mesure vector: {}".format(self.vector))
 
                     for i in self.vector:
                         self.last_value = i
@@ -1106,13 +1113,31 @@ class IVTransfer(Procedure):
                         }
                         self.emit("results", data)
                         self.stop_flag = False
+                    #Sweep field to next value or 0 
                     if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
-                        vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                        if window.get_sequencer_len() == 0 or window.get_sequencer_len() == IVTransfer.licznik+1:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            for p in vector_to_zero_list:
+                                self.field.set_field(p / self.field_const)
+                                sleep(self.delay * 0.001)
+                                print("DEBUG:set field to zero: {}".format(p))
+
+                        else:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            for p in vector_to_zero_list:
+                                self.field.set_field(p / self.field_const)
+                                sleep(self.delay * 0.001)
+                                print("DEBUG:set field to next value: {}".format(p))
+                    else: 
+                        if self.reverse_field == False:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                        else: 
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
                         for p in vector_to_zero_list:
                             self.field.set_field(p / self.field_const)
                             sleep(self.delay * 0.001)
                             print("DEBUG:set field to zero: {}".format(p))
-
+                        
 
                         
 
@@ -1123,7 +1148,7 @@ class IVTransfer(Procedure):
                     else:
                         self.field_const = 10
                     w = 0
-                    if IVTransfer.licznik == 0: 
+                    if IVTransfer.licznik == 0 and 'Hr' in self.vector_obj.generate_vector_input(self.vector_param): 
                         for k in vector_to_saturation_list:
                             self.field.set_field(k / self.field_const)
                             sleep(self.delay * 0.001)
@@ -1222,8 +1247,26 @@ class IVTransfer(Procedure):
                         }
                         self.emit("results", data)
                         stop_flag = False
+                     #Sweep field to next value or 0 
                     if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
-                        vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                        if window.get_sequencer_len() == 0 or window.get_sequencer_len() == IVTransfer.licznik+1:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            for p in vector_to_zero_list:
+                                self.field.set_field(p / self.field_const)
+                                sleep(self.delay * 0.001)
+                                print("DEBUG:set field to zero: {}".format(p))
+
+                        else:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            for p in vector_to_zero_list:
+                                self.field.set_field(p / self.field_const)
+                                sleep(self.delay * 0.001)
+                                print("DEBUG:set field to next value: {}".format(p))
+                    else: 
+                        if self.reverse_field == False:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                        else: 
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
                         for p in vector_to_zero_list:
                             self.field.set_field(p / self.field_const)
                             sleep(self.delay * 0.001)
@@ -1235,7 +1278,7 @@ class IVTransfer(Procedure):
                     else:
                         self.field_const = 10
                     w = 0
-                    if IVTransfer.licznik == 0: 
+                    if IVTransfer.licznik == 0 and 'Hr' in self.vector_obj.generate_vector_input(self.vector_param): 
                         for k in vector_to_saturation_list:
                             self.field.set_field(k / self.field_const)
                             sleep(self.delay * 0.001)
@@ -1320,7 +1363,25 @@ class IVTransfer(Procedure):
                         self.emit("results", data)
                         stop_flag = False
                     if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
-                        vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                        if window.get_sequencer_len() == 0 or window.get_sequencer_len() == IVTransfer.licznik+1:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            for p in vector_to_zero_list:
+                                self.field.set_field(p / self.field_const)
+                                sleep(self.delay * 0.001)
+                                print("DEBUG:set field to zero: {}".format(p))
+
+                        else:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            for p in vector_to_zero_list:
+                                self.field.set_field(p / self.field_const)
+                                sleep(self.delay * 0.001)
+                                print("DEBUG:set field to next value: {}".format(p))
+                    
+                    else: 
+                        if self.reverse_field == False:
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                        else: 
+                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
                         for p in vector_to_zero_list:
                             self.field.set_field(p / self.field_const)
                             sleep(self.delay * 0.001)
@@ -1452,7 +1513,7 @@ class IVTransfer(Procedure):
                 #             'Z field (Oe)': 0,
                 #             'Hset (Oe)': 0,
 
-            elif self.mode == "HDC-ACModeLockin":
+            elif self.mode == "HDC-ACModeLockin": 
                 if self.mode_lockin == "Sweep field":
                     if self.kepco == False:
                         # self.calibration_field = LockinCalibration(
@@ -1729,14 +1790,17 @@ class IVTransfer(Procedure):
                 if self.mode == "HDCMode":
                     if self.field_device == "DAQ":
                         self.field.shutdown()
+                        print("pole wyłączone")
                         pass
                     else:
                         if (
                             self.acquire_type == "I(Hdc) | set Vb"
                             or self.acquire_type == "V(Hdc) |set Ib" or self.acquire_type == "V(Hdc) |set Vb" ):
                             self.field.shutdown(self.last_value / self.field_const)
+                            print("pole wyłączone")
                         else:
                             self.field.shutdown(self.field_bias / self.field_const)
+                            print("pole wyłączone")
                     sleep(0.2)
                     
                     self.keithley.shutdown()

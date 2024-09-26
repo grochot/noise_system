@@ -1,8 +1,8 @@
 {
     "mode": "HDCMode",
     "mode_lockin": "Sweep frequency",
-    "sample_name": "test1",
-    "vector_param": "10,1,Hr",
+    "sample_name": "4510-9-A_1x10_FORC-45,Hr-18_48dHr4",
+    "vector_param": "-5,2,Hr",
     "lockin_vector": "1,1,5",
     "coil": "Small",
     "coil_constant": 21.2,
@@ -14,7 +14,7 @@
     "keithley_compliance_current": 0.001,
     "keithley_compliance_voltage": 10.0,
     "keithley_current_bias": 10.0,
-    "keithley_voltage_bias": 0.15,
+    "keithley_voltage_bias": 0.05,
     "field_device": "DAQ",
     "field_bias": 10.0,
     "agilent_adress": "ASRL1::INSTR",
@@ -48,5 +48,5 @@
     "order": 4,
     "ac_voltage_frequency": 10.0,
     "ac_voltage_amplitude": 1.0,
-    "Hr": 7.0
+    "Hr": 9.0
 }

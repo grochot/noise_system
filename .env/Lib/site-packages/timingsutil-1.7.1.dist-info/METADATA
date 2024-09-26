@@ -1,0 +1,30 @@
+Metadata-Version: 2.1
+Name: timingsutil
+Version: 1.7.1
+Summary: A collection of timing utilities.
+Home-page: https://bitbucket.org/daycoder/timingsutil.git
+Author: Hywel Thomas
+Author-email: hywel.thomas@mac.com
+License: MIT
+Download-URL: https://bitbucket.org/daycoder/timingsutil.git/get/1.7.1.tar
+Keywords: date,time
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Topic :: Utilities
+License-File: LICENSE.txt
+Requires-Dist: future (>=0.16.0)
+Provides-Extra: test
+
+
+TimingsUtil
+========================
+
+A collection of networking utilities.
+
+

@@ -1,0 +1,51 @@
+Metadata-Version: 2.1
+Name: zhinst-core
+Version: 23.6.45428
+Summary: Python API for Zurich Instruments Devices
+Home-page: http://www.zhinst.com
+Author: Zurich Instruments AG
+Author-email: info@zhinst.com
+License: MIT
+Platform: windows
+Platform: Linux
+Platform: Darwin
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Programming Language :: C++
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Requires-Dist: numpy (>=1.19)
+Requires-Dist: typing-extensions
+
+# Zurich Instruments LabOne API
+
+The `zhinst-core` package allows communication with Zurich Instruments devices from
+the Python programming language. It's the native Python API of LabOne&reg;, the
+Zurich Instruments control software.
+
+![Zurich Instruments Arbitrary Waveform Generator and monitor showing LabOne Software](https://people.zhinst.com/~danielw/pypi/hdawg_labone_pic02.jpg)
+
+The documentation for the `zhinst.core` binary extension can be accessed [online](https://docs.zhinst.com/labone_api/index.html) or via the built-in `help` command:
+
+```Python
+import zhinst.core
+help(zhinst.core)
+```
+
+More information about programming with Zurich Instruments devices is available
+in the [LabOne Programming
+Manual](https://docs.zhinst.com/labone_programming_manual/python.html).
