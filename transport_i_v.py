@@ -1790,7 +1790,7 @@ class IVTransfer(Procedure):
                 if self.mode == "HDCMode":
                     if self.field_device == "DAQ":
                         self.field.shutdown()
-                        pass
+                        print("pole wyłączone")
                     else:
                         if (
                             self.acquire_type == "I(Hdc) | set Vb"
