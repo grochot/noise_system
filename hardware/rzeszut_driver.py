@@ -231,7 +231,7 @@ import sys
 
 # Konfiguracja portu UART
 ser = serial.Serial(
-    port='COM3',    # Zmień na odpowiedni port COM na swoim systemie
+    port='COM6',    # Zmień na odpowiedni port COM na swoim systemie
     baudrate=115200,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
@@ -283,5 +283,5 @@ if __name__ == "__main__":
 
     # Odbieranie danych
    
-    receive_data()
+    print(receive_data())
     ser.close()
