@@ -28,94 +28,117 @@ class RzeszutField():
         )
 
     def version(self):
-        self.write(b"V?;")
+        self.write("V?;")
         text = self.read()
         return text
 
     def get_field(self):
-        self.write(b"FCC;")
+        self.write("FCC?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
 
     def get_field_xy(self):
-        self.write(b"FXY;")
+        self.write("FXY?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
     def get_field_xz(self):
-        self.write(b"FXZ;")
+        self.write("FXZ?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
     def get_field_yz(self):
-        self.write(b"FYZ;")
+        self.write("FYZ?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
     def get_field_all(self):
-        self.write(b"FTT;")
+        self.write("FTT?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
     def get_angle_yz(self):
-        self.serial_port.write(b"FPX;")
+        self.write("FPX?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
     def get_angle_xz(self):
-        self.serial_port.write(b"FPY;")
+        self.write("FPY?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
     def get_angle_xy(self):
-        self.serial_port.write(b"FPZ;")
+        self.write("FPZ?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
     def get_sample_number(self): 
-        self.serial_port.write(b"AV?;")
+        self.write("AV?;")
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
-    def set_sample_number(self, number=int): 
-        message = "AVS;"+str(number)
+    def set_sample_number(self, number=str): 
+        message = "AVS;"+ number +";"
         self.write(message)
        
     def set_voltage(self, channel = int, voltage = float): 
-        message = "WV;"+str(channel)+";"+str(voltage)
+        message = "WV;"+str(channel)+";"+str(voltage) + ";" 
         self.write(message)    
 
 
     def set_pid(self, channel = int, p = float, i = float, d = float, mean = int, step = float, i_max = float, rezerwa = float, preskaler = int): 
-        message = "PID;"+str(channel)+";"+str(p)+";"+str(d)+";"+str(i)+";"+str(mean)+";"+str(step)+";"+str(i_max)+";"+str(rezerwa)+";"+str(preskaler)
+        message = "PID;"+str(channel)+";"+str(p)+";"+str(d)+";"+str(i)+";"+str(mean)+";"+str(step)+";"+str(i_max)+";"+str(rezerwa)+";"+str(preskaler)+";"
         self.write(message)
     
 
     def get_pid(self, channel = int): 
-        message = "WPG;"+str(channel) 
+        message = "WPG;"+str(channel)+";"
         self.write(message)
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
     
     def get_pid_status(self, channel = int): 
         
-        message = "WPC;"+str(channel) 
+        message = "WPC;"+str(channel)+";"
         self.write(message)
         text = self.read()
-        return text
+        result = text.split(';')
+        return result
 
     def set_pid_on(self, channel = int): 
-        message = "WPS;"+str(channel)
+        message = "WPS;"+str(channel)+";"
         self.write(message)
 
     def set_pid_off(self, channel = int): 
-        message = "WPL;"+str(channel)
+        message = "WPL;"+str(channel)+';'
         self.write(message)
     
-    def sef_pid_value(self, channel = int, value = float): 
-        message = "WPV;"+str(channel)+";"+str(value)
+    def set_pid_value(self, channel = int, value = float): 
+        message = "WPV;"+str(channel)+";"+str(value)+";"
         self.write(message)
     
+    #funkcje koncowe:
+    
+    def set_field_value(self, angleXY=0, value=0): 
+        radian = np.radians(angleXY)
+        v_x = value * np.cos(radian)
+        v_y = value * np.sin(radian)
+        self.set_pid_value(1,v_x)
+        sleep(0.3)
+        self.set_pid_value(2,v_y)
+
+
+
     
     # Funkcje pomocnicze:
     def crc8calc(self, incoming):
@@ -147,6 +170,7 @@ class RzeszutField():
 
         # Tworzenie ramki danych
         frame = data_ascii  + crc8 + b'\r\n'
+        print(frame)
         
         # Wysłanie danych
 
@@ -155,33 +179,35 @@ class RzeszutField():
 
     def read(self):
         # Odbieranie danych do znaku nowej linii
-        data = self.serial_port.readline().decode()
+        data = self.serial_port.read(100).decode()
+        print("RAW:{}".format(data))
         
         # Parsowanie danych
         if data:
             frame_data, crc_str = data.rsplit(';', 1)
             print(f'Odebrano poprawne dane: {frame_data}')
-            return frame_data
+            return str(frame_data)
 
 
 if __name__ == '__main__':
     rzeszut = RzeszutField("COM6")
-    # print(rzeszut.version())
-    # print(rzeszut.get_field())
-    # print(rzeszut.get_field_xy())
-    # print(rzeszut.get_field_xz())
+    #print(rzeszut.version())
+    #print(rzeszut.get_field())
+    #print(rzeszut.get_field())
+    #print(rzeszut.get_field_xy())
+    #print(rzeszut.get_field_xz())
     # print(rzeszut.get_field_yz())
-    # print(rzeszut.get_field_all())
+    #print(rzeszut.get_field_all())
     # print(rzeszut.get_angle_yz())
     # print(rzeszut.get_angle_xz())
-    # print(rzeszut.get_angle_xy())
-    # print(rzeszut.get_sample_number())
-    # print(rzeszut.set_sample_number(5))
-    # print(rzeszut.set_voltage(1, 2.5))
+    #print(rzeszut.get_angle_xy())
+    #print(rzeszut.get_sample_number())
+    #print(rzeszut.set_sample_number('001'))
+    #print(rzeszut.set_voltage(1, 2.5))
     # print(rzeszut.set_pid(1, 1, 1, 1, 1, 1, 1, 1, 1))
-    # print(rzeszut.get_pid(1))
-    # print(rzeszut.get_pid_status(1))
-    # print(rzeszut.set_pid_on(1))
+    #print(rzeszut.get_pid(2))
+    print(rzeszut.get_pid_status(1))
+    #print(rzeszut.set_pid_on(1))
     # print(rzeszut.set_pid_off(1))
     # print(rzeszut.sef_pid_value(1, 2.5))
     # print(rzeszut.crc8calc("FCC"))

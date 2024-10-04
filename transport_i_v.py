@@ -222,7 +222,7 @@ class IVTransfer(Procedure):
     
     field_device = ListParameter(
         "Field device",
-        choices=["DAQ", "Agilent E3648A"],
+        choices=["DAQ", "Agilent E3648A", "2D Controller"],
         default="DAQ",
         group_by="mode",
         group_condition=lambda v: v == "HDCMode",
@@ -232,10 +232,18 @@ class IVTransfer(Procedure):
         units="Oe",
         default=parameters_from_file["field_bias"],
         group_by={
-            "acquire_type": lambda v: v == "I(Vb) | set Hdc" or v == "V(Ib) | set Hdc",
             "mode": lambda v: v == "HDCMode",
         },
-    )
+    ) 
+
+    field_angle = FloatParameter( 
+        "Field angle",
+        units="deg",
+        default=parameters_from_file["field_angle"],
+        group_by={
+            "mode": lambda v: v == "HDCMode",
+        },
+    ) 
     coil = ListParameter(
         "Coil",
         default=parameters_from_file["coil"],
@@ -279,6 +287,21 @@ class IVTransfer(Procedure):
         default=parameters_from_file["lockin_adress"],
         group_by="mode",
         group_condition=lambda v: v == "HDC-ACModeLockin" or v == "TimeMode",
+    )
+
+    Field2DController_address = Parameter(
+         "2D Controller adress",
+        default=parameters_from_file["2Dcontroller_adress"],
+        group_by="field_device",
+        group_condition=lambda v: v =="2D Controller",
+    )
+
+    Field2DController_average = IntegerParameter(
+        "2D Field Controller average", 
+         default=parameters_from_file["2Dcontroller_average"],
+         group_by="field_device",
+        group_condition=lambda v: v =="2D Controller",
+
     )
     # input_type = ListParameter(
     #     "Signal input",
@@ -516,6 +539,8 @@ class IVTransfer(Procedure):
     )
 
     Hr = FloatParameter("Hr", default = parameters_from_file["Hr"])
+    sweep_by = ListParameter("Sweep by", choices=["Angle, Field Value"], default = parameters_from_file["sweep_by"], group_by=["mode", "field_device"],
+        group_condition=[lambda v: v == "HDCMode", "2D Controller"] )
     ##############################################################################################################################################################
 
     DEBUG = 1
@@ -610,7 +635,7 @@ class IVTransfer(Procedure):
                     log.error("Vector set failed")
                     self.stop_flag = True
                 
-            else:
+            elif self.field_device == "Agilent E3648A":
                 ##Bias field:
                 try:
                     from hardware.keisight_e3600a import E3600a
@@ -635,7 +660,40 @@ class IVTransfer(Procedure):
                 except Exception as e:
                     log.error("Vector set failed")
                     self.stop_flag = True
-
+            else: 
+                try: 
+                    from hardware.rzeszut_driver import RzeszutField 
+                    self.field = RzeszutField(self.Field2DController_address)
+                    if self.field.get_pid_status(1)[1] == "R": 
+                        pass 
+                    else: 
+                        self.field.set_pid_on(1)
+                    if self.field.get_pid_status(2)[1] == "R": 
+                        pass 
+                    else: 
+                        self.field.set_pid_on(2)
+                except: 
+                    log.error("Config DAQ failed")
+                    self.stop_flag = True
+                try:
+                    if self.reverse_field == True and 'Hr' not in self.vector_obj.generate_vector_input(self.vector_param):
+                        self.vector_to = self.vector_obj.generate_vector(
+                            self.vector_param
+                        )
+                        self.vector_rev = self.vector_to[::-1]
+                        self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+                        
+                    else:
+                        if 'Hr' not in self.vector_obj.generate_vector_input(self.vector_param):
+                            self.vector = self.vector_obj.generate_vector(self.vector_param)
+                            
+                        else: 
+                            self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
+                           
+                        print(self.vector)
+                except Exception as e:
+                    log.error("Vector set failed")
+                    self.stop_flag = True
             ############## KEITHLEY CONFIG ###############
             try:
 
@@ -710,15 +768,18 @@ class IVTransfer(Procedure):
 
 
             ####### Config FieldSensor ########
-           
-            try:
-                self.field_sensor = FieldSensor(self.field_sensor_adress)
-                self.field_sensor.read_field_init()
+            if self.field_device == "2D Controller":
+                    log.info("Use 2D Controller ")
+            else:   
+                try:
+                    self.field_sensor = FieldSensor(self.field_sensor_adress)
+                    self.field_sensor.read_field_init()
 
-            except:
-                log.error("Config FieldSensor failed")
-                self.field_sensor = DummyFieldSensor()
-                log.info("Use DummyFieldSensor")
+                except:
+                    log.error("Config FieldSensor failed")
+                    self.field_sensor = DummyFieldSensor()
+                    log.info("Use DummyFieldSensor")
+
 
             ####### Config Agilent 34410A ########
             if self.agilent == True:
@@ -976,6 +1037,7 @@ class IVTransfer(Procedure):
             tmp_conductance = []
             tmp_field_set = []
             tmp_diff_x = []
+            tmp_field_angle = []
             tmp_dR = []
             tmp_dI = []
             tmp_dV = []
@@ -1022,21 +1084,48 @@ class IVTransfer(Procedure):
                     w = 0
                     if IVTransfer.licznik == 0 and 'Hr' in self.vector_obj.generate_vector_input(self.vector_param): 
                         for k in vector_to_saturation_list:
-                            self.field.set_field(k / self.field_const)
-                            sleep(self.delay * 0.001)
+                            if self.field_device == "2D Controller": 
+                                self.field.set_field_value(self.field_angle, k)
+                                sleep(self.delay * 0.001)
+                            else:
+                                self.field.set_field(k / self.field_const)
+                                sleep(self.delay * 0.001)
                             print("DEBUG:set field to saturation: {}".format(k))
                     print("Mesure vector: {}".format(self.vector))
 
                     for i in self.vector:
                         self.last_value = i
-                        self.field.set_field(i / self.field_const)
-                        tmp_field_set.append(i)  # surowe pole
+                        if self.field_device == "2D Controller":
+                            if self.sweep_by == "Angle":
+                                self.field.set_field_value(i, self.field_bias)
+                                tmp_field_angle.append(i)
+                                tmp_field_set.append(self.field_bias)
+                            else: 
+                                self.field.set_field_value(self.field_angle, i)
+                                tmp_field_angle.append(self.field_angle)
+                                tmp_field_set.append(i)
+
+
+                            
+                        else:
+                            self.field.set_field(i / self.field_const)
+                            tmp_field_set.append(i)  # surowe pole
                         sleep(self.delay * 0.001)
                         print("DEBUG:set field measure: {}".format(i))
-                        self.tmp_field = self.field_sensor.read_field()
-                        tmp_field_x.append(self.tmp_field[0])
-                        tmp_field_y.append(self.tmp_field[1])
-                        tmp_field_z.append(self.tmp_field[2])
+                        
+                        
+                        if self.field_device == "2D Controller":
+                            self.tmp_field = self.field.get_field()
+                            tmp_field_x.append(self.tmp_field[0])
+                            tmp_field_y.append(self.tmp_field[1])
+                            tmp_field_z.append(self.tmp_field[2])
+
+
+                        else:
+                            self.tmp_field = self.field_sensor.read_field()
+                            tmp_field_x.append(self.tmp_field[0])
+                            tmp_field_y.append(self.tmp_field[1])
+                            tmp_field_z.append(self.tmp_field[2])
                         sleep(self.delay * 0.001)
                         print("DEBUG: field masured:  {}".format(self.tmp_field))
                         if self.agilent == True:
@@ -1110,6 +1199,7 @@ class IVTransfer(Procedure):
                             "NdG": self.value_function(tmp_NdG, l),
                             "HdRS": self.value_function(tmp_HdRS, l),
                             "HdGS": self.value_function(tmp_HdGS, l),
+                            "Phase": self.value_function(tmp_field_angle, l)
                         }
                         self.emit("results", data)
                         self.stop_flag = False
@@ -1118,15 +1208,23 @@ class IVTransfer(Procedure):
                         if window.get_sequencer_len() == 0 or window.get_sequencer_len() == IVTransfer.licznik+1:
                             vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
                             for p in vector_to_zero_list:
-                                self.field.set_field(p / self.field_const)
-                                sleep(self.delay * 0.001)
+                                if self.field_device == "2D Controller":
+                                    self.field.set_field_value(self.field_angle, p)
+                                    sleep(self.delay * 0.001)
+                                else:
+                                    self.field.set_field(p / self.field_const)
+                                    sleep(self.delay * 0.001)
                                 print("DEBUG:set field to zero: {}".format(p))
 
                         else:
                             vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
                             for p in vector_to_zero_list:
-                                self.field.set_field(p / self.field_const)
-                                sleep(self.delay * 0.001)
+                                if self.field_device == "2D Controller":
+                                    self.field.set_field_value(self.field_angle, p)
+                                    sleep(self.delay * 0.001)
+                                else: 
+                                    self.field.set_field(p / self.field_const)
+                                    sleep(self.delay * 0.001)
                                 print("DEBUG:set field to next value: {}".format(p))
                     else: 
                         if self.reverse_field == False:
@@ -1134,7 +1232,10 @@ class IVTransfer(Procedure):
                         else: 
                             vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
                         for p in vector_to_zero_list:
-                            self.field.set_field(p / self.field_const)
+                            if self.field_device == "2D Controller":
+                                self.field.set_field_value(self.field_angle, p)
+                            else: 
+                                self.field.set_field(p / self.field_const)
                             sleep(self.delay * 0.001)
                             print("DEBUG:set field to zero: {}".format(p))
                         
