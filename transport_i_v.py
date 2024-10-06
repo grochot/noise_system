@@ -544,7 +544,7 @@ class IVTransfer(Procedure):
     )
 
     Hr = FloatParameter("Hr", default = parameters_from_file["Hr"])
-    sweep_by = ListParameter("Sweep by", choices=["Angle", "Field Value", "acquire_mode"], default = parameters_from_file["sweep_by"], group_by=["mode", "field_device"],
+    sweep_by = ListParameter("Sweep by", choices=["Angle", "Field Value"], default = parameters_from_file["sweep_by"], group_by=["mode", "field_device"],
         group_condition=[lambda v: v == "HDCMode", "2D Controller", (lambda v: v != "I(Vb) | set Hdc") or (lambda k: k !="V(Ib) | set Hdc")] )
     ##############################################################################################################################################################
 
@@ -1309,18 +1309,14 @@ class IVTransfer(Procedure):
                         try:
                             if self.agilent == True:
                                 self.tmp_volatage = self.agilent_34410.voltage_dc
-                            else: 
-                                self.tmp_volatage = math.nan
+                            else:
+                                self.tmp_volatage = self.keithley.voltage
                             
                             self.tmp_current = self.keithley.current
                         except Exception as exception: 
                             log.error(f"Measurement failed")
                             break
 
-                        
-                        
-                        
-                        
                         # surowe dane:
                         tmp_current.append(self.tmp_current)  # surowy prąd
                         tmp_voltage.append(self.tmp_volatage)  # surowe napiecie
@@ -2021,6 +2017,7 @@ class IVTransfer(Procedure):
                         print("pole wyłączone")
                     elif self.field_device == "2D Controller":
                         self.field.shutdown()
+                        
                         print("pole wyłączone")
                     else: 
                         if (

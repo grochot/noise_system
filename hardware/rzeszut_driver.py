@@ -142,6 +142,7 @@ class RzeszutField():
     
     def shutdown(self): 
         self.set_field_value(0,0)
+        self.serial_port.close()
 
 
 

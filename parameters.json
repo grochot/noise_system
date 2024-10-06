@@ -6,7 +6,7 @@
     "lockin_vector": "1,1,5",
     "coil": "Small",
     "coil_constant": 21.2,
-    "acquire_type": "V(Hdc) | set Vb",
+    "acquire_type": "V(Hdc) |set Ib",
     "keithley_adress": "GPIB1::24::INSTR",
     "agilent": false,
     "agilent34401a_adress": "None",
@@ -49,7 +49,7 @@
     "ac_voltage_frequency": 10.0,
     "ac_voltage_amplitude": 1.0,
     "Hr": 8.0,
-    "sweep_by": "Angle",
+    "sweep_by": "Field Value",
     "field_angle": 4.0,
     "Field2DController_address": "COM6",
     "Field2DController_average": 4
