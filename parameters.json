@@ -2,11 +2,11 @@
     "mode": "HDCMode",
     "mode_lockin": "Sweep frequency",
     "sample_name": "4510-9-A_1x10_FORC-45,Hr-18_48dHr4",
-    "vector_param": "-5,2,Hr",
+    "vector_param": "-5,2,3",
     "lockin_vector": "1,1,5",
     "coil": "Small",
     "coil_constant": 21.2,
-    "acquire_type": "I(Hdc) | set Vb",
+    "acquire_type": "V(Hdc) | set Vb",
     "keithley_adress": "GPIB1::24::INSTR",
     "agilent": false,
     "agilent34401a_adress": "None",
@@ -15,7 +15,7 @@
     "keithley_compliance_voltage": 10.0,
     "keithley_current_bias": 10.0,
     "keithley_voltage_bias": 0.05,
-    "field_device": "DAQ",
+    "field_device": "2D Controller",
     "field_bias": 10.0,
     "agilent_adress": "ASRL1::INSTR",
     "delay": 300.0,
@@ -48,5 +48,9 @@
     "order": 4,
     "ac_voltage_frequency": 10.0,
     "ac_voltage_amplitude": 1.0,
-    "Hr": 8.0
+    "Hr": 8.0,
+    "sweep_by": "Angle",
+    "field_angle": 4.0,
+    "Field2DController_address": "COM6",
+    "Field2DController_average": 4
 }

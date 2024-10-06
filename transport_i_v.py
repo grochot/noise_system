@@ -107,7 +107,11 @@ class IVTransfer(Procedure):
                 "order",
                 "ac_voltage_frequency",
                 "ac_voltage_amplitude",
-                "Hr"
+                "Hr", 
+                "sweep_by",
+                "field_angle",
+                "Field2DController_address", 
+                "Field2DController_average"
     ]
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
@@ -223,7 +227,7 @@ class IVTransfer(Procedure):
     field_device = ListParameter(
         "Field device",
         choices=["DAQ", "Agilent E3648A", "2D Controller"],
-        default="DAQ",
+        default=parameters_from_file["field_device"],
         group_by="mode",
         group_condition=lambda v: v == "HDCMode",
     )
@@ -242,6 +246,7 @@ class IVTransfer(Procedure):
         default=parameters_from_file["field_angle"],
         group_by={
             "mode": lambda v: v == "HDCMode",
+            "field_device": lambda v: v == "2D Controller"
         },
     ) 
     coil = ListParameter(
@@ -298,7 +303,7 @@ class IVTransfer(Procedure):
 
     Field2DController_average = IntegerParameter(
         "2D Field Controller average", 
-         default=parameters_from_file["2Dcontroller_average"],
+         default=parameters_from_file["Field2DController_average"],
          group_by="field_device",
         group_condition=lambda v: v =="2D Controller",
 
@@ -539,8 +544,8 @@ class IVTransfer(Procedure):
     )
 
     Hr = FloatParameter("Hr", default = parameters_from_file["Hr"])
-    sweep_by = ListParameter("Sweep by", choices=["Angle, Field Value"], default = parameters_from_file["sweep_by"], group_by=["mode", "field_device"],
-        group_condition=[lambda v: v == "HDCMode", "2D Controller"] )
+    sweep_by = ListParameter("Sweep by", choices=["Angle", "Field Value", "acquire_mode"], default = parameters_from_file["sweep_by"], group_by=["mode", "field_device"],
+        group_condition=[lambda v: v == "HDCMode", "2D Controller", (lambda v: v != "I(Vb) | set Hdc") or (lambda k: k !="V(Ib) | set Hdc")] )
     ##############################################################################################################################################################
 
     DEBUG = 1
@@ -582,10 +587,8 @@ class IVTransfer(Procedure):
         "HdRS",
         "HdGS",
         "G(t)",
-        "R(t)",
-        "sweep_by",
-        "field_angle",
-        "Field2DController_address",
+        "R(t)"
+
 
     ]  # data columns
 
@@ -676,8 +679,9 @@ class IVTransfer(Procedure):
                         pass 
                     else: 
                         self.field.set_pid_on(2)
+                    self.field.set_sample_number(str(self.Field2DController_average))
                 except: 
-                    log.error("Config DAQ failed")
+                    log.error("Config 2D Controller failed")
                     self.stop_flag = True
                 try:
                     if self.reverse_field == True and 'Hr' not in self.vector_obj.generate_vector_input(self.vector_param):
@@ -694,7 +698,7 @@ class IVTransfer(Procedure):
                         else: 
                             self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
                            
-                        print(self.vector)
+                        print("Vector: {}".format(self.vector))
                 except Exception as e:
                     log.error("Vector set failed")
                     self.stop_flag = True
@@ -1127,9 +1131,10 @@ class IVTransfer(Procedure):
                         
                         if self.field_device == "2D Controller":
                             self.tmp_field = self.field.get_field()
-                            tmp_field_x.append(self.tmp_field[0])
-                            tmp_field_y.append(self.tmp_field[1])
-                            tmp_field_z.append(self.tmp_field[2])
+                            print("RAW field value:{}".format(self.tmp_field))
+                            tmp_field_x.append(float(self.tmp_field[-3][7:]))
+                            tmp_field_y.append(float(self.tmp_field[-2]))
+                            tmp_field_z.append(float(self.tmp_field[-1]))
 
 
                         else:
@@ -1288,9 +1293,10 @@ class IVTransfer(Procedure):
                         
                         if self.field_device == "2D Controller":
                             self.tmp_field = self.field.get_field()
-                            tmp_field_x.append(self.tmp_field[0])
-                            tmp_field_y.append(self.tmp_field[1])
-                            tmp_field_z.append(self.tmp_field[2])
+                            print("RAW field value:{}".format(self.tmp_field))
+                            tmp_field_x.append(float(self.tmp_field[-3][7:]))
+                            tmp_field_y.append(float(self.tmp_field[-2]))
+                            tmp_field_z.append(float(self.tmp_field[-1]))
                         else:
                             self.tmp_field = self.field_sensor.read_field()
                             tmp_field_x.append(self.tmp_field[0])
@@ -1458,9 +1464,10 @@ class IVTransfer(Procedure):
                         print("DEBUG:set field measure: {}".format(i))
                         if self.field_device == "2D Controller":
                             self.tmp_field = self.field.get_field()
-                            tmp_field_x.append(self.tmp_field[0])
-                            tmp_field_y.append(self.tmp_field[1])
-                            tmp_field_z.append(self.tmp_field[2])
+                            print("RAW field value:{}".format(self.tmp_field))
+                            tmp_field_x.append(float(self.tmp_field[-3][7:]))
+                            tmp_field_y.append(float(self.tmp_field[-2]))
+                            tmp_field_z.append(float(self.tmp_field[-1]))
 
 
                         else:
@@ -1600,10 +1607,10 @@ class IVTransfer(Procedure):
                         
                         if self.field_device == "2D Controller":
                             self.tmp_field = self.field.get_field()
-                            tmp_field_x.append(self.tmp_field[0])
-                            tmp_field_y.append(self.tmp_field[1])
-                            tmp_field_z.append(self.tmp_field[2])
-
+                            print("RAW field value:{}".format(self.tmp_field))
+                            tmp_field_x.append(float(self.tmp_field[-3][7:]))
+                            tmp_field_y.append(float(self.tmp_field[-2]))
+                            tmp_field_z.append(float(self.tmp_field[-1]))
 
                         else:
                             self.tmp_field = self.field_sensor.read_field()
@@ -2012,7 +2019,10 @@ class IVTransfer(Procedure):
                     if self.field_device == "DAQ":
                         self.field.shutdown()
                         print("pole wyłączone")
-                    else:
+                    elif self.field_device == "2D Controller":
+                        self.field.shutdown()
+                        print("pole wyłączone")
+                    else: 
                         if (
                             self.acquire_type == "I(Hdc) | set Vb"
                             or self.acquire_type == "V(Hdc) |set Ib" or self.acquire_type == "V(Hdc) |set Vb" ):
@@ -2067,6 +2077,7 @@ class MainWindow(ManagedWindow):
                 "sweep_by",
                 "field_angle",
                 "Field2DController_address",
+                "Field2DController_average",
                 "field_bias",
                 "agilent_adress",
                 "delay",

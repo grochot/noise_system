@@ -34,9 +34,11 @@ class RzeszutField():
 
     def get_field(self):
         self.write("FCC?;")
+        sleep(0.3)
         text = self.read()
         result = text.split(';')
         return result
+       
 
     def get_field_xy(self):
         self.write("FXY?;")
@@ -49,6 +51,7 @@ class RzeszutField():
         text = self.read()
         result = text.split(';')
         return result
+        
     
     def get_field_yz(self):
         self.write("FYZ?;")
@@ -136,6 +139,9 @@ class RzeszutField():
         self.set_pid_value(1,v_x)
         sleep(0.3)
         self.set_pid_value(2,v_y)
+    
+    def shutdown(self): 
+        self.set_field_value(0,0)
 
 
 
@@ -180,19 +186,19 @@ class RzeszutField():
     def read(self):
         # Odbieranie danych do znaku nowej linii
         data = self.serial_port.read(100).decode()
-        print("RAW:{}".format(data))
+      
         
         # Parsowanie danych
         if data:
             frame_data, crc_str = data.rsplit(';', 1)
-            print(f'Odebrano poprawne dane: {frame_data}')
+         
             return str(frame_data)
 
 
 if __name__ == '__main__':
     rzeszut = RzeszutField("COM6")
     #print(rzeszut.version())
-    #print(rzeszut.get_field())
+    print(rzeszut.get_field())
     #print(rzeszut.get_field())
     #print(rzeszut.get_field_xy())
     #print(rzeszut.get_field_xz())
@@ -206,7 +212,7 @@ if __name__ == '__main__':
     #print(rzeszut.set_voltage(1, 2.5))
     # print(rzeszut.set_pid(1, 1, 1, 1, 1, 1, 1, 1, 1))
     #print(rzeszut.get_pid(2))
-    print(rzeszut.get_pid_status(1))
+    #print(rzeszut.get_pid_status(1))
     #print(rzeszut.set_pid_on(1))
     # print(rzeszut.set_pid_off(1))
     # print(rzeszut.sef_pid_value(1, 2.5))
