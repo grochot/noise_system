@@ -50,3 +50,7 @@ class Agilent34410A(Instrument):
         super().__init__(
             adapter, name, **kwargs
         )
+
+if __name__ == '__main__':
+    pp = Agilent34410A("GPIB1::22::INSTR")
+    print(pp.voltage_dc)

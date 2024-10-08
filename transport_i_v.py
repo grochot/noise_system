@@ -671,14 +671,16 @@ class IVTransfer(Procedure):
                 try: 
                     from hardware.rzeszut_driver import RzeszutField 
                     self.field = RzeszutField(self.Field2DController_address)
+                    self.field.set_voltage(1,0)
+                    self.field.set_voltage(2,0)
                     if self.field.get_pid_status(1)[1] == "R": 
-                        pass 
+                        self.field.set_pid_off(1)
                     else: 
-                        self.field.set_pid_on(1)
+                        pass
                     if self.field.get_pid_status(2)[1] == "R": 
-                        pass 
+                        self.field.set_pid_off(2)
                     else: 
-                        self.field.set_pid_on(2)
+                        pass
                     self.field.set_sample_number(str(self.Field2DController_average))
                 except: 
                     log.error("Config 2D Controller failed")

@@ -133,6 +133,8 @@ class RzeszutField():
     #funkcje koncowe:
     
     def set_field_value(self, angleXY=0, value=0): 
+        self.set_pid_on(1)
+        self.set_pid_on(2)
         radian = np.radians(angleXY)
         v_x = value * np.cos(radian)
         v_y = value * np.sin(radian)
@@ -141,8 +143,14 @@ class RzeszutField():
         self.set_pid_value(2,v_y)
     
     def shutdown(self): 
-        self.set_field_value(0,0)
+        self.set_pid_off(1)
+        self.set_pid_off(2)
+        self.set_voltage(1,0)
+        self.set_voltage(2,0)
+
         self.serial_port.close()
+    
+
 
 
 
@@ -199,7 +207,7 @@ class RzeszutField():
 if __name__ == '__main__':
     rzeszut = RzeszutField("COM6")
     #print(rzeszut.version())
-    print(rzeszut.get_field())
+    #print(rzeszut.get_field())
     #print(rzeszut.get_field())
     #print(rzeszut.get_field_xy())
     #print(rzeszut.get_field_xz())
@@ -210,13 +218,13 @@ if __name__ == '__main__':
     #print(rzeszut.get_angle_xy())
     #print(rzeszut.get_sample_number())
     #print(rzeszut.set_sample_number('001'))
-    #print(rzeszut.set_voltage(1, 2.5))
+    print(rzeszut.set_voltage(1, 0))
     # print(rzeszut.set_pid(1, 1, 1, 1, 1, 1, 1, 1, 1))
     #print(rzeszut.get_pid(2))
     #print(rzeszut.get_pid_status(1))
     #print(rzeszut.set_pid_on(1))
-    # print(rzeszut.set_pid_off(1))
-    # print(rzeszut.sef_pid_value(1, 2.5))
+    print(rzeszut.set_pid_off(1))
+    #print(rzeszut.set_pid_value(1, 0))
     # print(rzeszut.crc8calc("FCC"))
 
 
