@@ -111,7 +111,8 @@ class IVTransfer(Procedure):
                 "sweep_by",
                 "field_angle",
                 "Field2DController_address", 
-                "Field2DController_average"
+                "Field2DController_average", 
+                "pid_parameters"
     ]
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
@@ -544,8 +545,14 @@ class IVTransfer(Procedure):
     )
 
     Hr = FloatParameter("Hr", default = parameters_from_file["Hr"])
-    sweep_by = ListParameter("Sweep by", choices=["Angle", "Field Value"], default = parameters_from_file["sweep_by"], group_by=["mode", "field_device"],
+    sweep_by = ListParameter("Sweep by", choices=["Angle", "Field Value"], default = parameters_from_file["sweep_by"], 
+    group_by=["mode", "field_device"],
         group_condition=[lambda v: v == "HDCMode", "2D Controller", (lambda v: v != "I(Vb) | set Hdc") or (lambda k: k !="V(Ib) | set Hdc")] )
+
+    pid_parameters = Parameter("PID Parameters (Kp, Kd, Ki, Uśrednianie PID,  max step, max. i, Pole zarezerwowane, Preskaler dla algorytmu PID)", 
+        default=parameters_from_file["pid_parameters"],
+        group_by="field_device",
+        group_condition=lambda v: v == "2D Controller",)
     ##############################################################################################################################################################
 
     DEBUG = 1
@@ -680,8 +687,13 @@ class IVTransfer(Procedure):
                     if self.field.get_pid_status(2)[1] == "R": 
                         self.field.set_pid_off(2)
                     else: 
-                        pass
+                        pass 
+                    pid_values = self.pid_parameters.split(',')
+                    self.field.set_pid(1,pid_values[0], pid_values[1], pid_values[2], pid_values[3], pid_values[4], pid_values[5], pid_values[6], pid_values[7])
+                    self.field.set_pid(2,pid_values[0], pid_values[1], pid_values[2], pid_values[3], pid_values[4], pid_values[5], pid_values[6], pid_values[7])
                     self.field.set_sample_number(str(self.Field2DController_average))
+                    print("PID:{}".format(self.field.get_pid(1)))
+
                 except: 
                     log.error("Config 2D Controller failed")
                     self.stop_flag = True
@@ -2077,6 +2089,7 @@ class MainWindow(ManagedWindow):
                 "field_angle",
                 "Field2DController_address",
                 "Field2DController_average",
+                "pid_parameters",
                 "field_bias",
                 "agilent_adress",
                 "delay",

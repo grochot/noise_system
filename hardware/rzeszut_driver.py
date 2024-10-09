@@ -194,7 +194,7 @@ class RzeszutField():
 
     def read(self):
         # Odbieranie danych do znaku nowej linii
-        data = self.serial_port.read(100).decode()
+        data = self.serial_port.read(300).decode()
       
         
         # Parsowanie danych
@@ -218,12 +218,12 @@ if __name__ == '__main__':
     #print(rzeszut.get_angle_xy())
     #print(rzeszut.get_sample_number())
     #print(rzeszut.set_sample_number('001'))
-    print(rzeszut.set_voltage(1, 0))
+    #print(rzeszut.set_voltage(1, 0))
     # print(rzeszut.set_pid(1, 1, 1, 1, 1, 1, 1, 1, 1))
-    #print(rzeszut.get_pid(2))
+    print(rzeszut.get_pid(2))
     #print(rzeszut.get_pid_status(1))
     #print(rzeszut.set_pid_on(1))
-    print(rzeszut.set_pid_off(1))
+    #print(rzeszut.set_pid_off(1))
     #print(rzeszut.set_pid_value(1, 0))
     # print(rzeszut.crc8calc("FCC"))
 

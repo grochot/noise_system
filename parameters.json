@@ -52,5 +52,6 @@
     "sweep_by": "Field Value",
     "field_angle": 10.0,
     "Field2DController_address": "COM6",
-    "Field2DController_average": 4
+    "Field2DController_average": 4, 
+    "pid_parameters": "0.00079499999992549419,0.01164999976754188538,0,1,1,10000,2.5,1"
 }
