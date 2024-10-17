@@ -549,7 +549,7 @@ class IVTransfer(Procedure):
     group_by=["mode", "field_device"],
         group_condition=[lambda v: v == "HDCMode", "2D Controller", (lambda v: v != "I(Vb) | set Hdc") or (lambda k: k !="V(Ib) | set Hdc")] )
 
-    pid_parameters = Parameter("PID Parameters (Kp, Kd, Ki, Uśrednianie PID,  max step, max. i, Pole zarezerwowane, Preskaler dla algorytmu PID)", 
+    pid_parameters = Parameter("PID Parameters (Kp, Kd, Ki, averag PID,  max step, max. i, Reserv field, Prescaler)", 
         default=parameters_from_file["pid_parameters"],
         group_by="field_device",
         group_condition=lambda v: v == "2D Controller",)
