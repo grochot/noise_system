@@ -112,7 +112,8 @@ class IVTransfer(Procedure):
                 "field_angle",
                 "Field2DController_address", 
                 "Field2DController_average", 
-                "pid_parameters"
+                "pid_parameters", 
+                "daq2channels_coil"
     ]
     parameters_from_file = save_parameter.ReadFile()
     parameters = {}
@@ -227,7 +228,7 @@ class IVTransfer(Procedure):
     
     field_device = ListParameter(
         "Field device",
-        choices=["DAQ", "Agilent E3648A", "2D Controller"],
+        choices=["DAQ","DAQ 2-channels" , "Agilent E3648A", "2D Controller"],
         default=parameters_from_file["field_device"],
         group_by="mode",
         group_condition=lambda v: v == "HDCMode",
@@ -247,15 +248,15 @@ class IVTransfer(Procedure):
         default=parameters_from_file["field_angle"],
         group_by={
             "mode": lambda v: v == "HDCMode",
-            "field_device": lambda v: v == "2D Controller"
+            "field_device": lambda v: v == "2D Controller" or v == "DAQ 2-channels"
         },
     ) 
     coil = ListParameter(
         "Coil",
         default=parameters_from_file["coil"],
         choices=["Large", "Small"],
-        group_by="mode",
-        group_condition=lambda v: v == "HDCMode",
+        group_by=["mode", "field_device"],
+        group_condition=[lambda v: v == "HDCMode", lambda v: v != "DAQ 2-channels"],
     )
     vector_param = Parameter(
         "Vector",
@@ -545,14 +546,17 @@ class IVTransfer(Procedure):
     )
 
     Hr = FloatParameter("Hr", default = parameters_from_file["Hr"])
+
     sweep_by = ListParameter("Sweep by", choices=["Angle", "Field Value"], default = parameters_from_file["sweep_by"], 
     group_by=["mode", "field_device"],
-        group_condition=[lambda v: v == "HDCMode", "2D Controller", (lambda v: v != "I(Vb) | set Hdc") or (lambda k: k !="V(Ib) | set Hdc")] )
+        group_condition=[lambda v: v == "HDCMode", lambda v: v == "2D Controller" or v == "DAQ 2-channels", (lambda v: v != "I(Vb) | set Hdc") or (lambda k: k !="V(Ib) | set Hdc")] )
 
     pid_parameters = Parameter("PID Parameters (Kp, Kd, Ki, averag PID,  max step, max. i, Reserv field, Prescaler)", 
         default=parameters_from_file["pid_parameters"],
         group_by="field_device",
         group_condition=lambda v: v == "2D Controller",)
+    
+    daq2channels_coil = ListParameter("DAQ ao0 coil", default = parameters_from_file["daq2channels_coil"], choices=["Large", "Small"], group_by = "field_device", group_condition = lambda w: w == "DAQ 2-channels")
     ##############################################################################################################################################################
 
     DEBUG = 1
@@ -645,6 +649,32 @@ class IVTransfer(Procedure):
                             self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
                            
                         print(self.vector)
+                except Exception as e:
+                    log.error("Vector set failed")
+                    self.stop_flag = True
+            elif self.field_device == "DAQ 2-channels": 
+                try: 
+                    from logic import daq_2_channels 
+                    self.daq2channels = daq_2_channels.DAQ_2_channels()
+                except Exception as e:
+                    log.error("Config 2-channels DAQ failed")
+                    self.stop_flag = True 
+                try:
+                    if self.reverse_field == True and 'Hr' not in self.vector_obj.generate_vector_input(self.vector_param):
+                        self.vector_to = self.vector_obj.generate_vector(
+                            self.vector_param
+                        )
+                        self.vector_rev = self.vector_to[::-1]
+                        self.vector = np.append(self.vector_to[0:-1], self.vector_rev)
+                        
+                    else:
+                        if 'Hr' not in self.vector_obj.generate_vector_input(self.vector_param):
+                            self.vector = self.vector_obj.generate_vector(self.vector_param)
+                            
+                        else: 
+                            self.vector = self.vector_obj.generate_vector(self.vector_param, self.Hr)
+                           
+                        print("Vector: {}".format(self.vector))
                 except Exception as e:
                     log.error("Vector set failed")
                     self.stop_flag = True
@@ -761,6 +791,16 @@ class IVTransfer(Procedure):
 
                     if self.field_device == "2D Controller":
                         self.field.set_field_value(self.field_angle, self.field_bias)
+                    elif self.field_device == "DAQ 2-channels":
+                        if self.daq2channels_coil == "Large": 
+                            self.field_const1 = 5
+                            self.field_const2 = 10
+                        else: 
+                            self.field_const1 = 10
+                            self.field_const2 = 5
+                        self.daq2channels.set_field_2channels(self.field_angle, self.field_bias, self.field_const1, self.field_const2 )
+
+
                     else:   
                         if self.coil == "Large":
                             self.field_const = 5
@@ -779,6 +819,15 @@ class IVTransfer(Procedure):
                     self.keithley.measure_voltage()
                     if self.field_device == "2D Controller":
                         self.field.set_field_value(self.field_angle, self.field_bias)
+                    elif self.field_device == "DAQ 2-channels":
+                        if self.daq2channels_coil == "Large": 
+                            self.field_const1 = 5
+                            self.field_const2 = 10
+                        else: 
+                            self.field_const1 = 10
+                            self.field_const2 = 5
+                        self.daq2channels.set_field_2channels(self.field_angle, self.field_bias, self.field_const1, self.field_const2 )
+                        
                     else:   
                         if self.coil == "Large":
                             self.field_const = 5
@@ -814,19 +863,19 @@ class IVTransfer(Procedure):
             if self.agilent == True:
                 try:
                     self.agilent_34410 = Agilent34410A(self.agilent34401a_adress)
-
-                    if self.coil == "Large":
-                        self.field_const = 5
-                    else:
-                        self.field_const = 10
-                    if self.acquire_type == "I(Vb) | set Hdc":
-                        self.set_field = self.field.set_field(
-                            self.field_bias / self.field_const
-                        )
-                    elif self.acquire_type == "V(Ib) | set Hdc":
-                        self.set_field = self.field.set_field(
-                            self.field_bias / self.field_const
-                        )
+                    if self.field_device == "DAQ":
+                        if self.coil == "Large":
+                            self.field_const = 5
+                        else:
+                            self.field_const = 10
+                        if self.acquire_type == "I(Vb) | set Hdc":
+                            self.set_field = self.field.set_field(
+                                self.field_bias / self.field_const
+                            )
+                        elif self.acquire_type == "V(Ib) | set Hdc":
+                            self.set_field = self.field.set_field(
+                                self.field_bias / self.field_const
+                            )
                   
                 except:
                     log.error("Config Agilent 34410A failed")
@@ -1116,6 +1165,9 @@ class IVTransfer(Procedure):
                             if self.field_device == "2D Controller": 
                                 self.field.set_field_value(self.field_angle, k)
                                 sleep(self.delay * 0.001)
+                            elif self.field_device == "DAQ 2-channels":
+                                self.daq2channels.set_field_2channels(self.field_angle, k, self.field_const1, self.field_const2)
+                                sleep(self.delay * 0.001)
                             else:
                                 self.field.set_field(k / self.field_const)
                                 sleep(self.delay * 0.001)
@@ -1133,6 +1185,17 @@ class IVTransfer(Procedure):
                                 self.field.set_field_value(self.field_angle, i)
                                 tmp_field_angle.append(self.field_angle)
                                 tmp_field_set.append(i)
+                        elif self.field_device == "DAQ 2-channels":
+                            if self.sweep_by == "Angle":
+                                self.daq2channels.set_field_2channels(i, self.field_bias, self.field_const1, self.field_const2)
+                                tmp_field_angle.append(i)
+                                tmp_field_set.append(self.field_bias)
+                            else: 
+                                self.daq2channels.set_field_2channels(self.field_angle, i, self.field_const1, self.field_const2)
+                                tmp_field_angle.append(self.field_angle)
+                                tmp_field_set.append(i)
+
+
 
 
                             
@@ -1241,6 +1304,9 @@ class IVTransfer(Procedure):
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
                                     sleep(self.delay * 0.001)
+                                elif self.field_device == "DAQ 2-channels": 
+                                    self.daq2channels.set_field_2channels(self.field_angle, p, self.field_const1, self.field_const2)
+                                    sleep(self.delay * 0.001)
                                 else:
                                     self.field.set_field(p / self.field_const)
                                     sleep(self.delay * 0.001)
@@ -1251,6 +1317,9 @@ class IVTransfer(Procedure):
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
+                                    sleep(self.delay * 0.001)
+                                elif self.field_device == "DAQ 2-channels": 
+                                    self.daq2channels.set_field_2channels(self.field_angle,p, self.field_const1, self.field_const2)
                                     sleep(self.delay * 0.001)
                                 else: 
                                     self.field.set_field(p / self.field_const)
@@ -1264,6 +1333,8 @@ class IVTransfer(Procedure):
                         for p in vector_to_zero_list:
                             if self.field_device == "2D Controller":
                                 self.field.set_field_value(self.field_angle, p)
+                            elif self.field_device == "DAQ 2-channels": 
+                                self.daq2channels.set_field_2channels(self.field_angle,p,self.field_const1, self.field_const2 )
                             else: 
                                 self.field.set_field(p / self.field_const)
                             sleep(self.delay * 0.001)
@@ -1282,6 +1353,9 @@ class IVTransfer(Procedure):
                                 if self.field_device == "2D Controller": 
                                     self.field.set_field_value(self.field_angle, k)
                                     sleep(self.delay * 0.001)
+                                elif self.field_device == "DAQ 2-channels":
+                                    self.daq2channels.set_field_2channels(self.field_angle, k, self.field_const1, self.field_const2)
+                                    sleep(self.delay * 0.001)
                                 else:
                                     self.field.set_field(k / self.field_const)
                                     sleep(self.delay * 0.001)
@@ -1298,7 +1372,15 @@ class IVTransfer(Procedure):
                                 self.field.set_field_value(self.field_angle, i)
                                 tmp_field_angle.append(self.field_angle)
                                 tmp_field_set.append(i)
-                        
+                        elif self.field_device == "DAQ 2-channels":
+                            if self.sweep_by == "Angle":
+                                self.daq2channels.set_field_2channels(i, self.field_bias, self.field_const1, self.field_const2)
+                                tmp_field_angle.append(i)
+                                tmp_field_set.append(self.field_bias)
+                            else: 
+                                self.daq2channels.set_field_2channels(self.field_angle, i, self.field_const1, self.field_const2)
+                                tmp_field_angle.append(self.field_angle)
+                                tmp_field_set.append(i)
                         else:
                             self.field.set_field(i / self.field_const)
                             tmp_field_set.append(i)  # surowe pole
@@ -1411,6 +1493,9 @@ class IVTransfer(Procedure):
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
                                     sleep(self.delay * 0.001)
+                                elif self.field_device == "DAQ 2-channels": 
+                                    self.daq2channels.set_field_2channels(self.field_angle, p, self.field_const1, self.field_const2)
+                                    sleep(self.delay * 0.001)
                                 else:
                                     self.field.set_field(p / self.field_const)
                                     sleep(self.delay * 0.001)
@@ -1421,6 +1506,9 @@ class IVTransfer(Procedure):
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
+                                    sleep(self.delay * 0.001)
+                                elif self.field_device == "DAQ 2-channels": 
+                                    self.daq2channels.set_field_2channels(self.field_angle,p, self.field_const1, self.field_const2)
                                     sleep(self.delay * 0.001)
                                 else: 
                                     self.field.set_field(p / self.field_const)
@@ -1434,6 +1522,8 @@ class IVTransfer(Procedure):
                         for p in vector_to_zero_list:
                             if self.field_device == "2D Controller":
                                 self.field.set_field_value(self.field_angle, p)
+                            elif self.field_device == "DAQ 2-channels": 
+                                self.daq2channels.set_field_2channels(self.field_angle,p,self.field_const1, self.field_const2 )
                             else: 
                                 self.field.set_field(p / self.field_const)
                             sleep(self.delay * 0.001)
@@ -1450,6 +1540,9 @@ class IVTransfer(Procedure):
                             if self.field_device == "2D Controller": 
                                 self.field.set_field_value(self.field_angle, k)
                                 sleep(self.delay * 0.001)
+                            elif self.field_device == "DAQ 2-channels":
+                                    self.daq2channels.set_field_2channels(self.field_angle, k, self.field_const1, self.field_const2)
+                                    sleep(self.delay * 0.001)
                             else:
                                 self.field.set_field(k / self.field_const)
                                 sleep(self.delay * 0.001)
@@ -1465,6 +1558,15 @@ class IVTransfer(Procedure):
                                 tmp_field_set.append(self.field_bias)
                             else: 
                                 self.field.set_field_value(self.field_angle, i)
+                                tmp_field_angle.append(self.field_angle)
+                                tmp_field_set.append(i)
+                        elif self.field_device == "DAQ 2-channels":
+                            if self.sweep_by == "Angle":
+                                self.daq2channels.set_field_2channels(i, self.field_bias, self.field_const1, self.field_const2)
+                                tmp_field_angle.append(i)
+                                tmp_field_set.append(self.field_bias)
+                            else: 
+                                self.daq2channels.set_field_2channels(self.field_angle, i, self.field_const1, self.field_const2)
                                 tmp_field_angle.append(self.field_angle)
                                 tmp_field_set.append(i)
                         else:
@@ -1570,6 +1672,9 @@ class IVTransfer(Procedure):
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
                                     sleep(self.delay * 0.001)
+                                elif self.field_device == "DAQ 2-channels": 
+                                    self.daq2channels.set_field_2channels(self.field_angle, p, self.field_const1, self.field_const2)
+                                    sleep(self.delay * 0.001)
                                 else:
                                     self.field.set_field(p / self.field_const)
                                     sleep(self.delay * 0.001)
@@ -1580,6 +1685,10 @@ class IVTransfer(Procedure):
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
+                                    sleep(self.delay * 0.001)
+                                 
+                                elif self.field_device == "DAQ 2-channels": 
+                                    self.daq2channels.set_field_2channels(self.field_angle,p, self.field_const1, self.field_const2)
                                     sleep(self.delay * 0.001)
                                 else: 
                                     self.field.set_field(p / self.field_const)
@@ -1594,6 +1703,8 @@ class IVTransfer(Procedure):
                         for p in vector_to_zero_list:
                             if self.field_device == "2D Controller":
                                 self.field.set_field_value(self.field_angle, p)
+                            elif self.field_device == "DAQ 2-channels": 
+                                self.daq2channels.set_field_2channels(self.field_angle,p,self.field_const1, self.field_const2 )
                             else: 
                                 self.field.set_field(p / self.field_const)
                             sleep(self.delay * 0.001)
@@ -2031,8 +2142,9 @@ class IVTransfer(Procedure):
                         print("pole wyłączone")
                     elif self.field_device == "2D Controller":
                         self.field.shutdown()
-                        
                         print("pole wyłączone")
+                    elif self.field_device == "DAQ 2-channels": 
+                        self.daq2channels.shutdown()
                     else: 
                         if (
                             self.acquire_type == "I(Hdc) | set Vb"
@@ -2087,6 +2199,7 @@ class MainWindow(ManagedWindow):
                 "field_device",
                 "sweep_by",
                 "field_angle",
+                "daq2channels_coil",
                 "Field2DController_address",
                 "Field2DController_average",
                 "pid_parameters",
