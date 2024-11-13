@@ -238,7 +238,8 @@ class IVTransfer(Procedure):
         units="Oe",
         default=parameters_from_file["field_bias"],
         group_by={
-            "mode": lambda v: v == "HDCMode",
+            "mode": lambda v: v == "HDCMode"
+            
         },
     ) 
 
@@ -249,6 +250,7 @@ class IVTransfer(Procedure):
         group_by={
             "mode": lambda v: v == "HDCMode",
             "field_device": lambda v: v == "2D Controller" or v == "DAQ 2-channels"
+           
         },
     ) 
     coil = ListParameter(
@@ -548,7 +550,7 @@ class IVTransfer(Procedure):
     Hr = FloatParameter("Hr", default = parameters_from_file["Hr"])
 
     sweep_by = ListParameter("Sweep by", choices=["Angle", "Field Value"], default = parameters_from_file["sweep_by"], 
-    group_by=["mode", "field_device"],
+    group_by=["mode", "field_device", "acquire_type"],
         group_condition=[lambda v: v == "HDCMode", lambda v: v == "2D Controller" or v == "DAQ 2-channels", (lambda v: v != "I(Vb) | set Hdc") or (lambda k: k !="V(Ib) | set Hdc")] )
 
     pid_parameters = Parameter("PID Parameters (Kp, Kd, Ki, averag PID,  max step, max. i, Reserv field, Prescaler)", 
@@ -748,6 +750,13 @@ class IVTransfer(Procedure):
                     self.stop_flag = True
             ############## KEITHLEY CONFIG ###############
             try:
+                if self.field_device == "DAQ 2-channels":
+                    if self.daq2channels_coil == "Large": 
+                        self.field_const1 = 5
+                        self.field_const2 = 10
+                    else: 
+                        self.field_const1 = 10
+                        self.field_const2 = 5
 
                 self.keithley = Keithley2400(self.keithley_adress)
                 if self.acquire_type == "I(Hdc) | set Vb":
@@ -1299,7 +1308,10 @@ class IVTransfer(Procedure):
                     #Sweep field to next value or 0 
                     if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
                         if window.get_sequencer_len() == 0 or window.get_sequencer_len() == IVTransfer.licznik+1:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            if self.sweep_by != "Angle":
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            else:
+                                vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
@@ -1313,11 +1325,15 @@ class IVTransfer(Procedure):
                                 print("DEBUG:set field to zero: {}".format(p))
 
                         else:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            if self.sweep_by != "Angle":
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            else:
+                                vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
                                     sleep(self.delay * 0.001)
+                                 
                                 elif self.field_device == "DAQ 2-channels": 
                                     self.daq2channels.set_field_2channels(self.field_angle,p, self.field_const1, self.field_const2)
                                     sleep(self.delay * 0.001)
@@ -1325,11 +1341,15 @@ class IVTransfer(Procedure):
                                     self.field.set_field(p / self.field_const)
                                     sleep(self.delay * 0.001)
                                 print("DEBUG:set field to next value: {}".format(p))
+                    
                     else: 
-                        if self.reverse_field == False:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                        if self.sweep_by != "Angle":
+                            if self.reverse_field == False:
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                            else: 
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
                         else: 
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                         for p in vector_to_zero_list:
                             if self.field_device == "2D Controller":
                                 self.field.set_field_value(self.field_angle, p)
@@ -1488,7 +1508,10 @@ class IVTransfer(Procedure):
                      #Sweep field to next value or 0 
                     if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
                         if window.get_sequencer_len() == 0 or window.get_sequencer_len() == IVTransfer.licznik+1:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            if self.sweep_by != "Angle":
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            else:
+                                vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
@@ -1502,11 +1525,15 @@ class IVTransfer(Procedure):
                                 print("DEBUG:set field to zero: {}".format(p))
 
                         else:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            if self.sweep_by != "Angle":
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            else:
+                                vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
                                     sleep(self.delay * 0.001)
+                                 
                                 elif self.field_device == "DAQ 2-channels": 
                                     self.daq2channels.set_field_2channels(self.field_angle,p, self.field_const1, self.field_const2)
                                     sleep(self.delay * 0.001)
@@ -1514,11 +1541,15 @@ class IVTransfer(Procedure):
                                     self.field.set_field(p / self.field_const)
                                     sleep(self.delay * 0.001)
                                 print("DEBUG:set field to next value: {}".format(p))
+                    
                     else: 
-                        if self.reverse_field == False:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                        if self.sweep_by != "Angle":
+                            if self.reverse_field == False:
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                            else: 
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
                         else: 
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                         for p in vector_to_zero_list:
                             if self.field_device == "2D Controller":
                                 self.field.set_field_value(self.field_angle, p)
@@ -1667,7 +1698,10 @@ class IVTransfer(Procedure):
                         stop_flag = False
                     if 'Hr' in self.vector_obj.generate_vector_input(self.vector_param):
                         if window.get_sequencer_len() == 0 or window.get_sequencer_len() == IVTransfer.licznik+1:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            if self.sweep_by != "Angle":
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            else:
+                                vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
@@ -1681,7 +1715,10 @@ class IVTransfer(Procedure):
                                 print("DEBUG:set field to zero: {}".format(p))
 
                         else:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            if self.sweep_by != "Angle":
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), self.Hr, 5))
+                            else:
+                                vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                             for p in vector_to_zero_list:
                                 if self.field_device == "2D Controller":
                                     self.field.set_field_value(self.field_angle, p)
@@ -1696,10 +1733,13 @@ class IVTransfer(Procedure):
                                 print("DEBUG:set field to next value: {}".format(p))
                     
                     else: 
-                        if self.reverse_field == False:
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                        if self.sweep_by != "Angle":
+                            if self.reverse_field == False:
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[2]), 0, 5))
+                            else: 
+                                vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
                         else: 
-                            vector_to_zero_list = list(np.linspace(float(self.vector_obj.generate_vector_input(self.vector_param)[0]), 0, 5))
+                            vector_to_zero_list = list(np.linspace(float(self.field_bias), 0, 5))
                         for p in vector_to_zero_list:
                             if self.field_device == "2D Controller":
                                 self.field.set_field_value(self.field_angle, p)
